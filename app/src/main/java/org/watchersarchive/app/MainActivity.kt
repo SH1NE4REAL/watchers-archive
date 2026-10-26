@@ -357,24 +357,6 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
     }
 
     val gestureModifier = Modifier
-        .pointerInput(page?.index, busy) {
-            var distance = 0f
-            detectHorizontalDragGestures(
-                onHorizontalDrag = { change, amount ->
-                    change.consume()
-                    distance += amount
-                },
-                onDragEnd = {
-                    val current = page?.index ?: 0
-                    if (!busy && zoom <= 1.01f && abs(distance) > 80f) {
-                        val target = current + if (distance < 0f) 1 else -1
-                        if (target >= 0 && target < (page?.total ?: 0)) task = scope.launch { load(target) }
-                    }
-                    distance = 0f
-                },
-                onDragCancel = { distance = 0f },
-            )
-        }
         .pointerInput(controlsVisible) {
             detectTapGestures(onTap = { controlsVisible = !controlsVisible })
         }
@@ -396,7 +378,18 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                         translationY = imageOffset.y
                     }
                     .pointerInput(page?.index) {
+                        var swipeDistance = 0f
+                        var swipeTriggered = false
                         detectTransformGestures { _, pan, gestureZoom, _ ->
+                            if (gestureZoom == 1f && zoom <= 1.01f) {
+                                swipeDistance += pan.x
+                                if (!swipeTriggered && !busy && abs(swipeDistance) > 80f) {
+                                    val target = current.index + if (swipeDistance < 0f) 1 else -1
+                                    if (target in 0 until current.total) task = scope.launch { load(target) }
+                                    swipeTriggered = true
+                                }
+                                return@detectTransformGestures
+                            }
                             zoom = (zoom * gestureZoom).coerceIn(1f, 4f)
                             imageOffset = if (zoom <= 1.01f) Offset.Zero else imageOffset + pan
                         }
@@ -512,12 +505,10 @@ private fun LatestScreen(repository: ReaderRepository, onRead: (DemoComic) -> Un
                                 Text(record.title, fontWeight = FontWeight.Bold)
                                 Text("来源发布时间：${record.sourcePublishedAt ?: "未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
                                 Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                                record.yearLabel?.let { Text("年份：$it", style = MaterialTheme.typography.labelSmall) }
-                                record.sizeLabel?.let { Text("文章体积：$it", style = MaterialTheme.typography.labelSmall) }
                             }
                         }
-                        record.synopsis?.takeIf { it.isNotBlank() }?.let { Text(it, maxLines = 4, color = Color.DarkGray, style = MaterialTheme.typography.bodySmall) }
-                        Text("文章来源：${record.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
+                        record.yearLabel?.let { Text("年份：$it", color = Color.Gray, style = MaterialTheme.typography.labelSmall) }
+                        record.sizeLabel?.let { Text("大小：$it", color = Color.Gray, style = MaterialTheme.typography.labelSmall) }
                         val inspection = inspections[record.externalId]
                         if (inspection == null) {
                             OutlinedButton(onClick = { scope.launch {
@@ -525,7 +516,7 @@ private fun LatestScreen(repository: ReaderRepository, onRead: (DemoComic) -> Un
                                     val result = repository.inspectGetComics(record)
                                     inspections = inspections + (record.externalId to result)
                                 } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-                            } }) { Text("检查文件候选") }
+                            } }) { Text("检查可读文件") }
                         } else {
                             inspection.assets.forEach { asset ->
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -585,7 +576,7 @@ private fun OfficialScreen(repository: ReaderRepository) {
                 try {
                     guide = repository.refreshOfficialGuide()
                     character = repository.refreshOfficialCharacter()
-                } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                } catch (_: Exception) { error = "官方资料暂时不可用，请检查网络后重试。" }
                 finally { busy = false }
             } }) { Text(if (busy) "读取中…" else "读取官方资料") }
         }

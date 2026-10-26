@@ -35,6 +35,14 @@ class GetComicsCatalogService(
     suspend fun fetchRss(feedUrl: String = "https://getcomics.org/cat/marvel/feed/") =
         withContext(Dispatchers.IO) { parseRss(getText(feedUrl), feedUrl) }
 
+    suspend fun enrichCover(record: CatalogSourceRecord): CatalogSourceRecord = withContext(Dispatchers.IO) {
+        if (!record.coverUrl.isNullOrBlank()) return@withContext record
+        val html = runCatching { getText(record.canonicalUrl) }.getOrNull() ?: return@withContext record
+        val cover = Regex("(?i)<meta[^>]+property=[\\\"']og:image[\\\"'][^>]+content=[\\\"']([^\\\"']+)").find(html)?.groupValues?.get(1)
+            ?: firstImageUrl(html)
+        record.copy(coverUrl = cover)
+    }
+
     fun parseWordPressPosts(json: String, endpoint: String, discoveredAt: String = now()): List<CatalogSourceRecord> {
         val array = JSONArray(json)
         return (0 until array.length()).mapNotNull { index ->
@@ -200,6 +208,8 @@ class GetComicsCatalogService(
         .replace(Regex("(?is)<script.*?</script>|<style.*?</style>"), " ")
         .replace(Regex("(?is)<[^>]+>"), " ")
         .replace("&nbsp;", " ").replace("&amp;", "&")
+        .replace("&quot;", "\"").replace("&#8211;", "–").replace("&#8212;", "—")
+        .replace("&#8217;", "’").replace("&#8216;", "‘").replace("&#8220;", "“").replace("&#8221;", "”")
         .replace(Regex("\\s+"), " ").trim()
 
     private fun firstImageUrl(html: String): String? = Regex("(?i)<img[^>]+src=[\\\"']([^\\\"']+)").find(html)?.groupValues?.get(1)

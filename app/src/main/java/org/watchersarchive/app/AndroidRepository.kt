@@ -192,7 +192,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
     override suspend fun refreshGetComics(): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
         state.ensureInitialized()
-        val records = GetComicsCatalogService().fetchWordPressPosts()
+        val service = GetComicsCatalogService()
+        val records = service.fetchWordPressPosts().map { service.enrichCover(it) }
         state.metadata.upsertAll(records)
         state.metadata.records()
     }
