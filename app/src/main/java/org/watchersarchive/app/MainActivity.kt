@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +62,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
@@ -283,6 +287,13 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(true) }
     var diagnosticsVisible by remember(comic.id) { mutableStateOf(false) }
+    var zoom by remember(comic.id) { mutableStateOf(1f) }
+    var imageOffset by remember(comic.id) { mutableStateOf(Offset.Zero) }
+
+    LaunchedEffect(page?.index) {
+        zoom = 1f
+        imageOffset = Offset.Zero
+    }
 
     suspend fun load(index: Int) {
         requestedIndex = index; busy = true; error = null; notice = null
@@ -343,7 +354,7 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                 },
                 onDragEnd = {
                     val current = page?.index ?: 0
-                    if (!busy && abs(distance) > 80f) {
+                    if (!busy && zoom <= 1.01f && abs(distance) > 80f) {
                         val target = current + if (distance < 0f) 1 else -1
                         if (target >= 0 && target < (page?.total ?: 0)) task = scope.launch { load(target) }
                     }
@@ -364,7 +375,26 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
             Image(
                 current.bitmap.asImageBitmap(),
                 "测试漫画第 ${current.index + 1} 页",
-                Modifier.fillMaxSize(),
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = zoom
+                        scaleY = zoom
+                        translationX = imageOffset.x
+                        translationY = imageOffset.y
+                    }
+                    .pointerInput(page?.index) {
+                        detectTransformGestures { _, pan, gestureZoom, _ ->
+                            zoom = (zoom * gestureZoom).coerceIn(1f, 4f)
+                            imageOffset = if (zoom <= 1.01f) Offset.Zero else imageOffset + pan
+                        }
+                    }
+                    .pointerInput(page?.index) {
+                        detectTapGestures(onDoubleTap = {
+                            zoom = if (zoom > 1.01f) 1f else 2f
+                            imageOffset = Offset.Zero
+                        })
+                    },
                 contentScale = ContentScale.Fit,
             )
         } ?: Column(horizontalAlignment = Alignment.CenterHorizontally) {
