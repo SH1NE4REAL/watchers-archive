@@ -212,7 +212,11 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     /** Registers before-cancellation cleanup so blocking HTTP reads are disconnected promptly. */
     @OptIn(InternalCoroutinesApi::class)
     private fun Job.onCancellation(action: () -> Unit): DisposableHandle =
-        invokeOnCompletion(onCancelling = true) { action() }
+        invokeOnCompletion(onCancelling = true) { cause ->
+            // Completion handlers also run after a successful page read. Only a
+            // non-null cause means this Job is actually being cancelled or failed.
+            if (cause != null) action()
+        }
 }
 
 private val demoComics: List<DemoComic> = listOf(
