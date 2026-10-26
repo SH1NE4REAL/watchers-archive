@@ -35,45 +35,60 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
 
     private class State(context: Context) {
         private val root = File(context.filesDir, "watchers-archive-phase1")
-        val cache = CacheManager(File(root, "temporary-cache"))
-        val library = PersistentLibrary(File(root, "persistent-library"))
         val traces = CopyOnWriteArrayList<String>()
         val preferences = context.getSharedPreferences("phase1-settings", Context.MODE_PRIVATE)
-        val lock = Any()
         val limits = ReaderLimits()
+        private val initializationLock = Any()
+        @Volatile private var initialized = false
+        private lateinit var cacheManager: CacheManager
+        private lateinit var persistentLibrary: PersistentLibrary
 
-        init {
-            root.mkdirs()
-            listOf(
-                DemoComic("standard", "标准 CBZ · 多页 PNG", "自建测试内容：标准 ZIP，含 STORE 与 DEFLATE 页面。", "standard.cbz"),
-                DemoComic("zip64", "ZIP64 · 大偏移归档", "自建测试内容：逻辑偏移超过 4 GiB，不占用相同大小磁盘。", "zip64.cbz"),
-                DemoComic("ignore", "Range 被忽略", "自建错误端点：服务器返回 200，客户端必须立即拒绝。", "ignore.cbz"),
-                DemoComic("bad-range", "错误 Content-Range", "自建错误端点：范围起点不匹配。", "bad-range.cbz"),
-                DemoComic("truncated", "网络中断", "自建错误端点：响应长度不足，不提交页面。", "truncated.cbz"),
-                DemoComic("changing", "对象版本变化", "自建错误端点：ETag 变化后拒绝混合读取。", "changing.cbz"),
-                DemoComic("slow", "可取消读取", "自建测试端点：低速响应，用于取消测试。", "slow.cbz"),
-            ).forEach { comic -> library.registerComic(comic.id, comic.title, comic.path, true) }
+        /**
+         * Cache and persistent records are opened lazily from a suspend API. The
+         * previous eager construction ran directory scans, file locking and seven
+         * synchronous fsyncs from Activity.onCreate's main thread.
+         */
+        fun ensureInitialized() {
+            if (initialized) return
+            synchronized(initializationLock) {
+                if (initialized) return
+                root.mkdirs()
+                val createdCache = CacheManager(File(root, "temporary-cache"))
+                try {
+                    val createdLibrary = PersistentLibrary(File(root, "persistent-library"))
+                    try {
+                        demoComics.forEach { comic ->
+                            createdLibrary.registerComic(comic.id, comic.title, comic.path, true)
+                        }
+                        cacheManager = createdCache
+                        persistentLibrary = createdLibrary
+                        initialized = true
+                    } catch (error: Throwable) {
+                        createdLibrary.close()
+                        throw error
+                    }
+                } catch (error: Throwable) {
+                    createdCache.close()
+                    throw error
+                }
+            }
         }
+
+        val cache: CacheManager get() = check(initialized) { "Repository state is not initialized" }.let { cacheManager }
+        val library: PersistentLibrary get() = check(initialized) { "Repository state is not initialized" }.let { persistentLibrary }
     }
 
     private val base: String
         get() = state.preferences.getString("baseUrl", "http://10.0.2.2:8765")!!
 
-    override val comics: List<DemoComic> = listOf(
-        DemoComic("standard", "标准 CBZ · 多页 PNG", "自建测试内容：标准 ZIP，含 STORE 与 DEFLATE 页面。", "standard.cbz"),
-        DemoComic("zip64", "ZIP64 · 大偏移归档", "自建测试内容：逻辑偏移超过 4 GiB，不占用相同大小磁盘。", "zip64.cbz"),
-        DemoComic("ignore", "Range 被忽略", "自建错误端点：服务器返回 200，客户端必须立即拒绝。", "ignore.cbz"),
-        DemoComic("bad-range", "错误 Content-Range", "自建错误端点：范围起点不匹配。", "bad-range.cbz"),
-        DemoComic("truncated", "网络中断", "自建错误端点：响应长度不足，不提交页面。", "truncated.cbz"),
-        DemoComic("changing", "对象版本变化", "自建错误端点：ETag 变化后拒绝混合读取。", "changing.cbz"),
-        DemoComic("slow", "可取消读取", "自建测试端点：低速响应，用于取消测试。", "slow.cbz"),
-    )
+    override val comics: List<DemoComic> = demoComics
 
     override var baseUrl: String
         get() = base
         set(value) { state.preferences.edit().putString("baseUrl", value.trim().trimEnd('/')).apply() }
 
     override suspend fun open(comic: DemoComic): ReaderSession = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
         val token = CancellationToken()
         val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
         try {
@@ -147,16 +162,23 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         }
     }
 
-    override suspend fun lastPage(comicId: String): Int = withContext(Dispatchers.IO) { state.library.progress(comicId) }
-    override suspend fun bookmarkPages(comicId: String): Set<Int> = withContext(Dispatchers.IO) { state.library.bookmarks(comicId) }
+    override suspend fun lastPage(comicId: String): Int = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.library.progress(comicId)
+    }
+    override suspend fun bookmarkPages(comicId: String): Set<Int> = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.library.bookmarks(comicId)
+    }
     override suspend fun setBookmark(comicId: String, index: Int, enabled: Boolean) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
         if (enabled) state.library.addBookmark(comicId, index) else state.library.removeBookmark(comicId, index)
     }
     override suspend fun cacheSnapshot(): CacheSnapshot = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
         val snapshot = state.cache.snapshot()
         CacheSnapshot(snapshot.committedBytes, snapshot.reservedBytes + snapshot.temporaryBytes, snapshot.limitBytes, snapshot.pinnedFiles)
     }
     override suspend fun clearCache(): String = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
         val reclaimed = state.cache.clearUnpinned()
         "已清理 ${formatBytes(reclaimed)}；正在阅读的页面仍受租约保护。"
     }
@@ -166,12 +188,24 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) throw ArchiveException(org.watchersarchive.core.ArchiveError.UNSUPPORTED_IMAGE, "Android 无法识别测试页面")
+        val width = bounds.outWidth.toLong()
+        val height = bounds.outHeight.toLong()
+        val pixels = width * height
+        if (width > state.limits.maxImageDimension || height > state.limits.maxImageDimension ||
+            pixels > state.limits.maxImagePixels) {
+            throw ArchiveException(org.watchersarchive.core.ArchiveError.LIMIT_EXCEEDED, "图片尺寸或像素数超出 Android 解码限制")
+        }
         var sample = 1
-        while ((bounds.outWidth.toLong() / sample) * (bounds.outHeight.toLong() / sample) > 4_000_000L) sample *= 2
+        while ((ceilDiv(width, sample.toLong()) * ceilDiv(height, sample.toLong())) > 4_000_000L) {
+            if (sample > Int.MAX_VALUE / 2) throw ArchiveException(org.watchersarchive.core.ArchiveError.LIMIT_EXCEEDED, "图片采样因子超出限制")
+            sample *= 2
+        }
         val options = BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = Bitmap.Config.RGB_565 }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
             ?: throw ArchiveException(org.watchersarchive.core.ArchiveError.UNSUPPORTED_IMAGE, "页面解码失败")
     }
+
+    private fun ceilDiv(value: Long, divisor: Long): Long = (value + divisor - 1L) / divisor
 
     private fun formatBytes(bytes: Long) = String.format(java.util.Locale.ROOT, "%.2f MB", bytes / 1_000_000.0)
 
@@ -180,3 +214,13 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     private fun Job.onCancellation(action: () -> Unit): DisposableHandle =
         invokeOnCompletion(onCancelling = true) { action() }
 }
+
+private val demoComics: List<DemoComic> = listOf(
+    DemoComic("standard", "标准 CBZ · 多页 PNG", "自建测试内容：标准 ZIP，含 STORE 与 DEFLATE 页面。", "standard.cbz"),
+    DemoComic("zip64", "ZIP64 · 大偏移归档", "自建测试内容：逻辑偏移超过 4 GiB，不占用相同大小磁盘。", "zip64.cbz"),
+    DemoComic("ignore", "Range 被忽略", "自建错误端点：服务器返回 200，客户端必须立即拒绝。", "ignore.cbz"),
+    DemoComic("bad-range", "错误 Content-Range", "自建错误端点：范围起点不匹配。", "bad-range.cbz"),
+    DemoComic("truncated", "网络中断", "自建错误端点：响应长度不足，不提交页面。", "truncated.cbz"),
+    DemoComic("changing", "对象版本变化", "自建错误端点：ETag 变化后拒绝混合读取。", "changing.cbz"),
+    DemoComic("slow", "可取消读取", "自建测试端点：低速响应，用于取消测试。", "slow.cbz"),
+)
