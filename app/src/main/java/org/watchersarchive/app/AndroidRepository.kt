@@ -99,7 +99,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val token = CancellationToken()
         val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
         try {
-            val source = HttpRangeSource("${baseUrl.trimEnd('/')}/${comic.path}", state.limits) { trace ->
+            val sourceUrl = comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}"
+            val source = HttpRangeSource(sourceUrl, state.limits) { trace ->
                 state.traces.add("${trace.outcome} · ${trace.statusCode ?: "—"} · ${trace.start}-${trace.endInclusive} · ${trace.receivedBytes} B · ${trace.contentRange ?: "无 Content-Range"}")
                 while (state.traces.size > 80) state.traces.removeAt(0)
             }
@@ -243,6 +244,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             connection.disconnect()
         }
     }
+    override suspend fun inspectGetComics(record: CatalogSourceRecord): SourceAssetInspection =
+        GetComicsCatalogService().inspectArticle(record.canonicalUrl)
+    override suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset =
+        GetComicsCatalogService().validateAsset(asset)
     override fun traceLines(): List<String> = state.traces.toList()
 
     private fun decodeBounded(bytes: ByteArray): Bitmap {

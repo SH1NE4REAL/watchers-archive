@@ -188,7 +188,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
                 Screen.Library -> LibraryScreen(repository.comics) { selected = it; screen = Screen.Detail }
                 Screen.Detail -> selected?.let { DetailScreen(it, repository) { screen = Screen.Reader } }
                 Screen.Reader -> selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
-                Screen.Latest -> LatestScreen(repository)
+                Screen.Latest -> LatestScreen(repository) { selected = it; screen = Screen.Reader }
                 Screen.Official -> OfficialScreen(repository)
                 Screen.Cache -> CacheScreen(repository)
             }
@@ -473,11 +473,12 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
 }
 
 @Composable
-private fun LatestScreen(repository: ReaderRepository) {
+private fun LatestScreen(repository: ReaderRepository, onRead: (DemoComic) -> Unit) {
     val scope = rememberCoroutineScope()
     var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var inspections by remember { mutableStateOf(emptyMap<String, SourceAssetInspection>()) }
     suspend fun refresh() {
         busy = true
         error = null
@@ -517,7 +518,48 @@ private fun LatestScreen(repository: ReaderRepository) {
                         }
                         record.synopsis?.takeIf { it.isNotBlank() }?.let { Text(it, maxLines = 4, color = Color.DarkGray, style = MaterialTheme.typography.bodySmall) }
                         Text("文章来源：${record.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
-                        Text("正文资产：未验证 · 不能直接开始阅读", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        val inspection = inspections[record.externalId]
+                        if (inspection == null) {
+                            OutlinedButton(onClick = { scope.launch {
+                                try {
+                                    val result = repository.inspectGetComics(record)
+                                    inspections = inspections + (record.externalId to result)
+                                } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                            } }) { Text("检查文件候选") }
+                        } else {
+                            inspection.assets.forEach { asset ->
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("${asset.host ?: "未知宿主"} · ${asset.status}", color = if (asset.status == SourceAssetStatus.READY) Color(0xFF238636) else Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                        Text(asset.reason, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                    if (asset.status == SourceAssetStatus.METADATA_ONLY) {
+                                        TextButton(onClick = { scope.launch {
+                                            try {
+                                                val checked = repository.validateSourceAsset(asset)
+                                                val updated = inspection.copy(assets = inspection.assets.map { if (it.id == checked.id) checked else it })
+                                                inspections = inspections + (record.externalId to updated)
+                                            } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                                        } }) { Text("验证") }
+                                    }
+                                    if (asset.status == SourceAssetStatus.READY) {
+                                        Button(onClick = {
+                                            onRead(DemoComic(
+                                                id = "${record.externalId}:${asset.id}",
+                                                title = record.title,
+                                                description = record.synopsis ?: "GetComics 来源文章",
+                                                path = asset.fileName ?: asset.candidateUrl,
+                                                series = "GetComics 来源条目",
+                                                year = record.yearLabel ?: "未知年份",
+                                                isTestContent = false,
+                                                sourceUrl = asset.candidateUrl,
+                                                sourceAssetStatus = SourceAssetStatus.READY,
+                                            ))
+                                        }) { Text("开始阅读") }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

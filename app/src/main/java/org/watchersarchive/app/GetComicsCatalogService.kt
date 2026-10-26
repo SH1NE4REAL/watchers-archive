@@ -138,6 +138,42 @@ class GetComicsCatalogService(
         return SourceAssetInspection(articleUrl, assets, false)
     }
 
+    suspend fun inspectArticle(articleUrl: String): SourceAssetInspection = withContext(Dispatchers.IO) {
+        inspectArticleHtml(articleUrl, getText(articleUrl))
+    }
+
+    /** Performs only a bounded one-byte Range probe; it never downloads the file. */
+    suspend fun validateAsset(asset: SourceAsset): SourceAsset = withContext(Dispatchers.IO) {
+        if (asset.status == SourceAssetStatus.NEEDS_USER_ACTION || asset.status == SourceAssetStatus.UNSUPPORTED_FORMAT) return@withContext asset
+        val checked = now()
+        val connection = runCatching { URL(asset.candidateUrl).openConnection() as HttpURLConnection }.getOrNull()
+            ?: return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件地址无效。", checkedAt = checked)
+        try {
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 15_000
+            connection.instanceFollowRedirects = true
+            connection.setRequestProperty("Range", "bytes=0-0")
+            connection.setRequestProperty("Accept-Encoding", "identity")
+            connection.setRequestProperty("User-Agent", "WatchersArchive-AssetProbe/1.0")
+            val status = connection.responseCode
+            if (status == 200) return@withContext asset.copy(status = SourceAssetStatus.RANGE_UNSUPPORTED, reason = "服务器忽略 Range，已拒绝完整响应。", checkedAt = checked)
+            if (status !in 200..299) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件探测返回 HTTP $status。", checkedAt = checked)
+            val range = connection.getHeaderField("Content-Range")
+            val match = Regex("bytes 0-0/(\\d+)").matchEntire(range?.trim().orEmpty())
+            val tag = connection.getHeaderField("ETag")?.trim()
+            if (status != 206 || match == null) return@withContext asset.copy(status = SourceAssetStatus.RANGE_UNSUPPORTED, reason = "缺少有效 206 Content-Range。", checkedAt = checked)
+            if (tag.isNullOrBlank() || tag.startsWith("W/")) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "缺少强 ETag，不能绑定文件版本。", checkedAt = checked)
+            connection.inputStream.use { input ->
+                if (input.read() < 0) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "Range 响应为空。", checkedAt = checked)
+            }
+            asset.copy(status = SourceAssetStatus.READY, reason = "已验证 206、Content-Range 和强 ETag；可继续由阅读器绑定。", checkedAt = checked, declaredSize = match.groupValues[1])
+        } catch (error: Exception) {
+            asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件探测失败：${error.message ?: error.javaClass.simpleName}", checkedAt = checked)
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     private fun getText(endpoint: String): String {
         val uri = URI(endpoint)
         require(uri.scheme == "https" || uri.scheme == "http")

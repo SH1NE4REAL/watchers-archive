@@ -13,6 +13,8 @@ data class DemoComic(
     val year: String = "测试内容",
     val pageCountHint: Int? = null,
     val isTestContent: Boolean = true,
+    val sourceUrl: String? = null,
+    val sourceAssetStatus: SourceAssetStatus? = null,
 )
 
 data class ReaderPage(
@@ -53,5 +55,7 @@ interface ReaderRepository {
     suspend fun refreshOfficialGuide(): OfficialGuide
     suspend fun refreshOfficialCharacter(): OfficialCharacterProfile
     suspend fun loadCover(url: String): Bitmap?
+    suspend fun inspectGetComics(record: CatalogSourceRecord): SourceAssetInspection
+    suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset
     fun traceLines(): List<String>
 }
