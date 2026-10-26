@@ -1,0 +1,10 @@
+.tools/
+.gradle/
+**/build/
+local.properties
+__pycache__/
+*.pyc
+artifacts/
+.tmp-kotlinc/
+.idea/
+*.iml
