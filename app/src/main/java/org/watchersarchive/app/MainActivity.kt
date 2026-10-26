@@ -86,7 +86,7 @@ import java.net.URI
 
 private val ArchiveRed = Color(0xFFBE2834)
 private val PageBackground = Color(0xFFF4F4F5)
-private enum class Screen { Library, Detail, Reader, Cache }
+private enum class Screen { Library, Detail, Reader, Latest, Official, Cache }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -166,9 +166,19 @@ private fun ArchiveApp(repository: ReaderRepository) {
                     icon = { Text("▤", fontSize = 22.sp) }, label = { Text("测试书架") },
                 )
                 NavigationBarItem(
+                    selected = screen == Screen.Latest,
+                    onClick = { screen = Screen.Latest },
+                    icon = { Text("◷", fontSize = 22.sp) }, label = { Text("最新更新") },
+                )
+                NavigationBarItem(
+                    selected = screen == Screen.Official,
+                    onClick = { screen = Screen.Official },
+                    icon = { Text("★", fontSize = 22.sp) }, label = { Text("官方推荐") },
+                )
+                NavigationBarItem(
                     selected = screen == Screen.Cache,
                     onClick = { screen = Screen.Cache },
-                    icon = { Text("◷", fontSize = 22.sp) }, label = { Text("缓存与设置") },
+                    icon = { Text("⚙", fontSize = 22.sp) }, label = { Text("缓存与设置") },
                 )
             }
         },
@@ -178,6 +188,8 @@ private fun ArchiveApp(repository: ReaderRepository) {
                 Screen.Library -> LibraryScreen(repository.comics) { selected = it; screen = Screen.Detail }
                 Screen.Detail -> selected?.let { DetailScreen(it, repository) { screen = Screen.Reader } }
                 Screen.Reader -> selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
+                Screen.Latest -> LatestScreen(repository)
+                Screen.Official -> OfficialScreen(repository)
                 Screen.Cache -> CacheScreen(repository)
             }
         }
@@ -456,6 +468,127 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
             }
         } else {
             Text("点击屏幕显示阅读控制", color = Color.White.copy(alpha = .7f), style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
+        }
+    }
+}
+
+@Composable
+private fun LatestScreen(repository: ReaderRepository) {
+    val scope = rememberCoroutineScope()
+    var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    suspend fun refresh() {
+        busy = true
+        error = null
+        try { records = repository.refreshGetComics() }
+        catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+        finally { busy = false }
+    }
+    LaunchedEffect(Unit) { records = repository.getComicsRecords() }
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("最新更新", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("GetComics 来源文章元数据 · 正文资产需单独验证", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            }
+            Button(enabled = !busy, onClick = { scope.launch { refresh() } }) { Text(if (busy) "更新中…" else "刷新") }
+        }
+        error?.let { ErrorText(it) }
+        if (records.isEmpty() && !busy) {
+            WhiteCard {
+                Text("还没有保存的来源文章", fontWeight = FontWeight.Bold)
+                Text("刷新后会读取 GetComics Marvel 分类的公开元数据。文章不会自动变成可读正文。", color = Color.Gray)
+            }
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(records, key = { it.externalId }) { record ->
+                Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            SourceCover(record.coverUrl, repository, Modifier.width(72.dp).height(102.dp))
+                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                Text(record.title, fontWeight = FontWeight.Bold)
+                                Text("来源发布时间：${record.sourcePublishedAt ?: "未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                record.yearLabel?.let { Text("年份：$it", style = MaterialTheme.typography.labelSmall) }
+                                record.sizeLabel?.let { Text("文章体积：$it", style = MaterialTheme.typography.labelSmall) }
+                            }
+                        }
+                        record.synopsis?.takeIf { it.isNotBlank() }?.let { Text(it, maxLines = 4, color = Color.DarkGray, style = MaterialTheme.typography.bodySmall) }
+                        Text("文章来源：${record.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
+                        Text("正文资产：未验证 · 不能直接开始阅读", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfficialScreen(repository: ReaderRepository) {
+    val scope = rememberCoroutineScope()
+    var guide by remember { mutableStateOf<OfficialGuide?>(null) }
+    var character by remember { mutableStateOf<OfficialCharacterProfile?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("官方推荐", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Marvel 官方指南和角色资料 · 不从 GetComics 推断剧情关系", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            }
+            Button(enabled = !busy, onClick = { scope.launch {
+                busy = true; error = null
+                try {
+                    guide = repository.refreshOfficialGuide()
+                    character = repository.refreshOfficialCharacter()
+                } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                finally { busy = false }
+            } }) { Text(if (busy) "读取中…" else "读取官方资料") }
+        }
+        error?.let { ErrorText(it) }
+        guide?.let { current ->
+            WhiteCard {
+                Text(current.title, fontWeight = FontWeight.Bold)
+                current.description?.let { Text(it, color = Color.DarkGray) }
+                Text("来源：${current.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
+                current.sections.forEach { section ->
+                    Text("${section.order}. ${section.title}", fontWeight = FontWeight.Bold)
+                    section.issues.take(12).forEach { issue ->
+                        Text("${issue.order}. Issue ${issue.issueExternalId ?: "未知"} · ${issue.sourceUrl}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        character?.let { current ->
+            WhiteCard {
+                Text("官方角色资料：${current.name}", fontWeight = FontWeight.Bold)
+                current.overview?.let { Text(it, color = Color.DarkGray) }
+                Text("来源：${current.sourceUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
+                Text("角色资料不是某一期的出场证明；具体关系需要 issue/API 证据。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (guide == null && character == null && !busy) {
+            WhiteCard {
+                Text("尚未读取官方资料", fontWeight = FontWeight.Bold)
+                Text("点击“读取官方资料”后保存官方阅读指南和角色资料的来源证据。", color = Color.Gray)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SourceCover(url: String?, repository: ReaderRepository, modifier: Modifier) {
+    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(url) {
+        bitmap = url?.let { runCatching { repository.loadCover(it) }.getOrNull() }
+    }
+    Surface(modifier.clip(RoundedCornerShape(8.dp)), color = Color(0xFFF8E6E8)) {
+        if (bitmap != null) {
+            Image(bitmap!!.asImageBitmap(), "来源封面", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("封面", color = ArchiveRed, style = MaterialTheme.typography.labelSmall) }
         }
     }
 }

@@ -17,6 +17,9 @@ import org.watchersarchive.core.PersistentLibrary
 import org.watchersarchive.core.ReaderLimits
 import org.watchersarchive.core.ZipArchiveReader
 import java.io.File
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -42,6 +45,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         @Volatile private var initialized = false
         private lateinit var cacheManager: CacheManager
         private lateinit var persistentLibrary: PersistentLibrary
+        private lateinit var catalogMetadata: CatalogMetadataStore
 
         /**
          * Cache and persistent records are opened lazily from a suspend API. The
@@ -54,6 +58,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                 if (initialized) return
                 root.mkdirs()
                 val createdCache = CacheManager(File(root, "temporary-cache"))
+                val createdCatalog = CatalogMetadataStore(File(root, "catalog-metadata.properties"))
                 try {
                     val createdLibrary = PersistentLibrary(File(root, "persistent-library"))
                     try {
@@ -62,6 +67,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                         }
                         cacheManager = createdCache
                         persistentLibrary = createdLibrary
+                        catalogMetadata = createdCatalog
                         initialized = true
                     } catch (error: Throwable) {
                         createdLibrary.close()
@@ -76,6 +82,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
 
         val cache: CacheManager get() = check(initialized) { "Repository state is not initialized" }.let { cacheManager }
         val library: PersistentLibrary get() = check(initialized) { "Repository state is not initialized" }.let { persistentLibrary }
+        val metadata: CatalogMetadataStore get() = check(initialized) { "Repository state is not initialized" }.let { catalogMetadata }
     }
 
     private val base: String
@@ -181,6 +188,60 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         state.ensureInitialized()
         val reclaimed = state.cache.clearUnpinned()
         "已清理 ${formatBytes(reclaimed)}；正在阅读的页面仍受租约保护。"
+    }
+    override suspend fun refreshGetComics(): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        val records = GetComicsCatalogService().fetchWordPressPosts()
+        state.metadata.upsertAll(records)
+        state.metadata.records()
+    }
+    override suspend fun getComicsRecords(): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        state.metadata.records()
+    }
+    override suspend fun refreshOfficialGuide(): OfficialGuide =
+        OfficialMarvelRecommendationService().fetchGuide(
+            "https://www.marvel.com/comics/guides/2531/the_road_to_avengers_armageddon",
+        )
+    override suspend fun refreshOfficialCharacter(): OfficialCharacterProfile =
+        OfficialMarvelRecommendationService().fetchCharacter(
+            "https://www.marvel.com/characters/spider-man-peter-parker",
+        )
+    override suspend fun loadCover(url: String): Bitmap? = withContext(Dispatchers.IO) {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10_000
+            readTimeout = 15_000
+            instanceFollowRedirects = true
+            setRequestProperty("Accept-Encoding", "identity")
+            setRequestProperty("User-Agent", "WatchersArchive-Cover/1.0")
+        }
+        try {
+            if (connection.responseCode !in 200..299) return@withContext null
+            val bytes = connection.inputStream.use { input ->
+                val output = ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                var total = 0
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    if (total > 2 * 1024 * 1024) return@withContext null
+                    output.write(buffer, 0, count)
+                }
+                output.toByteArray()
+            }
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@withContext null
+            var sample = 1
+            while ((bounds.outWidth / sample) * (bounds.outHeight / sample) > 2_000_000) sample *= 2
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.RGB_565
+            })
+        } finally {
+            connection.disconnect()
+        }
     }
     override fun traceLines(): List<String> = state.traces.toList()
 

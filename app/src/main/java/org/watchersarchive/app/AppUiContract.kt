@@ -48,5 +48,10 @@ interface ReaderRepository {
     suspend fun cacheSnapshot(): CacheSnapshot
     /** Returns a result explaining retained entries if they are currently in use. */
     suspend fun clearCache(): String
+    suspend fun refreshGetComics(): List<CatalogSourceRecord>
+    suspend fun getComicsRecords(): List<CatalogSourceRecord>
+    suspend fun refreshOfficialGuide(): OfficialGuide
+    suspend fun refreshOfficialCharacter(): OfficialCharacterProfile
+    suspend fun loadCover(url: String): Bitmap?
     fun traceLines(): List<String>
 }
