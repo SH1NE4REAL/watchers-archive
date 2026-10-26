@@ -31,11 +31,13 @@ path:
 $env:GRADLE_USER_HOME = "$env:LOCALAPPDATA\Temp\gradle-home-phase1"
 $env:TEMP = "$PWD\.tools\tmp"
 $env:TMP = $env:TEMP
+$env:ANDROID_USER_HOME = "$env:LOCALAPPDATA\Temp\android-user-phase1"
 .\gradlew.bat test :app:assembleDebug --no-daemon
 ```
 
-The debug variant uses a generated local-only `app/debug.keystore`; it is ignored by
-Git and is not a release signing key. The checked-in wrapper JAR is extracted from
+The debug variant uses Android's default local debug signing, with `ANDROID_USER_HOME`
+redirected to a writable temporary directory. No release signing key is stored in the
+repository. The checked-in wrapper JAR is extracted from
 the verified Gradle 8.9 distribution and has SHA-256
 `498495120a03b9a6ab5d155f5de3c8f0d986a449153702fb80fc80e134484f17`.
 
