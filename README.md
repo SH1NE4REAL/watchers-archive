@@ -23,6 +23,22 @@ Once the wrapper and dependencies are available:
 .\gradlew.bat test :app:assembleDebug
 ```
 
+On the restricted Windows validation host, use an ASCII Gradle home and temporary
+directory so the Kotlin daemon and Android tools do not inherit the Chinese project
+path:
+
+```powershell
+$env:GRADLE_USER_HOME = "$env:LOCALAPPDATA\Temp\gradle-home-phase1"
+$env:TEMP = "$PWD\.tools\tmp"
+$env:TMP = $env:TEMP
+.\gradlew.bat test :app:assembleDebug --no-daemon
+```
+
+The debug variant uses a generated local-only `app/debug.keystore`; it is ignored by
+Git and is not a release signing key. The checked-in wrapper JAR is extracted from
+the verified Gradle 8.9 distribution and has SHA-256
+`498495120a03b9a6ab5d155f5de3c8f0d986a449153702fb80fc80e134484f17`.
+
 The Android instrumentation suite expects the local fixture server and an emulator
 or device. Start the server and connect it to the emulator with:
 
