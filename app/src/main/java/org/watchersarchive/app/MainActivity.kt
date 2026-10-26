@@ -1,11 +1,14 @@
 package org.watchersarchive.app
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +53,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +72,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import kotlin.math.abs
 import java.net.URI
 
 private val ArchiveRed = Color(0xFFBE2834)
@@ -90,14 +103,35 @@ class MainActivity : ComponentActivity() {
 private fun ArchiveApp(repository: ReaderRepository) {
     var screen by remember { mutableStateOf(Screen.Library) }
     var selected by remember { mutableStateOf<DemoComic?>(null) }
+    val view = LocalView.current
+    val activity = view.context as? Activity
     val goBack = {
         screen = if (screen == Screen.Reader) Screen.Detail else Screen.Library
     }
     BackHandler(enabled = screen != Screen.Library) { goBack() }
+    DisposableEffect(screen, activity) {
+        val window = activity?.window
+        val controller = window?.let { WindowInsetsControllerCompat(it, view) }
+        if (window != null && controller != null) {
+            WindowCompat.setDecorFitsSystemWindows(window, screen != Screen.Reader)
+            if (screen == Screen.Reader) {
+                controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+        onDispose {
+            if (window != null && controller != null && screen == Screen.Reader) {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+                WindowCompat.setDecorFitsSystemWindows(window, true)
+            }
+        }
+    }
     Scaffold(
         containerColor = PageBackground,
         topBar = {
-            Surface(color = PageBackground) {
+            if (screen != Screen.Reader) Surface(color = PageBackground) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -129,7 +163,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
             when (screen) {
                 Screen.Library -> LibraryScreen(repository.comics) { selected = it; screen = Screen.Detail }
                 Screen.Detail -> selected?.let { DetailScreen(it, repository) { screen = Screen.Reader } }
-                Screen.Reader -> selected?.let { ReaderScreen(it, repository) }
+                Screen.Reader -> selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
                 Screen.Cache -> CacheScreen(repository)
             }
         }
@@ -200,7 +234,7 @@ private fun DetailScreen(comic: DemoComic, repository: ReaderRepository, onRead:
 }
 
 @Composable
-private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository) {
+private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var session by remember(comic.id) { mutableStateOf<ReaderSession?>(null) }
     var page by remember(comic.id) { mutableStateOf<ReaderPage?>(null) }
@@ -262,8 +296,34 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository) {
         onDispose { displayedPage?.release?.invoke() }
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .pointerInput(page?.index, busy) {
+                var distance = 0f
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, amount ->
+                        change.consume()
+                        distance += amount
+                    },
+                    onDragEnd = {
+                        val current = page?.index ?: 0
+                        if (!busy && abs(distance) > 80f) {
+                            val target = current + if (distance < 0f) 1 else -1
+                            if (target >= 0 && target < (page?.total ?: 0)) {
+                                task = scope.launch { load(target) }
+                            }
+                        }
+                        distance = 0f
+                    },
+                    onDragCancel = { distance = 0f },
+                )
+            },
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack) { Text("返回", color = ArchiveRed) }
             Column(Modifier.weight(1f)) {
                 Text(comic.title, fontWeight = FontWeight.Bold)
                 Text("自建测试 · ${page?.let { "第 ${it.index + 1} / ${it.total} 页" } ?: "尚未解码页面"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
