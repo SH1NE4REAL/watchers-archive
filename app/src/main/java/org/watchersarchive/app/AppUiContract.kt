@@ -57,5 +57,9 @@ interface ReaderRepository {
     suspend fun loadCover(url: String): Bitmap?
     suspend fun inspectGetComics(record: CatalogSourceRecord): SourceAssetInspection
     suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset
+    suspend fun shelfNames(): List<String>
+    suspend fun createShelf(name: String)
+    suspend fun addToShelf(shelf: String, comicId: String)
+    suspend fun shelfItems(shelf: String): Set<String>
     fun traceLines(): List<String>
 }

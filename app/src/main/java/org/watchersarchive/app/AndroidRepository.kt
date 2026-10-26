@@ -46,6 +46,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private lateinit var cacheManager: CacheManager
         private lateinit var persistentLibrary: PersistentLibrary
         private lateinit var catalogMetadata: CatalogMetadataStore
+        private lateinit var shelfStore: ShelfStore
 
         /**
          * Cache and persistent records are opened lazily from a suspend API. The
@@ -68,6 +69,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                         cacheManager = createdCache
                         persistentLibrary = createdLibrary
                         catalogMetadata = createdCatalog
+                        shelfStore = ShelfStore(File(root, "shelves.properties"))
                         initialized = true
                     } catch (error: Throwable) {
                         createdLibrary.close()
@@ -83,6 +85,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val cache: CacheManager get() = check(initialized) { "Repository state is not initialized" }.let { cacheManager }
         val library: PersistentLibrary get() = check(initialized) { "Repository state is not initialized" }.let { persistentLibrary }
         val metadata: CatalogMetadataStore get() = check(initialized) { "Repository state is not initialized" }.let { catalogMetadata }
+        val shelves: ShelfStore get() = check(initialized) { "Repository state is not initialized" }.let { shelfStore }
     }
 
     private val base: String
@@ -249,6 +252,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         GetComicsCatalogService().inspectArticle(record.canonicalUrl)
     override suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset =
         GetComicsCatalogService().validateAsset(asset)
+    override suspend fun shelfNames(): List<String> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.shelves() }
+    override suspend fun createShelf(name: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.createShelf(name) }
+    override suspend fun addToShelf(shelf: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.add(shelf, comicId) }
+    override suspend fun shelfItems(shelf: String): Set<String> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.items(shelf) }
     override fun traceLines(): List<String> = state.traces.toList()
 
     private fun decodeBounded(bytes: ByteArray): Bitmap {
