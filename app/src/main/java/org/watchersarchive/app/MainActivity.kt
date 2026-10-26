@@ -86,7 +86,7 @@ import java.net.URI
 
 private val ArchiveRed = Color(0xFFBE2834)
 private val PageBackground = Color(0xFFF4F4F5)
-private enum class Screen { Library, Detail, Reader, Official, Cache }
+private enum class Screen { Library, Detail, Reader, SourceDetail, Official, Cache }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,10 +109,16 @@ class MainActivity : ComponentActivity() {
 private fun ArchiveApp(repository: ReaderRepository) {
     var screen by remember { mutableStateOf(Screen.Library) }
     var selected by remember { mutableStateOf<DemoComic?>(null) }
+    var selectedSource by remember { mutableStateOf<CatalogSourceRecord?>(null) }
     val view = LocalView.current
     val activity = view.context as? Activity
     val goBack = {
-        screen = if (screen == Screen.Reader) Screen.Detail else Screen.Library
+        screen = when (screen) {
+            Screen.Reader -> Screen.Detail
+            Screen.SourceDetail -> Screen.Official
+            Screen.Detail -> Screen.Library
+            else -> Screen.Library
+        }
     }
     BackHandler(enabled = screen != Screen.Library) { goBack() }
     DisposableEffect(screen, activity) {
@@ -183,7 +189,8 @@ private fun ArchiveApp(repository: ReaderRepository) {
                 Screen.Library -> LibraryScreen(repository.comics, repository) { selected = it; screen = Screen.Detail }
                 Screen.Detail -> selected?.let { DetailScreen(it, repository) { screen = Screen.Reader } }
                 Screen.Reader -> selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
-                Screen.Official -> OfficialScreen(repository)
+                Screen.SourceDetail -> selectedSource?.let { record -> SourceDetailScreen(record, repository, { screen = Screen.Official }) { comic -> selected = comic; screen = Screen.Reader } }
+                Screen.Official -> OfficialScreen(repository) { selectedSource = it; screen = Screen.SourceDetail }
                 Screen.Cache -> CacheScreen(repository)
             }
         }
@@ -585,7 +592,7 @@ private fun LatestScreen(repository: ReaderRepository, onRead: (DemoComic) -> Un
 }
 
 @Composable
-private fun OfficialScreen(repository: ReaderRepository) {
+private fun OfficialScreen(repository: ReaderRepository, onOpenRecord: (CatalogSourceRecord) -> Unit) {
     val scope = rememberCoroutineScope()
     var guide by remember { mutableStateOf<OfficialGuide?>(null) }
     var character by remember { mutableStateOf<OfficialCharacterProfile?>(null) }
@@ -632,8 +639,12 @@ private fun OfficialScreen(repository: ReaderRepository) {
             WhiteCard {
                 Text("最近更新", fontWeight = FontWeight.Bold)
                 records.take(12).forEach { record ->
-                    Text(record.title, fontWeight = FontWeight.Medium)
-                    Text("${record.yearLabel ?: "未知年份"} · ${record.sizeLabel ?: "大小未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                    TextButton(onClick = { onOpenRecord(record) }) {
+                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                            Text(record.title, fontWeight = FontWeight.Medium)
+                            Text("${record.yearLabel ?: "未知年份"} · ${record.sizeLabel ?: "大小未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                 }
             }
         }
@@ -679,6 +690,69 @@ private fun SourceCover(url: String?, repository: ReaderRepository, modifier: Mo
             Image(bitmap!!.asImageBitmap(), "来源封面", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("封面", color = ArchiveRed, style = MaterialTheme.typography.labelSmall) }
+        }
+    }
+}
+
+@Composable
+private fun SourceDetailScreen(record: CatalogSourceRecord, repository: ReaderRepository, onBack: () -> Unit, onRead: (DemoComic) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var inspection by remember(record.externalId) { mutableStateOf<SourceAssetInspection?>(null) }
+    var error by remember(record.externalId) { mutableStateOf<String?>(null) }
+    var busy by remember(record.externalId) { mutableStateOf(true) }
+    LaunchedEffect(record.externalId) {
+        try {
+            val raw = repository.inspectGetComics(record)
+            val checked = raw.assets.map { asset ->
+                if (asset.status == SourceAssetStatus.METADATA_ONLY) repository.validateSourceAsset(asset) else asset
+            }
+            inspection = raw.copy(assets = checked)
+        } catch (e: Exception) { error = "来源文件暂时无法验证，请稍后重试。" }
+        finally { busy = false }
+    }
+    val ready = inspection?.assets?.firstOrNull { it.status == SourceAssetStatus.READY }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        TextButton(onClick = onBack) { Text("返回", color = ArchiveRed) }
+        WhiteCard {
+            Row(verticalAlignment = Alignment.Top) {
+                SourceCover(record.coverUrl, repository, Modifier.width(120.dp).height(168.dp))
+                Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    record.yearLabel?.let { Text("年份：$it", color = Color.Gray) }
+                    record.sizeLabel?.let { Text("大小：$it", color = Color.Gray) }
+                    Text("来源文章：${record.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            record.synopsis?.let { Text(it, color = Color.DarkGray) }
+        }
+        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        error?.let { ErrorText(it) }
+        if (!busy && error == null) {
+            Text(
+                if (ready != null) "已验证可读文件：${ready.fileName ?: ready.host ?: "来源资产"}"
+                else "正文文件未通过 Range/ETag 验证，暂不能开始阅读。",
+                color = if (ready != null) Color(0xFF238636) else Color.Gray,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(enabled = ready != null, modifier = Modifier.weight(1f), onClick = {
+                    val asset = ready ?: return@Button
+                    val comic = DemoComic(
+                        id = "${record.externalId}:${asset.id}",
+                        title = record.title,
+                        description = record.synopsis ?: "GetComics 来源文章",
+                        path = asset.fileName ?: asset.candidateUrl,
+                        series = "GetComics 来源条目",
+                        year = record.yearLabel ?: "未知年份",
+                        isTestContent = false,
+                        sourceUrl = asset.candidateUrl,
+                        sourceAssetStatus = SourceAssetStatus.READY,
+                    )
+                    onRead(comic)
+                }) { Text("开始阅读") }
+                OutlinedButton(modifier = Modifier.weight(1f), onClick = {
+                    scope.launch { repository.addToShelf("默认书架", record.externalId) }
+                }) { Text("加入书架") }
+            }
         }
     }
 }
