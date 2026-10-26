@@ -8,6 +8,11 @@ data class DemoComic(
     val title: String,
     val description: String,
     val path: String,
+    /** Display metadata for the catalogue shell. These are test/local values until real metadata is connected. */
+    val series: String = "本地测试系列",
+    val year: String = "测试内容",
+    val pageCountHint: Int? = null,
+    val isTestContent: Boolean = true,
 )
 
 data class ReaderPage(
