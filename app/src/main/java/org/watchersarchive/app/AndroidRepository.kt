@@ -4,6 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DisposableHandle
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import org.watchersarchive.core.ArchiveException
 import org.watchersarchive.core.CacheManager
@@ -70,13 +74,18 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         set(value) { state.preferences.edit().putString("baseUrl", value.trim().trimEnd('/')).apply() }
 
     override suspend fun open(comic: DemoComic): ReaderSession = withContext(Dispatchers.IO) {
-        val source = HttpRangeSource("${baseUrl.trimEnd('/')}/${comic.path}", state.limits) { trace ->
-            state.traces.add("${trace.outcome} · ${trace.statusCode ?: "—"} · ${trace.start}-${trace.endInclusive} · ${trace.receivedBytes} B · ${trace.contentRange ?: "无 Content-Range"}")
-            while (state.traces.size > 80) state.traces.removeAt(0)
-        }
         val token = CancellationToken()
-        val index = ZipArchiveReader(source, state.limits).open(token)
-        Session(comic, source, index, token)
+        val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
+        try {
+            val source = HttpRangeSource("${baseUrl.trimEnd('/')}/${comic.path}", state.limits) { trace ->
+                state.traces.add("${trace.outcome} · ${trace.statusCode ?: "—"} · ${trace.start}-${trace.endInclusive} · ${trace.receivedBytes} B · ${trace.contentRange ?: "无 Content-Range"}")
+                while (state.traces.size > 80) state.traces.removeAt(0)
+            }
+            val index = ZipArchiveReader(source, state.limits).open(token)
+            Session(comic, source, index, token)
+        } finally {
+            cancellation?.dispose()
+        }
     }
 
     private inner class Session(
@@ -90,43 +99,49 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         override val totalPages: Int get() = index.pages.size
 
         override suspend fun loadPage(index: Int): ReaderPage = withContext(Dispatchers.IO) {
-            check(!closed.get()) { "阅读会话已关闭" }
-            require(index in 0 until totalPages)
-            val page = this@Session.index.pages[index]
-            val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${page.stableId}"
-            var lease = state.cache.acquire(key, comic.id)
-            val fromCache = lease != null
-            var transferred = 0L
+            val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
             try {
-                if (lease != null) activeLeases += lease!!
-                val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
-                    val raw = ZipArchiveReader(source, state.limits).readPage(this@Session.index, index, token)
-                    transferred = raw.size.toLong()
-                    lease = state.cache.put(key, comic.id, raw) { token.throwIfCancelled() }
-                    activeLeases += lease!!
-                    raw
-                }
-                val bitmap = decodeBounded(bytes)
-                if (!fromCache && lease != null && !activeLeases.contains(lease)) activeLeases += lease!!
-                state.library.setProgress(comic.id, index)
-                val owned = lease
-                val released = AtomicBoolean(false)
-                ReaderPage(index, totalPages, bitmap, fromCache, transferred) {
-                    if (released.compareAndSet(false, true)) {
-                        owned?.close()
-                        if (owned != null) activeLeases.remove(owned)
+                check(!closed.get()) { "阅读会话已关闭" }
+                require(index in 0 until totalPages)
+                val page = this@Session.index.pages[index]
+                val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${page.stableId}"
+                var lease = state.cache.acquire(key, comic.id)
+                val fromCache = lease != null
+                var transferred = 0L
+                try {
+                    if (lease != null) activeLeases += lease!!
+                    val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
+                        val raw = ZipArchiveReader(source, state.limits).readPage(this@Session.index, index, token)
+                        transferred = raw.size.toLong()
+                        lease = state.cache.put(key, comic.id, raw) { token.throwIfCancelled() }
+                        activeLeases += lease!!
+                        raw
                     }
+                    val bitmap = decodeBounded(bytes)
+                    if (!fromCache && lease != null && !activeLeases.contains(lease)) activeLeases += lease!!
+                    state.library.setProgress(comic.id, index)
+                    val owned = lease
+                    val released = AtomicBoolean(false)
+                    ReaderPage(index, totalPages, bitmap, fromCache, transferred) {
+                        if (released.compareAndSet(false, true)) {
+                            owned?.close()
+                            if (owned != null) activeLeases.remove(owned)
+                        }
+                    }
+                } catch (e: Throwable) {
+                    lease?.close()
+                    if (lease != null) activeLeases.remove(lease)
+                    throw e
                 }
-            } catch (e: Throwable) {
-                lease?.close()
-                if (lease != null) activeLeases.remove(lease)
-                throw e
+            } finally {
+                cancellation?.dispose()
             }
         }
 
         override suspend fun close() = withContext(Dispatchers.IO) {
-            if (!closed.compareAndSet(false, true)) return@withContext
-            token.cancel()
+            if (closed.compareAndSet(false, true)) token.cancel()
+            // Keep cleanup idempotent: a page load can race the first close after its
+            // cache commit. Repeated close calls must still release that late lease.
             activeLeases.toList().forEach { it.close() }
             activeLeases.clear()
         }
@@ -159,4 +174,9 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
 
     private fun formatBytes(bytes: Long) = String.format(java.util.Locale.ROOT, "%.2f MB", bytes / 1_000_000.0)
+
+    /** Registers before-cancellation cleanup so blocking HTTP reads are disconnected promptly. */
+    @OptIn(InternalCoroutinesApi::class)
+    private fun Job.onCancellation(action: () -> Unit): DisposableHandle =
+        invokeOnCompletion(onCancelling = true) { action() }
 }

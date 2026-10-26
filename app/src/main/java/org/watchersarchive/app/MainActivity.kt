@@ -244,6 +244,9 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository) {
                 // actively disconnects the current Range request.
                 session?.close()
                 task?.cancelAndJoin()
+                // A load that completed concurrently with the first close may have
+                // registered its cache lease after the initial snapshot.
+                session?.close()
             }
         }
     }

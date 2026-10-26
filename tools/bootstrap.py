@@ -55,13 +55,35 @@ def extract(archive, destination, strip_top=False):
 def gradle():
     target = TOOLS / 'gradle-8.9'
     if not (target / 'bin/gradle.bat').exists():
-        archive = fetch('https://services.gradle.org/distributions/gradle-8.9-bin.zip',
-                        TOOLS / 'downloads/gradle-8.9-bin.zip',
-                        'd725d707bfabd4dfdc958c624003b3c80accc03f7037b5122c4b1d0ef15cecab')
+        # Prefer Gradle's official endpoint. These mirrors are fallback transport
+        # only; the official SHA-256 is required for every successful download.
+        urls = [
+            'https://services.gradle.org/distributions/gradle-8.9-bin.zip',
+            'https://mirrors.cloud.tencent.com/gradle/gradle-8.9-bin.zip',
+            'https://mirrors.huaweicloud.com/gradle/gradle-8.9-bin.zip',
+        ]
+        archive = None
+        failures = []
+        for url in urls:
+            try:
+                archive = fetch(url, TOOLS / 'downloads/gradle-8.9-bin.zip',
+                                'd725d707bfabd4dfdc958c624003b3c80accc03f7037b5122c4b1d0ef15cecab')
+                break
+            except Exception as error:
+                failures.append(f'{url}: {error}')
+        if archive is None:
+            raise RuntimeError('Unable to obtain verified Gradle 8.9: ' + '; '.join(failures))
         extract(archive, target, True)
     wrapper = ROOT / 'gradle/wrapper/gradle-wrapper.jar'
     if not wrapper.exists():
-        fetch('https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar', wrapper)
+        plugin = target / 'lib/plugins/gradle-wrapper-main-8.9.jar'
+        if plugin.exists():
+            # Gradle 8.9 ships the wrapper JAR nested in this official plugin.
+            with zipfile.ZipFile(plugin) as archive:
+                wrapper.parent.mkdir(parents=True, exist_ok=True)
+                wrapper.write_bytes(archive.read('gradle-wrapper.jar'))
+        else:
+            fetch('https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar', wrapper)
 
 
 def kotlin():

@@ -6,5 +6,8 @@ __pycache__/
 *.pyc
 artifacts/
 .tmp-kotlinc/
+.tmp-kotlin-check/
+.kotlin/
+**/debug.keystore
 .idea/
 *.iml
