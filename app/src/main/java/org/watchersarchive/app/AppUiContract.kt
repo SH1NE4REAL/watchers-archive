@@ -41,11 +41,15 @@ interface ReaderSession {
     val totalPages: Int
     suspend fun loadPage(index: Int): ReaderPage
     suspend fun close()
+    /** Optional bounded read-ahead. It never marks a page as read. */
+    fun prefetchPage(index: Int) { }
+    fun cancelPrefetch() { }
 }
 
 interface ReaderRepository {
     val comics: List<DemoComic>
     var baseUrl: String
+    var prefetchEnabled: Boolean
     suspend fun open(comic: DemoComic): ReaderSession
     suspend fun lastPage(comicId: String): Int
     suspend fun bookmarkPages(comicId: String): Set<Int>
@@ -64,6 +68,7 @@ interface ReaderRepository {
     suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset
     suspend fun shelfNames(): List<String>
     suspend fun createShelf(name: String)
+    suspend fun deleteShelf(name: String)
     suspend fun addToShelf(shelf: String, comicId: String)
     suspend fun removeFromShelf(shelf: String, comicId: String)
     suspend fun moveToShelf(from: String?, to: String, comicId: String)

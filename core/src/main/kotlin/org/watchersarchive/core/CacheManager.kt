@@ -89,16 +89,26 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
     fun snapshot(): Snapshot = mutex.withLock { ensureOpen(); snapshotLocked() }
 
     /** Acquiring a page marks this comic as read. The returned lease pins it until closed. */
-    fun acquire(key: String, comicId: String): CacheLease? = mutex.withLock {
+    fun acquire(key: String, comicId: String, markRead: Boolean = true): CacheLease? = mutex.withLock {
         ensureOpen()
         val file = entryFile(key, comicId)
         if (!file.isFile) return null
-        if (!file.setLastModified(System.currentTimeMillis())) throw IOException("Cannot record cache reading time")
+        if (markRead && !file.setLastModified(System.currentTimeMillis())) throw IOException("Cannot record cache reading time")
         lease(file)
     }
 
     fun put(key: String, comicId: String, bytes: ByteArray, cancellationCheck: () -> Unit = {}): CacheLease {
-        beginWrite(key, comicId, bytes.size.toLong()).use { write ->
+        return putBytes(key, comicId, bytes, null, cancellationCheck)
+    }
+
+    /** Read-ahead inherits the comic's last actual read time instead of promoting it. */
+    fun putPrefetched(key: String, comicId: String, bytes: ByteArray, cancellationCheck: () -> Unit = {}): CacheLease {
+        val timestamp = mutex.withLock { entries().filter { it.name.startsWith(hash(comicId) + ".") }.maxOfOrNull { it.lastModified() } ?: 1L }
+        return putBytes(key, comicId, bytes, timestamp, cancellationCheck)
+    }
+
+    private fun putBytes(key: String, comicId: String, bytes: ByteArray, readTimestamp: Long?, cancellationCheck: () -> Unit): CacheLease {
+        beginWrite(key, comicId, bytes.size.toLong(), readTimestamp).use { write ->
             var offset = 0
             while (offset < bytes.size) {
                 cancellationCheck()
@@ -112,7 +122,7 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
     }
 
     /** Reserve the complete output before opening a temporary file. */
-    fun beginWrite(key: String, comicId: String, expectedBytes: Long): CacheWrite = mutex.withLock {
+    fun beginWrite(key: String, comicId: String, expectedBytes: Long, readTimestamp: Long? = null): CacheWrite = mutex.withLock {
         ensureOpen()
         if (expectedBytes < 0 || expectedBytes > HARD_LIMIT) throw CacheFullException("Invalid cache write size")
         val target = entryFile(key, comicId)
@@ -124,7 +134,7 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
         // reservation cannot consume the last rounded block.
         makeRoom(reserve + if (writers.isEmpty()) 0L else METADATA_MARGIN)
         val temporary = File(directory, "${target.name}.${java.util.UUID.randomUUID()}.part")
-        val writer = CacheWrite(target, temporary, expectedBytes, reserve)
+        val writer = CacheWrite(target, temporary, expectedBytes, reserve, readTimestamp)
         writers += writer
         writer
     }
@@ -178,6 +188,13 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
             for (file in group) deleteChecked(file)
             if (snapshotLocked().availableBytes >= required) return
         }
+        // A long currently-open omnibus may itself fill the budget. Reclaim its
+        // old unpinned pages only after trying other comics; keep the displayed
+        // page and all active writers protected.
+        for (file in entries().filter { (pins[it.name] ?: 0) == 0 }.sortedBy { it.lastModified() }) {
+            deleteChecked(file)
+            if (snapshotLocked().availableBytes >= required) return
+        }
         throw CacheFullException("Cache full: remaining entries are in use or reserved")
     }
 
@@ -208,6 +225,7 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
         private val temporary: File,
         val expectedBytes: Long,
         internal val reservation: Long,
+        private val readTimestamp: Long?,
     ) : OutputStream() {
         private var stream = FileChannel.open(temporary.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
         internal var written = 0L
@@ -237,7 +255,7 @@ class CacheManager(val directory: File, val budgetBytes: Long = HARD_LIMIT) : Cl
                 stream.close()
                 // Same-directory atomic rename: never duplicate the reserved payload.
                 Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE)
-                target.setLastModified(System.currentTimeMillis())
+                target.setLastModified(readTimestamp ?: System.currentTimeMillis())
                 done = true
                 writers.remove(this)
                 lease(target)

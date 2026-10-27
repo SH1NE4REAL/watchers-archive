@@ -48,6 +48,27 @@ class ShelfStore(private val file: File) {
 
     fun allItems(): Set<String> = synchronized(lock) { shelves().flatMap { items(it) }.toSet() }
 
+    /** Delete one custom category in the same snapshot that returns its books to the root shelf. */
+    fun deleteShelf(name: String): Unit = synchronized(lock) {
+        val clean = name.trim()
+        require(clean.isNotBlank() && clean != "默认书架" && clean != "全部") { "默认书架不能删除。" }
+        val prefix = "shelf.${encode(clean)}."
+        if (!properties.containsKey(prefix + "name")) return@synchronized
+        val previous = Properties().also { it.putAll(properties) }
+        try {
+            val rootPrefix = "shelf.${encode("默认书架")}."
+            val returned = items("默认书架") + items(clean)
+            properties.setProperty(rootPrefix + "name", "默认书架")
+            properties.setProperty(rootPrefix + "items", returned.joinToString(","))
+            properties.stringPropertyNames().filter { it.startsWith(prefix) }.forEach { properties.remove(it) }
+            commit()
+        } catch (failure: Throwable) {
+            properties.clear()
+            properties.putAll(previous)
+            throw failure
+        }
+    }
+
     /** Only collection membership changes; source records and user reading data are untouched. */
     fun remove(shelfName: String, comicId: String) = synchronized(lock) {
         val previous = Properties().also { it.putAll(properties) }

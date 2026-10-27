@@ -175,6 +175,7 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
     var creating by remember { mutableStateOf(false) }
     var actionBook by remember { mutableStateOf<CatalogSourceRecord?>(null) }
     var showMove by remember { mutableStateOf(false) }
+    var deleteFolder by remember { mutableStateOf<String?>(null) }
     var updating by remember { mutableStateOf(false) }
     var importing by remember { mutableStateOf(false) }
     var importNotice by remember { mutableStateOf<String?>(null) }
@@ -217,6 +218,7 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
                 if (selectedFolder != null) TextButton(onClick = { selectedFolder = null }) { Text("‹ 书架") }
                 Text(selectedFolder ?: "我的书架", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 if (selectedFolder == null) TextButton(onClick = { showCreate = true }) { Text("新建分类") }
+                if (selectedFolder != null) TextButton(enabled = !updating, onClick = { deleteFolder = selectedFolder }) { Text("删除分类") }
                 if (selectedFolder == null) TextButton(enabled = !importing, onClick = { pickComic.launch(arrayOf("*/*")) }) { Text(if (importing) "导入中…" else "导入") }
             }
         }
@@ -225,7 +227,7 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
         if (selectedFolder == null) {
             items(customFolders, key = { "folder:$it" }) { name ->
                 val memberRecords = records.filter { it.externalId in memberships[name].orEmpty() }
-                ShelfFolderTile(name, memberRecords, repository) { selectedFolder = name }
+                ShelfFolderTile(name, memberRecords, repository, onLongClick = { deleteFolder = name }) { selectedFolder = name }
             }
         }
         items(books, key = { it.externalId }) { record ->
@@ -246,6 +248,31 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
         catch (e: Exception) { error = e.message ?: "创建失败，请重试。" }
         finally { creating = false }
     } }) { Text("创建") } }, dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } })
+
+    deleteFolder?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { if (!updating) deleteFolder = null },
+            title = { Text("删除分类“$folder”？") },
+            text = { Text("分类内 ${memberships[folder].orEmpty().size} 本漫画会回到书架。只删除分类，不删除漫画文件、阅读进度、书签或笔记。") },
+            confirmButton = {
+                TextButton(enabled = !updating, modifier = Modifier.testTag("confirm-delete-shelf"), onClick = {
+                    scope.launch {
+                        updating = true
+                        try {
+                            repository.deleteShelf(folder)
+                            reload()
+                            if (selectedFolder == folder) selectedFolder = null
+                            deleteFolder = null
+                            error = null
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { error = "分类删除未完成，请稍后重试。"; deleteFolder = null }
+                        finally { updating = false }
+                    }
+                }) { Text(if (updating) "删除中…" else "删除分类", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(enabled = !updating, onClick = { deleteFolder = null }) { Text("取消") } },
+        )
+    }
 
     actionBook?.let { book ->
         fun performShelfChange(change: suspend () -> Unit) {
@@ -299,8 +326,9 @@ internal fun ShelfBookTile(record: CatalogSourceRecord, repository: ReaderReposi
 }
 
 @Composable
-internal fun ShelfFolderTile(name: String, records: List<CatalogSourceRecord>, repository: ReaderRepository, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("shelf-folder:$name"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+@OptIn(ExperimentalFoundationApi::class)
+internal fun ShelfFolderTile(name: String, records: List<CatalogSourceRecord>, repository: ReaderRepository, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).testTag("shelf-folder:$name"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Surface(Modifier.fillMaxWidth().aspectRatio(0.68f), shape = RoundedCornerShape(6.dp), color = Color(0xFFE9E4DF), shadowElevation = 1.dp) {
             Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("分类 · ${records.size} 本", color = Color(0xFF7D6654), style = MaterialTheme.typography.labelSmall, maxLines = 1)

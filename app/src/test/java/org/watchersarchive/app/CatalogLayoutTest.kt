@@ -47,7 +47,12 @@ class CatalogLayoutTest {
             override suspend fun getComicsRecords() = books
             override suspend fun savedOfficialGuides() = emptyList<OfficialGuide>()
             override suspend fun savedOfficialCharacters() = emptyList<OfficialCharacterProfile>()
-            override suspend fun shelfNames() = listOf("默认书架", "大事件")
+            override suspend fun shelfNames() = memberships.keys.toList()
+            override suspend fun deleteShelf(name: String) {
+                require(name != "默认书架" && name != "全部")
+                val returned = memberships.remove(name).orEmpty()
+                memberships.getOrPut("默认书架") { mutableSetOf() }.addAll(returned)
+            }
             override suspend fun shelfItems(shelf: String): Set<String> = when (shelf) {
                 "全部" -> memberships.values.flatten().toSet()
                 else -> memberships[shelf].orEmpty().toSet()
@@ -135,5 +140,33 @@ class CatalogLayoutTest {
         compose.onNodeWithTag("shelf-book:plain").assertDoesNotExist()
         compose.onNodeWithTag("shelf-folder:大事件").performClick()
         compose.onNodeWithTag("shelf-book:plain").assertIsDisplayed()
+    }
+
+    @Test fun deletingFolderFromLongPressReturnsMembersWithoutDeletingSourceRecords() {
+        val repository = repository()
+        compose.setContent { MaterialTheme { ShelfScreen(repository) {} } }
+        compose.waitForIdle()
+        compose.onNodeWithTag("shelf-folder:大事件").performTouchInput { longClick() }
+        compose.onNodeWithText("分类内 2 本漫画会回到书架。只删除分类，不删除漫画文件、阅读进度、书签或笔记。").assertIsDisplayed()
+        compose.onNodeWithTag("confirm-delete-shelf").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("shelf-folder:大事件").assertDoesNotExist()
+        compose.onNodeWithTag("shelf-book:civil").assertIsDisplayed()
+        compose.onNodeWithTag("shelf-book:secret").assertIsDisplayed()
+        assertEquals(4, runBlocking { repository.getComicsRecords() }.size)
+        assertEquals(setOf("civil", "secret", "gauntlet", "plain"), runBlocking { repository.shelfItems("默认书架") })
+    }
+
+    @Test fun deletingTheOpenCategoryClosesItAndShowsItsBooksOnTheRootShelf() {
+        val repository = repository()
+        compose.setContent { MaterialTheme { ShelfScreen(repository) {} } }
+        compose.waitForIdle()
+        compose.onNodeWithTag("shelf-folder:大事件").performClick()
+        compose.onNodeWithText("删除分类").performClick()
+        compose.onNodeWithTag("confirm-delete-shelf").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("‹ 书架").assertDoesNotExist()
+        compose.onNodeWithTag("shelf-folder:大事件").assertDoesNotExist()
+        compose.onNodeWithTag("shelf-book:civil").assertIsDisplayed()
     }
 }

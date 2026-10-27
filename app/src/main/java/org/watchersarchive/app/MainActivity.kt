@@ -260,6 +260,11 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
         val displayedPage = page
         onDispose { displayedPage?.release?.invoke() }
     }
+    LaunchedEffect(page?.index, session) {
+        val current = page ?: return@LaunchedEffect
+        if (repository.prefetchEnabled) session?.prefetchPage(current.index + 1)
+        else session?.cancelPrefetch()
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         page?.let { current ->
@@ -337,6 +342,7 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var showDeveloper by remember { mutableStateOf(false) }
+    var preload by remember { mutableStateOf(repository.prefetchEnabled) }
     LaunchedEffect(Unit) {
         try { snapshot = repository.cacheSnapshot() }
         catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
@@ -355,6 +361,15 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
                 finally { busy = false }
             } }) { Text("清理可清理缓存") }
             Text("目录、阅读进度、书签与笔记独立持久保存。当前使用的页面不会被清理。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        }
+        WhiteCard {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("提前读取下一页", fontWeight = FontWeight.Bold)
+                    Text("阅读当前页时只预读后面一页，计入原有缓存上限，可关闭以减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                }
+                androidx.compose.material3.Switch(checked = preload, onCheckedChange = { preload = it; repository.prefetchEnabled = it })
+            }
         }
         TextButton(onClick = { showDeveloper = !showDeveloper }) { Text(if (showDeveloper) "收起开发测试" else "开发测试") }
         if (showDeveloper) WhiteCard {

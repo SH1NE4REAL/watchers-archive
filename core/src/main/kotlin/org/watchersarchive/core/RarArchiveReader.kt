@@ -112,7 +112,11 @@ class RarArchiveReader(
         val header = pageHeaders.getOrNull(pageIndex) ?: throw ArchiveException(ArchiveError.INVALID_LENGTH, "页码超出范围")
         val input = checkNotNull(channel)
         if (source.discover(token) != index.identity) throw ArchiveException(ArchiveError.OBJECT_CHANGED, "漫画文件版本已改变，请重新打开")
-        input.begin(token, limits.maxCompressedPageBytes.toLong() + 128 * 1024, headerMode = false)
+        // Large pages previously caused one sequential HTTP round trip per
+        // 64 KiB. Use bounded larger reads, while charging both alignment edges
+        // against this page's actual compressed size rather than the whole file.
+        input.begin(token, header.fullPackSize + 2L * 1024 * 1024,
+            headerMode = false, packedPageBytes = header.fullPackSize)
         val result = ByteArray(header.fullUnpackSize.toInt())
         var written = 0
         val crc = CRC32()
@@ -231,12 +235,24 @@ private class BoundedRarChannel(private val source: ArchiveByteSource, val ident
     private var budget = 0L
     private var consumed = 0L
     private var blockSize = 512
+    private var readingHeaders = true
     private var closed = false
     var failure: ArchiveException? = null
         private set
     private var cursor = 0L
 
-    fun begin(token: CancellationToken, maximum: Long, headerMode: Boolean) { activeToken = token; budget = maximum; consumed = 0; blockSize = if (headerMode) 512 else 64 * 1024; failure = null }
+    fun begin(token: CancellationToken, maximum: Long, headerMode: Boolean, packedPageBytes: Long = 0) {
+        activeToken = token
+        budget = maximum
+        consumed = 0
+        readingHeaders = headerMode
+        var desired = 64 * 1024
+        if (!headerMode) {
+            while (desired < 1024 * 1024 && desired.toLong() < packedPageBytes) desired *= 2
+        }
+        blockSize = minOf(if (headerMode) 512 else desired, limits.maxRangeBytes)
+        failure = null
+    }
     fun exactAt(at: Long, count: Int): ByteArray { setPosition(at); val result = ByteArray(count); readFully(result, count); return result }
     override fun getPosition(): Long = cursor
     override fun setPosition(pos: Long) { if (pos < 0 || pos > identity.length) corrupt("RAR seek 越界"); cursor = pos }
@@ -254,7 +270,7 @@ private class BoundedRarChannel(private val source: ArchiveByteSource, val ident
                 activeToken.throwIfCancelled()
                 val start = cursor / blockSize * blockSize
                 val length = minOf(blockSize.toLong(), identity.length - start).toInt()
-                val key = RarBlockKey(identity.url, identity.eTag, identity.length, start, length, blockSize == 512)
+                val key = RarBlockKey(identity.url, identity.eTag, identity.length, start, length, readingHeaders)
                 val block = SharedRarBlocks.get(key) ?: run {
                     if (consumed > budget - length) limit("RAR 本次读取超出传输预算")
                     val bytes = source.readRange(identity, start, length, activeToken)

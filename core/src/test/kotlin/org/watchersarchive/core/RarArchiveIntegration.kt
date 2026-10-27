@@ -93,7 +93,111 @@ object RarArchiveIntegration {
         expect(ArchiveError.UNSUPPORTED_ARCHIVE) { BoundedPpmAllocator().startSubAllocator(256) }
         expect(ArchiveError.UNSUPPORTED_ARCHIVE) { BoundedPpmAllocator().startSubAllocator(1) }
         println("PASS rar4: PPM allocation is rejected before allocating even 1 MiB")
-        println("RarArchiveIntegration: 9 tests passed")
+
+        val performance = largeStoredArchive()
+        fun profile(maximumRange: Int): Triple<Int, Long, Long> {
+            ComicArchiveReaders.clearMemoryCache()
+            val source = MemorySource(performance.first, performance.second)
+            val limits = ReaderLimits(maxRangeBytes = maximumRange)
+            ComicArchiveReaders.create(source, limits).use { reader ->
+                val index = reader.open()
+                check(index.pages.size == 1)
+                source.readCount = 0
+                source.bytesRead = 0
+                source.perReadDelayMillis = 8
+                val start = System.nanoTime()
+                val page = reader.readPage(index, 0)
+                val elapsedMillis = (System.nanoTime() - start) / 1_000_000
+                check(page.contentEquals(performance.third))
+                val decoded = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(page))
+                check(decoded != null && decoded.width == 1024 && decoded.height == 768)
+                decoded.flush()
+                check(source.maximumReadLength <= maximumRange)
+                return Triple(source.readCount, source.bytesRead, elapsedMillis)
+            }
+        }
+        // A 64 KiB source cap reproduces the former page block strategy. An
+        // otherwise identical source permits the new bounded 1 MiB page reads.
+        val baseline = profile(64 * 1024)
+        val optimized = profile(1024 * 1024)
+        check(baseline.first >= 36 && optimized.first <= 4)
+        check(optimized.first * 8 < baseline.first)
+        check(optimized.second <= performance.third.size + 2L * 1024 * 1024)
+        println("PASS rar4: large-page round trips old64KiB=${baseline.first}/${baseline.second}B new1MiB=${optimized.first}/${optimized.second}B; simulated8msPerRead=${baseline.third}ms/${optimized.third}ms")
+
+        ComicArchiveReaders.clearMemoryCache()
+        val lowRange = MemorySource(fixture.size.toLong(), listOf(0L to fixture))
+        ComicArchiveReaders.create(lowRange, ReaderLimits(maxRangeBytes = 128)).use { reader ->
+            val index = reader.open()
+            check(reader.readPage(index, 0).isNotEmpty())
+        }
+        check(lowRange.maximumReadLength <= 128)
+        println("PASS rar4: small source range caps are respected for both headers and pages")
+
+        ComicArchiveReaders.clearMemoryCache()
+        val truncatedBacking = MemorySource(performance.first, performance.second)
+        val truncatedSource = object : ArchiveByteSource by truncatedBacking {
+            override fun readRange(identity: RemoteIdentity, start: Long, length: Int, token: CancellationToken): ByteArray {
+                val response = truncatedBacking.readRange(identity, start, length, token)
+                return if (length > 64 * 1024) response.copyOf(response.size - 1) else response
+            }
+        }
+        ComicArchiveReaders.create(truncatedSource).use { reader ->
+            val index = reader.open()
+            expect(ArchiveError.CORRUPT_ARCHIVE) { reader.readPage(index, 0) }
+        }
+        println("PASS rar4: truncated large range never returns a page")
+
+        ComicArchiveReaders.clearMemoryCache()
+        val largeCancelled = MemorySource(performance.first, performance.second)
+        ComicArchiveReaders.create(largeCancelled).use { reader ->
+            val index = reader.open()
+            val token = CancellationToken()
+            largeCancelled.afterRead = { token.cancel() }
+            expect(ArchiveError.CANCELLED) { reader.readPage(index, 0, token) }
+            largeCancelled.afterRead = null
+            check(reader.readPage(index, 0).contentEquals(performance.third))
+        }
+        println("PASS rar4: cancelled large page is not delivered and a fresh request can retry")
+        println("RarArchiveIntegration: 13 tests passed")
+    }
+
+    /** 2.36 MB self-generated PNG plus a virtual 64 MiB non-image gap. */
+    private fun largeStoredArchive(): Triple<Long, List<Pair<Long, ByteArray>>, ByteArray> {
+        val width = 1024
+        val height = 768
+        val raw = ByteArray((width * 3 + 1) * height)
+        java.util.Random(7).nextBytes(raw)
+        repeat(height) { raw[it * (width * 3 + 1)] = 0 }
+        val compressed = java.io.ByteArrayOutputStream().also { output ->
+            java.util.zip.DeflaterOutputStream(output).use { it.write(raw) }
+        }.toByteArray()
+        fun chunk(type: String, data: ByteArray): ByteArray {
+            val name = type.toByteArray(Charsets.US_ASCII)
+            val crc = CRC32().apply { update(name); update(data) }.value
+            return ByteBuffer.allocate(data.size + 12).order(ByteOrder.BIG_ENDIAN)
+                .putInt(data.size).put(name).put(data).putInt(crc.toInt()).array()
+        }
+        val ihdr = ByteBuffer.allocate(13).order(ByteOrder.BIG_ENDIAN)
+            .putInt(width).putInt(height).put(8).put(2).put(0).put(0).put(0).array()
+        val image = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 13, 10, 26, 10) +
+            chunk("IHDR", ihdr) + chunk("IDAT", compressed) + chunk("IEND", ByteArray(0))
+        fun storedHeader(name: String, size: Int, crc: Long): ByteArray {
+            val encoded = name.toByteArray(Charsets.UTF_8)
+            return ByteBuffer.allocate(32 + encoded.size).order(ByteOrder.LITTLE_ENDIAN).apply {
+                putShort(0); put(0x74); putShort(0x8000.toShort()); putShort((32 + encoded.size).toShort())
+                putInt(size); putInt(size); put(2); putInt(crc.toInt()); putInt(0); put(20); put(0x30)
+                putShort(encoded.size.toShort()); putInt(0x20); put(encoded)
+            }.array().also { updateHeaderCrc(it) }
+        }
+        val gap = 64 * 1024 * 1024
+        val mainEnd = 7 + u16(fixture, 12)
+        val prefix = fixture.copyOfRange(0, mainEnd) +
+            storedHeader("page-001.png", image.size, CRC32().apply { update(image) }.value) + image +
+            storedHeader("padding.bin", gap, 0)
+        val end = fixture.copyOfRange(fixture.size - 7, fixture.size)
+        val endOffset = prefix.size.toLong() + gap
+        return Triple(endOffset + end.size, listOf(0L to prefix, endOffset to end), image)
     }
 
     private fun u16(b:ByteArray, at:Int) = (b[at].toInt() and 255) or ((b[at+1].toInt() and 255) shl 8)
@@ -106,6 +210,9 @@ object RarArchiveIntegration {
     }
     private class MemorySource(val size:Long, val segments:List<Pair<Long,ByteArray>>) : ArchiveByteSource {
         var bytesRead=0L
+        var readCount=0
+        var maximumReadLength=0
+        var perReadDelayMillis=0L
         var afterRead: (() -> Unit)? = null
         val allocatedBytes=segments.sumOf { it.second.size }
         private val fingerprint = java.security.MessageDigest.getInstance("SHA-256").apply {
@@ -121,6 +228,9 @@ object RarArchiveIntegration {
                 val from=maxOf(start,at);val end=minOf(start+length,at+data.size)
                 if(from<end)data.copyInto(result,(from-start).toInt(),(from-at).toInt(),(end-at).toInt())
             }
+            readCount++
+            maximumReadLength=maxOf(maximumReadLength,length)
+            if (perReadDelayMillis > 0) Thread.sleep(perReadDelayMillis)
             bytesRead+=length;afterRead?.invoke();return result
         }
     }

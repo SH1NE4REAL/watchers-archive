@@ -12,6 +12,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import org.watchersarchive.core.ArchiveException
 import org.watchersarchive.core.CacheManager
@@ -111,6 +113,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         get() = base
         set(value) { state.preferences.edit().putString("baseUrl", value.trim().trimEnd('/')).apply() }
 
+    override var prefetchEnabled: Boolean
+        get() = state.preferences.getBoolean("prefetchNextPage", true)
+        set(value) { state.preferences.edit().putBoolean("prefetchNextPage", value).apply() }
+
     override suspend fun open(comic: DemoComic): ReaderSession = withReaderHandoff<Session>(release = { it.closeNow() }) {
         state.ensureInitialized()
         val token = CancellationToken()
@@ -155,54 +161,88 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private val closed = AtomicBoolean(false)
         private val activeLeases = CopyOnWriteArrayList<CacheManager.CacheLease>()
         override val totalPages: Int get() = index.pages.size
+        private val pageAccess = Mutex()
+        private val prefetcher = ReaderPrefetcher { target -> prefetchRawPage(target) }
 
-        override suspend fun loadPage(index: Int): ReaderPage = withReaderHandoff(release = { it.release() }) {
+        override fun prefetchPage(index: Int) {
+            if (closed.get() || !prefetchEnabled || index !in 0 until totalPages) return
+            val entry = this.index.pages[index]
+            if (entry.compressedSize > 8 * 1024 * 1024 || entry.uncompressedSize > 16 * 1024 * 1024) return
+            prefetcher.schedule(index)
+        }
+        override fun cancelPrefetch() = prefetcher.cancel()
+
+        private suspend fun prefetchRawPage(target: Int) {
             val pageToken = CancellationToken()
             val sessionCancellation = token.onCancel { pageToken.cancel() }
             val cancellation = currentCoroutineContext()[Job]?.onCancellation { pageToken.cancel() }
             try {
-                check(!closed.get()) { "阅读会话已关闭" }
-                pageToken.throwIfCancelled()
-                require(index in 0 until totalPages)
-                val page = this@Session.index.pages[index]
-                val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${page.stableId}"
-                var lease = state.cache.acquire(key, comic.id)
-                val fromCache = lease != null
-                var transferred = 0L
-                try {
-                    if (lease != null) activeLeases += lease!!
-                    val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
-                        val raw = reader.readPage(this@Session.index, index, pageToken)
-                        transferred = raw.size.toLong()
-                        lease = state.cache.put(key, comic.id, raw) { pageToken.throwIfCancelled() }
-                        activeLeases += lease!!
-                        raw
-                    }
-                    val bitmap = decodeBounded(bytes)
+                pageAccess.withLock {
                     pageToken.throwIfCancelled()
-                    if (!fromCache && lease != null && !activeLeases.contains(lease)) activeLeases += lease!!
-                    state.library.setProgress(comic.id, index)
-                    val owned = lease
-                    val released = AtomicBoolean(false)
-                    ReaderPage(index, totalPages, bitmap, fromCache, transferred) {
-                        if (released.compareAndSet(false, true)) {
-                            owned?.close()
-                            if (owned != null) activeLeases.remove(owned)
-                        }
-                    }
-                } catch (e: Throwable) {
-                    lease?.close()
-                    if (lease != null) activeLeases.remove(lease)
-                    throw e
+                    if (closed.get()) return@withLock
+                    val entry = index.pages[target]
+                    val key = "${index.identity.url}|${index.identity.eTag}|${entry.stableId}"
+                    val cached = state.cache.acquire(key, comic.id, markRead = false)
+                    if (cached != null) { cached.close(); return@withLock }
+                    val raw = reader.readPage(index, target, pageToken)
+                    pageToken.throwIfCancelled()
+                    state.cache.putPrefetched(key, comic.id, raw) { pageToken.throwIfCancelled() }.close()
+                    // Do not decode a second Bitmap or write reading progress for a preview.
                 }
-            } finally {
-                cancellation?.dispose()
-                sessionCancellation.close()
+            } finally { cancellation?.dispose(); sessionCancellation.close() }
+        }
+
+        override suspend fun loadPage(index: Int): ReaderPage = withReaderHandoff(release = { it.release() }) {
+            prefetcher.beforeForeground(index)
+            pageAccess.withLock {
+                val pageToken = CancellationToken()
+                val sessionCancellation = token.onCancel { pageToken.cancel() }
+                val cancellation = currentCoroutineContext()[Job]?.onCancellation { pageToken.cancel() }
+                try {
+                    check(!closed.get()) { "阅读会话已关闭" }
+                    pageToken.throwIfCancelled()
+                    require(index in 0 until totalPages)
+                    val page = this@Session.index.pages[index]
+                    val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${page.stableId}"
+                    var lease = state.cache.acquire(key, comic.id)
+                    val fromCache = lease != null
+                    var transferred = 0L
+                    try {
+                        if (lease != null) activeLeases += lease!!
+                        val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
+                            val raw = reader.readPage(this@Session.index, index, pageToken)
+                            transferred = raw.size.toLong()
+                            lease = state.cache.put(key, comic.id, raw) { pageToken.throwIfCancelled() }
+                            activeLeases += lease!!
+                            raw
+                        }
+                        val bitmap = decodeBounded(bytes)
+                        pageToken.throwIfCancelled()
+                        if (!fromCache && lease != null && !activeLeases.contains(lease)) activeLeases += lease!!
+                        state.library.setProgress(comic.id, index)
+                        val owned = lease
+                        val released = AtomicBoolean(false)
+                        ReaderPage(index, totalPages, bitmap, fromCache, transferred) {
+                            if (released.compareAndSet(false, true)) {
+                                owned?.close()
+                                if (owned != null) activeLeases.remove(owned)
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        lease?.close()
+                        if (lease != null) activeLeases.remove(lease)
+                        throw e
+                    }
+                } finally {
+                    cancellation?.dispose()
+                    sessionCancellation.close()
+                }
             }
         }
 
         override suspend fun close() = withContext(Dispatchers.IO) { closeNow() }
         fun closeNow() {
+            prefetcher.close()
             if (closed.compareAndSet(false, true)) token.cancel()
             activeLeases.toList().forEach { lease -> lease.close(); activeLeases.remove(lease) }
             reader.close()
@@ -380,6 +420,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         GetComicsCatalogService().validateAsset(asset)
     override suspend fun shelfNames(): List<String> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.shelves() }
     override suspend fun createShelf(name: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.createShelf(name) }
+    override suspend fun deleteShelf(name: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.deleteShelf(name) }
     override suspend fun addToShelf(shelf: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.add(shelf, comicId) }
     override suspend fun removeFromShelf(shelf: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.remove(shelf, comicId) }
     override suspend fun moveToShelf(from: String?, to: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.move(from, to, comicId) }
