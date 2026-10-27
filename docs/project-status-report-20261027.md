@@ -38,6 +38,7 @@
 - 构建命令已通过：`:app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin`。
 - APK 包名 `org.watchersarchive.app`，versionName `0.7.1`，versionCode `11`。
 - 本次带图标 APK：64,064,857 字节；APK Signature Scheme v2 已验证，调试签名证书未变化。
+- APK 已复制到仓库的 `downloads/watchers-archive-0.7.1-icon.apk`，并在 [安装说明](INSTALL.md) 中提供手机安装步骤。该文件是 debug 签名测试包。
 - 已通过局域网 HTTP 下载并校验新的带图标 APK。主机渲染检查覆盖最近更新、大事件、书架、设置和存储管理弹窗；这些不是手机截图。
 
 ## 当前待处理问题
