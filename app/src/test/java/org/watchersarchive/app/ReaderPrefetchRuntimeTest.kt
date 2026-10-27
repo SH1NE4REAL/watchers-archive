@@ -26,7 +26,7 @@ class ReaderPrefetchRuntimeTest {
     @Test fun nextPageComesFromPreviewCacheWithoutNetworkOrPrematureProgress() = runBlocking {
         val png = Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMQVDIGAACuAGcVHqFfAAAAAElFTkSuQmCC")
         val archive = ByteArrayOutputStream().also { out -> ZipOutputStream(out).use { zip ->
-            repeat(3) { zip.putNextEntry(ZipEntry("page-$it.png")); zip.write(png); zip.closeEntry() }
+            repeat(2) { zip.putNextEntry(ZipEntry("page-$it.png")); zip.write(png); zip.closeEntry() }
         } }.toByteArray()
         val server = ServerSocket(0, 16, java.net.InetAddress.getByName("127.0.0.1"))
         val requests = AtomicInteger()

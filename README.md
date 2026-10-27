@@ -1,6 +1,6 @@
 # 观察者漫格 · Phase 1
 
-当前版本：**0.4.1**。启动先进入“官方推荐”，底部仅有“官方推荐 / 我的书架 / 缓存与设置”。
+当前版本：**0.5.0**。启动先进入“官方推荐”，底部仅有“官方推荐 / 我的书架 / 缓存与设置”。
 来源条目详情只有“开始阅读”和“加入书架”；正文检查在后台执行，HTML、损坏文件和缺少强 ETag 的远程来源不会进入阅读器。支持 ZIP/ZIP64 和普通非固实 RAR4/CBR；RAR5、固实、加密、分卷和 PPM 压缩明确拒绝。
 来源站拒绝访问时保留本地快照，真实来源不依赖电脑测试 IP。大事件专题是有来源入口的检索集合，不能视为已下载、完整或官方排序的漫画合集。
 
@@ -91,12 +91,14 @@ The runner checks standard ZIP, ZIP64 and large offsets, local byte sources,
 non-solid RAR4, cancellation, CRC, memory/transfer limits and persistent data.
 It never needs a complete multi-GB fixture file.
 
-## 0.4.1 behaviour
+## 0.5.0 behaviour
 
 - Event collections are full-width vertical cards with sourced cover images.
 - The shelf is a three-column cover grid. Named categories appear as cover folders.
 - Long-press a category to delete it and return its members to the main shelf.
-- Read-ahead caches at most the next page without advancing progress; the setting can be disabled. RAR page transfers use fewer bounded ranges.
+- Read-ahead caches a rolling window of at most two upcoming pages without advancing progress. Each page is limited to 8MiB packed / 16MiB unpacked and the window to 24MiB unpacked; no extra preview Bitmap is decoded. Cached pages bypass unrelated slow preview HTTP work. The setting can be disabled to reduce speculative traffic. RAR page transfers use fewer bounded ranges.
+- Back from search clears the query and returns to recommendations; returning from an article preserves search results and scroll position. The top decoration is original red comic-panel artwork instead of the application title.
+- The reader's optional “译文” action offers English OCR with paired Chinese text. Opening it checks only the local model; first use requires explicitly choosing the approximately 30MB language-model download, using Wi-Fi by default. Images and recognized lettering are processed on-device. SDK model storage is independent of the disposable comic-page cache. Closing cancels page processing, although an SDK model download can continue. It does not replace speech bubbles or provide an official Chinese edition. Actual model delivery, physical-phone OCR, lettering order and translation quality still require device validation; controller/UI tests use a fake engine. See `docs/0.5.0-verification.md` for the exact scope.
 - Long-press a book to move it between categories, return it to the main shelf or remove
   all shelf memberships. These actions never delete source files, progress, bookmarks or notes.
 - Cover loading has a 16MiB bitmap memory budget, shared requests, bounded thumbnails

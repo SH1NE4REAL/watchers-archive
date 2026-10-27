@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import org.junit.Rule
 import org.junit.Test
@@ -36,5 +37,11 @@ class StartupRuntimeTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         compose.onNodeWithText("缓存与设置").assertIsDisplayed()
+    }
+
+    @Test fun compactRedHeaderReplacesTheLargeApplicationTitle() {
+        compose.onNodeWithTag("comic-header-decoration").assertIsDisplayed()
+        compose.onNodeWithText("观察者漫格").assertDoesNotExist()
+        compose.onNodeWithText("THE WATCHER'S ARCHIVE").assertDoesNotExist()
     }
 }

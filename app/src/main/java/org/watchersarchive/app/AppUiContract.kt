@@ -26,6 +26,7 @@ data class ReaderPage(
     val bitmap: Bitmap,
     val fromCache: Boolean,
     val transferredBytes: Long,
+    val stablePageId: String? = null,
     /** Releases the cache lease for this displayed page; idempotent in the repository. */
     val release: () -> Unit = {},
 )

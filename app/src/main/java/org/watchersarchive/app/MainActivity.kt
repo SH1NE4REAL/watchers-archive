@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Alignment
@@ -110,6 +111,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
     var selected by remember { mutableStateOf<DemoComic?>(null) }
     var selectedSource by remember { mutableStateOf<CatalogSourceRecord?>(null) }
     var detailParent by remember { mutableStateOf(Screen.Official) }
+    val discoverySearch = rememberSaveable(saver = DiscoverySearchState.Saver) { DiscoverySearchState() }
     val view = LocalView.current
     val activity = view.context as? Activity
     val goBack = {
@@ -152,14 +154,11 @@ private fun ArchiveApp(repository: ReaderRepository) {
         topBar = {
             Surface(color = PageBackground) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (screen == Screen.SourceDetail) TextButton(onClick = goBack) { Text("返回") }
-                    Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text("观察者漫格", fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                        Text("THE WATCHER'S ARCHIVE", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    }
+                    ComicHeaderDecoration(Modifier.weight(1f))
                 }
             }
         },
@@ -189,7 +188,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
                 Screen.SourceDetail -> selectedSource?.let { record ->
                     ArticleDetailScreen(record, repository) { comic -> selected = comic; screen = Screen.Reader }
                 }
-                Screen.Official -> DiscoveryScreen(repository) { selectedSource = it; detailParent = Screen.Official; screen = Screen.SourceDetail }
+                Screen.Official -> DiscoveryScreen(repository, discoverySearch) { selectedSource = it; detailParent = Screen.Official; screen = Screen.SourceDetail }
                 Screen.Cache -> CacheScreen(repository) { comic -> selectedSource = null; selected = comic; screen = Screen.Reader }
                 Screen.Reader -> Unit
             }
@@ -212,6 +211,8 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(false) }
     var diagnosticsVisible by remember(comic.id) { mutableStateOf(false) }
+    var translationVisible by remember(comic.id) { mutableStateOf(false) }
+    LaunchedEffect(page?.index) { translationVisible = false }
     suspend fun load(index: Int) {
         requestedIndex = index; busy = true; error = null; notice = null
         try {
@@ -260,10 +261,16 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
         val displayedPage = page
         onDispose { displayedPage?.release?.invoke() }
     }
-    LaunchedEffect(page?.index, session) {
+    LaunchedEffect(page?.index, session, translationVisible) {
         val current = page ?: return@LaunchedEffect
-        if (repository.prefetchEnabled) session?.prefetchPage(current.index + 1)
+        if (repository.prefetchEnabled && !translationVisible) session?.prefetchPage(current.index + 1)
         else session?.cancelPrefetch()
+    }
+
+    if (translationVisible) page?.let { current ->
+        PageTranslationPanel(current.bitmap,
+            "${comic.id}:${comic.verifiedLength}:${current.stablePageId ?: "${current.index}:${current.bitmap.generationId}"}",
+            onDismiss = { translationVisible = false })
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
@@ -301,6 +308,7 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                             } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
                         }
                     }) { Text(if (page?.index?.let { it in bookmarks } == true) "已书签" else "书签", color = Color.White) }
+                    TextButton(enabled = page != null && !busy, onClick = { translationVisible = true }) { Text("译文", color = Color.White) }
                 }
                 Spacer(Modifier.weight(1f))
                 Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .76f)).windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -348,7 +356,7 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
         catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("观察者漫格 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        Text("版本 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         WhiteCard {
             Text("临时阅读缓存", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("${snapshot?.let { formatBytes(it.committedBytes) } ?: "—"} / 500 MB", style = MaterialTheme.typography.headlineSmall)
@@ -365,8 +373,8 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
         WhiteCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("提前读取下一页", fontWeight = FontWeight.Bold)
-                    Text("阅读当前页时只预读后面一页，计入原有缓存上限，可关闭以减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text("连续翻页加速", fontWeight = FontWeight.Bold)
+                    Text("阅读当前页时最多预读后面两页，计入原有缓存上限，可关闭以减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 }
                 androidx.compose.material3.Switch(checked = preload, onCheckedChange = { preload = it; repository.prefetchEnabled = it })
             }

@@ -165,10 +165,18 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private val prefetcher = ReaderPrefetcher { target -> prefetchRawPage(target) }
 
         override fun prefetchPage(index: Int) {
-            if (closed.get() || !prefetchEnabled || index !in 0 until totalPages) return
-            val entry = this.index.pages[index]
-            if (entry.compressedSize > 8 * 1024 * 1024 || entry.uncompressedSize > 16 * 1024 * 1024) return
-            prefetcher.schedule(index)
+            if (closed.get()) return
+            if (!prefetchEnabled || index !in 0 until totalPages) { prefetcher.cancel(); return }
+            val targets = mutableListOf<Int>()
+            var previewBytes = 0L
+            for (target in index until minOf(index + 2, totalPages)) {
+                val entry = this.index.pages[target]
+                if (entry.compressedSize > 8 * 1024 * 1024 || entry.uncompressedSize > 16 * 1024 * 1024) continue
+                if (previewBytes + entry.uncompressedSize > 24L * 1024 * 1024) break
+                targets += target
+                previewBytes += entry.uncompressedSize
+            }
+            prefetcher.scheduleWindow(targets)
         }
         override fun cancelPrefetch() = prefetcher.cancel()
 
@@ -193,50 +201,69 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         }
 
         override suspend fun loadPage(index: Int): ReaderPage = withReaderHandoff(release = { it.release() }) {
-            prefetcher.beforeForeground(index)
-            pageAccess.withLock {
-                val pageToken = CancellationToken()
-                val sessionCancellation = token.onCancel { pageToken.cancel() }
-                val cancellation = currentCoroutineContext()[Job]?.onCancellation { pageToken.cancel() }
-                try {
-                    check(!closed.get()) { "阅读会话已关闭" }
-                    pageToken.throwIfCancelled()
-                    require(index in 0 until totalPages)
-                    val page = this@Session.index.pages[index]
-                    val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${page.stableId}"
-                    var lease = state.cache.acquire(key, comic.id)
-                    val fromCache = lease != null
-                    var transferred = 0L
+            check(!closed.get()) { "阅读会话已关闭" }
+            token.throwIfCancelled()
+            require(index in 0 until totalPages)
+            val entry = this@Session.index.pages[index]
+            val key = "${this@Session.index.identity.url}|${this@Session.index.identity.eTag}|${entry.stableId}"
+            // The cached previous/current page does not touch the archive reader.
+            // In particular it must not queue behind an unrelated slow HTTP preview.
+            state.cache.acquire(key, comic.id)?.let { cached ->
+                return@withReaderHandoff materializePage(index, cached, true, 0L)
+            }
+            prefetcher.withForeground(index) {
+                pageAccess.withLock {
+                    val pageToken = CancellationToken()
+                    val sessionCancellation = token.onCancel { pageToken.cancel() }
+                    val cancellation = currentCoroutineContext()[Job]?.onCancellation { pageToken.cancel() }
                     try {
-                        if (lease != null) activeLeases += lease!!
-                        val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
-                            val raw = reader.readPage(this@Session.index, index, pageToken)
-                            transferred = raw.size.toLong()
-                            lease = state.cache.put(key, comic.id, raw) { pageToken.throwIfCancelled() }
-                            activeLeases += lease!!
-                            raw
-                        }
-                        val bitmap = decodeBounded(bytes)
+                        check(!closed.get()) { "阅读会话已关闭" }
                         pageToken.throwIfCancelled()
-                        if (!fromCache && lease != null && !activeLeases.contains(lease)) activeLeases += lease!!
-                        state.library.setProgress(comic.id, index)
-                        val owned = lease
-                        val released = AtomicBoolean(false)
-                        ReaderPage(index, totalPages, bitmap, fromCache, transferred) {
-                            if (released.compareAndSet(false, true)) {
-                                owned?.close()
-                                if (owned != null) activeLeases.remove(owned)
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        lease?.close()
-                        if (lease != null) activeLeases.remove(lease)
-                        throw e
+                        var lease = state.cache.acquire(key, comic.id)
+                        if (lease != null) return@withLock materializePage(index, lease, true, 0L)
+                        val raw = reader.readPage(this@Session.index, index, pageToken)
+                        pageToken.throwIfCancelled()
+                        lease = state.cache.put(key, comic.id, raw) { pageToken.throwIfCancelled() }
+                        materializePage(index, lease, false, raw.size.toLong(), raw)
+                    } finally {
+                        cancellation?.dispose()
+                        sessionCancellation.close()
                     }
-                } finally {
-                    cancellation?.dispose()
-                    sessionCancellation.close()
                 }
+            }
+        }
+
+        private suspend fun materializePage(
+            pageIndex: Int,
+            lease: CacheManager.CacheLease,
+            fromCache: Boolean,
+            bytesRead: Long,
+            encoded: ByteArray? = null,
+        ): ReaderPage {
+            activeLeases += lease
+            var bitmap: Bitmap? = null
+            try {
+                currentCoroutineContext().ensureActive()
+                token.throwIfCancelled()
+                check(!closed.get()) { "阅读会话已关闭" }
+                bitmap = decodeBounded(encoded ?: lease.readBytes(state.limits.maxPageBytes))
+                currentCoroutineContext().ensureActive()
+                token.throwIfCancelled()
+                state.library.setProgress(comic.id, pageIndex)
+                val released = AtomicBoolean(false)
+                val entry = index.pages[pageIndex]
+                return ReaderPage(pageIndex, totalPages, bitmap, fromCache, bytesRead,
+                    stablePageId = "${index.identity.eTag}:${entry.stableId}") {
+                    if (released.compareAndSet(false, true)) {
+                        lease.close()
+                        activeLeases.remove(lease)
+                    }
+                }
+            } catch (failure: Throwable) {
+                bitmap?.recycle()
+                lease.close()
+                activeLeases.remove(lease)
+                throw failure
             }
         }
 
@@ -268,6 +295,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     override suspend fun clearCache(): String = withContext(Dispatchers.IO) {
         state.ensureInitialized()
         state.covers.clearMemory()
+        clearPageTranslationMemory()
         ComicArchiveReaders.clearMemoryCache()
         val reclaimed = state.cache.clearUnpinned()
         "已清理 ${formatBytes(reclaimed)}；正在阅读的页面仍受租约保护。"

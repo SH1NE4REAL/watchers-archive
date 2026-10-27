@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,44 +19,68 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourceRecord) -> Unit) {
+internal fun DiscoveryScreen(
+    repository: ReaderRepository,
+    searchState: DiscoverySearchState = remember { DiscoverySearchState() },
+    onOpen: (CatalogSourceRecord) -> Unit,
+) {
     val scope = rememberCoroutineScope()
     var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
     var guides by remember { mutableStateOf(emptyList<OfficialGuide>()) }
     var characters by remember { mutableStateOf(emptyList<OfficialCharacterProfile>()) }
-    var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
+    var query by searchState::query
+    var results by searchState::results
     var refreshing by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
-    var searchPage by remember { mutableIntStateOf(1) }
-    var moreResults by remember { mutableStateOf(false) }
+    var searchPage by searchState::page
+    var moreResults by searchState::moreResults
     var notice by remember { mutableStateOf<String?>(null) }
-    var searchNotice by remember { mutableStateOf<String?>(null) }
+    var searchNotice by searchState::notice
     var officialNotice by remember { mutableStateOf<String?>(null) }
     var source by remember { mutableStateOf<RecommendationCollection?>(null) }
     val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val catalogueFocus = remember { FocusRequester() }
+    fun clearSearch() {
+        searchState.clear()
+        // Keep focus inside this screen on an explicit non-editable target.
+        // clearFocus can let Android restore the first TextField in non-touch mode.
+        catalogueFocus.requestFocus()
+        keyboard?.hide()
+        scope.launch { searchState.listState.scrollToItem(0) }
+    }
+    BackHandler(enabled = query.isNotBlank()) { clearSearch() }
 
     suspend fun loadSaved() {
         try {
             records = repository.getComicsRecords().filter { it.source == "getcomics" }
             guides = repository.savedOfficialGuides()
             characters = repository.savedOfficialCharacters()
+            if (query.isNotBlank() && results.isEmpty()) results = records.filter { it.title.contains(query.trim(), true) }
         } catch (c: CancellationException) { throw c }
         catch (_: Exception) { notice = "暂时无法读取保存的目录，可稍后重试。" }
     }
@@ -68,6 +93,9 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
     }
     LaunchedEffect(Unit) { loadSaved() }
     LaunchedEffect(query) {
+        val requestedQuery = query.trim()
+        if (searchState.completedQuery == requestedQuery) return@LaunchedEffect
+        searchState.listState.scrollToItem(0)
         searchNotice = null
         searchPage = 1; moreResults = false
         if (query.trim().length < 2) { results = emptyList(); searching = false; return@LaunchedEffect }
@@ -78,12 +106,32 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
         catch (c: CancellationException) { throw c }
         catch (_: Exception) { searchNotice = "在线搜索暂时不可用，显示已保存的匹配条目。" }
         finally { searching = false }
+        searchState.completedQuery = requestedQuery
     }
 
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("discovery-list"), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Box(Modifier.fillMaxSize().focusRequester(catalogueFocus).focusable().testTag("discovery-focus-anchor")) {
+    LazyColumn(
+        Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("discovery-list"),
+        state = searchState.listState,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         item {
-            OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
-                placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp))
+            OutlinedTextField(
+                query, { query = it }, Modifier.fillMaxWidth().testTag("catalogue-search"), singleLine = true,
+                placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp),
+                leadingIcon = if (query.isNotBlank()) ({
+                    IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-back").semantics { contentDescription = "返回推荐" }) {
+                        Text("‹", style = MaterialTheme.typography.headlineSmall)
+                    }
+                }) else null,
+                trailingIcon = if (query.isNotBlank()) ({
+                    IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-clear").semantics { contentDescription = "清除搜索" }) {
+                        Text("×", style = MaterialTheme.typography.titleLarge)
+                    }
+                }) else null,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { catalogueFocus.requestFocus(); keyboard?.hide() }),
+            )
         }
         if (query.isNotBlank()) {
             item { Text(if (searching) "正在搜索…" else "搜索结果", style = MaterialTheme.typography.titleMedium) }
@@ -153,6 +201,7 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
             if (records.isEmpty()) item { Text("点击刷新获取漫画。无需连接电脑测试服务器。", color = Color.Gray) }
         }
         item { Spacer(Modifier.height(20.dp)) }
+    }
     }
     source?.let { collection ->
         AlertDialog(onDismissRequest = { source = null }, title = { Text(collection.title) },
