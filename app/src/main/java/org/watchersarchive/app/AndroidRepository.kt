@@ -19,6 +19,9 @@ import org.watchersarchive.core.CancellationToken
 import org.watchersarchive.core.HttpRangeSource
 import org.watchersarchive.core.PersistentLibrary
 import org.watchersarchive.core.ReaderLimits
+import org.watchersarchive.core.ArchiveByteSource
+import org.watchersarchive.core.ComicArchiveReader
+import org.watchersarchive.core.ComicArchiveReaders
 import org.watchersarchive.core.ZipArchiveReader
 import java.io.File
 import java.io.ByteArrayOutputStream
@@ -40,12 +43,13 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         }
     }
 
-    private class State(context: Context) {
+    private class State(val context: Context) {
         private val root = File(context.filesDir, "watchers-archive-phase1")
         val traces = CopyOnWriteArrayList<String>()
         val preferences = context.getSharedPreferences("phase1-settings", Context.MODE_PRIVATE)
         val limits = ReaderLimits()
-        val coverDownloads = Semaphore(2)
+        val covers = CoverImageCache()
+        val eventCovers = java.util.concurrent.ConcurrentHashMap<String, String>()
         private val initializationLock = Any()
         @Volatile private var initialized = false
         private lateinit var cacheManager: CacheManager
@@ -107,34 +111,44 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         get() = base
         set(value) { state.preferences.edit().putString("baseUrl", value.trim().trimEnd('/')).apply() }
 
-    override suspend fun open(comic: DemoComic): ReaderSession = withContext(Dispatchers.IO) {
+    override suspend fun open(comic: DemoComic): ReaderSession = withReaderHandoff<Session>(release = { it.closeNow() }) {
         state.ensureInitialized()
         val token = CancellationToken()
         val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
+        var source: ArchiveByteSource? = null
+        var reader: ComicArchiveReader? = null
         try {
             if (!comic.isTestContent) {
                 require(comic.sourceAssetStatus == SourceAssetStatus.READY && comic.verifiedETag != null && comic.verifiedLength != null) {
-                    "该来源尚无已验证的 CBZ 文件，请在详情页重试。"
+                    "该来源尚无已验证的漫画文件，请在详情页重试。"
                 }
             }
-            val sourceUrl = comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}"
-            val source = HttpRangeSource(sourceUrl, state.limits) { trace ->
-                state.traces.add("${trace.outcome} · ${trace.statusCode ?: "—"} · ${trace.start}-${trace.endInclusive} · ${trace.receivedBytes} B · ${trace.contentRange ?: "无 Content-Range"}")
-                while (state.traces.size > 80) state.traces.removeAt(0)
-            }
-            val index = ZipArchiveReader(source, state.limits).open(token)
+            source = archiveSource(comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}")
+            reader = ComicArchiveReaders.create(source, state.limits, token)
+            val index = reader.open(token)
             if (!comic.isTestContent && (index.identity.eTag != comic.verifiedETag || index.identity.length != comic.verifiedLength)) {
                 throw ArchiveException(org.watchersarchive.core.ArchiveError.OBJECT_CHANGED, "来源文件已改变，请返回详情页重新打开。")
             }
-            Session(comic, source, index, token)
-        } finally {
-            cancellation?.dispose()
+            Session(comic, source, reader, index, token)
+        } catch (failure: Throwable) {
+            runCatching { reader?.close() }
+            runCatching { (source as? java.io.Closeable)?.close() }
+            throw failure
+        } finally { cancellation?.dispose() }
+    }
+
+    private fun archiveSource(address: String): ArchiveByteSource {
+        if (address.startsWith("content://")) return DocumentArchiveSource(state.context.contentResolver, android.net.Uri.parse(address), state.limits)
+        return HttpRangeSource(address, state.limits) { trace ->
+            state.traces.add("${trace.outcome} · ${trace.statusCode ?: "—"} · ${trace.start}-${trace.endInclusive} · ${trace.receivedBytes} B · ${trace.contentRange ?: "无 Content-Range"}")
+            while (state.traces.size > 80) state.traces.removeAt(0)
         }
     }
 
     private inner class Session(
         private val comic: DemoComic,
-        private val source: HttpRangeSource,
+        private val source: ArchiveByteSource,
+        private val reader: ComicArchiveReader,
         private val index: org.watchersarchive.core.ArchiveIndex,
         private val token: CancellationToken,
     ) : ReaderSession {
@@ -158,7 +172,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                 try {
                     if (lease != null) activeLeases += lease!!
                     val bytes = if (lease != null) lease!!.readBytes(state.limits.maxPageBytes) else {
-                        val raw = ZipArchiveReader(source, state.limits).readPage(this@Session.index, index, pageToken)
+                        val raw = reader.readPage(this@Session.index, index, pageToken)
                         transferred = raw.size.toLong()
                         lease = state.cache.put(key, comic.id, raw) { pageToken.throwIfCancelled() }
                         activeLeases += lease!!
@@ -187,11 +201,12 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             }
         }
 
-        override suspend fun close() = withContext(Dispatchers.IO) {
+        override suspend fun close() = withContext(Dispatchers.IO) { closeNow() }
+        fun closeNow() {
             if (closed.compareAndSet(false, true)) token.cancel()
-            // Keep cleanup idempotent: a page load can race the first close after its
-            // cache commit. Repeated close calls must still release that late lease.
             activeLeases.toList().forEach { lease -> lease.close(); activeLeases.remove(lease) }
+            reader.close()
+            (source as? java.io.Closeable)?.close()
         }
     }
 
@@ -212,6 +227,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
     override suspend fun clearCache(): String = withContext(Dispatchers.IO) {
         state.ensureInitialized()
+        state.covers.clearMemory()
+        ComicArchiveReaders.clearMemoryCache()
         val reclaimed = state.cache.clearUnpinned()
         "已清理 ${formatBytes(reclaimed)}；正在阅读的页面仍受租约保护。"
     }
@@ -254,19 +271,30 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
     override suspend fun prepareSourceReading(record: CatalogSourceRecord): DemoComic = withContext(Dispatchers.IO) {
         state.ensureInitialized()
+        if (record.source == "local") return@withContext prepareLocalReading(record)
         val raw = inspectGetComics(record)
         val checked = mutableListOf<SourceAsset>()
         var ready: SourceAsset? = null
         // Sequential, bounded probes. Landing pages and gated redirects are never bypassed.
         for (asset in raw.assets.take(6)) {
-            val result = validateSourceAsset(asset)
+            val result = GetComicsCatalogService(onValidatedPage = { index, bytes ->
+                // Reuse the already verified first page when entering the reader.
+                // This obeys the same disk budget and avoids downloading it twice.
+                val key = "${index.identity.url}|${index.identity.eTag}|${index.pages.first().stableId}"
+                try {
+                    val cached = state.cache.acquire(key, record.externalId)
+                    if (cached != null) cached.close() else state.cache.put(key, record.externalId, bytes).close()
+                } catch (_: java.io.IOException) { /* Full cache can safely read on demand instead. */ }
+            }).validateAsset(asset)
             checked += result
             if (isVerifiedReady(result)) { ready = result; break }
         }
         state.snapshots.saveInspection(record.externalId, raw.copy(assets = checked, canStartRemoteReader = ready != null))
         val asset = ready ?: throw java.io.IOException(
-            checked.firstOrNull { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT }?.let { "此条目提供 CBR/RAR 文件，当前阅读器暂不支持。" }
-                ?: "该来源暂未提供可直接阅读的 CBZ，已保留条目信息，可加入书架。"
+            checked.firstOrNull { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT }?.reason
+                ?: checked.firstOrNull { it.status == SourceAssetStatus.NEEDS_USER_ACTION }?.reason
+                ?: checked.firstOrNull()?.reason
+                ?: "该来源暂未提供可直接阅读的文件，可先加入书架或导入本地漫画。"
         )
         DemoComic(id = record.externalId, title = record.title, description = record.synopsis.orEmpty(),
             path = asset.fileName.orEmpty(), series = "GetComics", year = record.yearLabel.orEmpty(),
@@ -274,58 +302,77 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             sourceAssetStatus = SourceAssetStatus.READY, sourceRecordId = record.externalId,
             verifiedETag = asset.verifiedETag, verifiedLength = asset.verifiedLength)
     }
+    override suspend fun importLocalComic(uri: String): CatalogSourceRecord = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        val selected = android.net.Uri.parse(uri)
+        require(selected.scheme == "content") { "请通过系统文件选择器选择漫画文件。" }
+        try { state.context.contentResolver.takePersistableUriPermission(selected, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        catch (_: SecurityException) { throw java.io.IOException("此文件不能保留读取权限，请从手机本地存储中选择。") }
+        val name = state.context.contentResolver.query(selected, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        } ?: "本地漫画"
+        val id = "local:" + java.security.MessageDigest.getInstance("SHA-256").digest(uri.toByteArray()).take(12).joinToString("") { "%02x".format(it) }
+        val record = CatalogSourceRecord("local", id, uri, name.substringBeforeLast('.'), "从手机选择的漫画文件，正文保留在原位置。", uri,
+            null, null, java.time.Instant.now().toString(), emptyList(), null, null, null, SourceConfidence.VERIFIED)
+        val ready = prepareLocalReading(record)
+        val length = checkNotNull(ready.verifiedLength)
+        val enriched = record.copy(sizeLabel = String.format(java.util.Locale.ROOT, "%.1f MB", length / 1_000_000.0))
+        state.metadata.upsertAll(listOf(enriched))
+        state.library.registerComic(id, record.title, uri, false)
+        state.shelves.add("默认书架", id)
+        enriched
+    }
+
+    private suspend fun prepareLocalReading(record: CatalogSourceRecord): DemoComic {
+        val token = CancellationToken()
+        val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
+        try {
+            DocumentArchiveSource(state.context.contentResolver, android.net.Uri.parse(record.canonicalUrl), state.limits).use { source ->
+                ComicArchiveReaders.create(source, state.limits, token).use { reader ->
+                    val index = reader.open(token)
+                    val bytes = reader.readPage(index, 0, token)
+                    decodeBounded(bytes).recycle()
+                    state.covers.load(record.canonicalUrl, state.cache) { bytes }
+                    return DemoComic(record.externalId, record.title, record.synopsis.orEmpty(), record.title,
+                        series = "本地漫画", year = record.yearLabel.orEmpty(), pageCountHint = index.pages.size,
+                        isTestContent = false, sourceUrl = record.canonicalUrl, sourceAssetStatus = SourceAssetStatus.READY,
+                        sourceRecordId = record.externalId, verifiedETag = index.identity.eTag, verifiedLength = index.identity.length)
+                }
+            }
+        } finally { cancellation?.dispose() }
+    }
+
+    override fun peekCover(url: String): Bitmap? = state.covers.peek(url)
     override suspend fun loadCover(url: String): Bitmap? = withContext(Dispatchers.IO) {
         state.ensureInitialized()
-        val safeUrl = safeSourceUrl(url) ?: return@withContext null
-        state.coverDownloads.withPermit {
-            val key = "cover:$safeUrl"
-            state.cache.acquire(key, "covers")?.use { lease ->
-                return@withPermit decodeCover(lease.readBytes(2 * 1024 * 1024))
-            }
-            val connection = (URL(safeUrl).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 10_000
-                readTimeout = 15_000
-                instanceFollowRedirects = false
-                useCaches = false
-                setRequestProperty("Accept-Encoding", "identity")
-                setRequestProperty("User-Agent", "WatchersArchive-Cover/0.4")
-            }
-            val cancellation = currentCoroutineContext()[Job]?.onCancellation { connection.disconnect() }
-            try {
-                if (connection.responseCode != 200) return@withPermit null
-                if ((connection.getHeaderField("Content-Length")?.toLongOrNull() ?: 0) > 2 * 1024 * 1024) return@withPermit null
-                val bytes = connection.inputStream.use { input ->
-                    val output = ByteArrayOutputStream()
-                    val buffer = ByteArray(8192)
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        if (output.size() > 2 * 1024 * 1024 - count) return@withPermit null
-                        output.write(buffer, 0, count)
+        if (url.startsWith("content://")) {
+            state.covers.load(url, state.cache) {
+                DocumentArchiveSource(state.context.contentResolver, android.net.Uri.parse(url), state.limits).use { source ->
+                    ComicArchiveReaders.create(source, state.limits).use { reader ->
+                        val index = reader.open()
+                        reader.readPage(index, 0)
                     }
-                    output.toByteArray()
                 }
-                val bitmap = decodeCover(bytes) ?: return@withPermit null
-                try { state.cache.put(key, "covers", bytes).close() }
-                catch (_: java.io.IOException) { /* Full or pinned cache can still display a bounded memory image. */ }
-                bitmap
-            } finally {
-                cancellation?.dispose()
-                connection.disconnect()
             }
-        }
+        } else state.covers.load(url, state.cache)
     }
-    private fun decodeCover(bytes: ByteArray): Bitmap? {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        val w = bounds.outWidth.toLong(); val h = bounds.outHeight.toLong()
-        if (w <= 0 || h <= 0 || w > 16_384 || h > 16_384 || w * h > 20_000_000) return null
-        var sample = 1
-        while (ceilDiv(w, sample.toLong()) * ceilDiv(h, sample.toLong()) > 400_000) sample *= 2
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
-            inSampleSize = sample; inPreferredConfig = Bitmap.Config.RGB_565
-        })
+    override suspend fun eventCover(collection: RecommendationCollection): String? = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        collection.coverUrl?.let { return@withContext it }
+        state.eventCovers[collection.id]?.let { return@withContext it }
+        val cached = state.metadata.records().firstOrNull { record ->
+            record.title.contains(collection.searchTerm, true) && !record.coverUrl.isNullOrBlank()
+        }?.coverUrl
+        if (cached != null) {
+            state.eventCovers[collection.id] = cached
+            return@withContext cached
+        }
+        try {
+            val found = GetComicsCatalogService().fetchWordPressPosts(search = collection.searchTerm, perPage = 5)
+            state.metadata.upsertAll(found)
+            found.firstOrNull { !it.coverUrl.isNullOrBlank() }?.coverUrl?.also { state.eventCovers[collection.id] = it }
+        } catch (c: CancellationException) { throw c }
+        catch (_: Exception) { null }
     }
     override suspend fun inspectGetComics(record: CatalogSourceRecord): SourceAssetInspection =
         GetComicsCatalogService().inspectArticle(record.canonicalUrl)
@@ -334,6 +381,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     override suspend fun shelfNames(): List<String> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.shelves() }
     override suspend fun createShelf(name: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.createShelf(name) }
     override suspend fun addToShelf(shelf: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.add(shelf, comicId) }
+    override suspend fun removeFromShelf(shelf: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.remove(shelf, comicId) }
+    override suspend fun moveToShelf(from: String?, to: String, comicId: String) = withContext(Dispatchers.IO) { state.ensureInitialized(); state.shelves.move(from, to, comicId) }
     override suspend fun shelfItems(shelf: String): Set<String> = withContext(Dispatchers.IO) {
         state.ensureInitialized()
         if (shelf == "全部") state.shelves.allItems() else state.shelves.items(shelf)

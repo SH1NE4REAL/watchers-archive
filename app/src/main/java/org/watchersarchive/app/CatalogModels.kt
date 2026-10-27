@@ -105,5 +105,8 @@ data class RecommendationCollection(
     val sourceUrl: String,
     val searchTerm: String,
     val sourceLabel: String,
+    /** An actual source cover; a collection without one resolves a matching saved article cover. */
+    val coverUrl: String? = null,
+    val coverSourceUrl: String? = null,
 )
 

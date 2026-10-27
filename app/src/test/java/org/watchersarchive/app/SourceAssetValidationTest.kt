@@ -61,8 +61,13 @@ class SourceAssetValidationTest {
             }
             val range = headers["range"]?.removePrefix("bytes=")?.split('-')
             val output = client.getOutputStream()
-            if (path == "/ignored.cbz" || range == null) {
-                output.write("HTTP/1.1 200 OK\r\nContent-Length: ${payload.size}\r\nConnection: close\r\n\r\n".toByteArray(Charsets.US_ASCII))
+            if (path == "/dls/redirect") {
+                output.write("HTTP/1.1 302 Found\r\nLocation: /valid.cbz\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray(Charsets.US_ASCII))
+                output.flush()
+                return
+            }
+            if (path.startsWith("/dls/") || path == "/ignored.cbz" || range == null) {
+                output.write("HTTP/1.1 200 OK\r\nContent-Type: ${if (path.startsWith("/dls/")) "text/html" else "application/octet-stream"}\r\nContent-Length: ${payload.size}\r\nConnection: close\r\n\r\n".toByteArray(Charsets.US_ASCII))
                 runCatching { output.write(payload) }
             } else {
                 val start = range[0].toInt(); val end = range[1].toInt()
@@ -89,16 +94,28 @@ class SourceAssetValidationTest {
         assertTrue("Validation must go beyond one-byte HTTP capability", requests.size >= 6)
     }
 
+    @Test fun onlyValidatedFirstPagesArePassedToTheSharedReaderCache() = runBlocking {
+        var commits = 0
+        val cachingAdapter = GetComicsCatalogService(decodeImage = { it.contentEquals(png) }, onValidatedPage = { index, bytes ->
+            assertEquals(4, index.pages.size)
+            assertTrue(bytes.contentEquals(png))
+            commits++
+        })
+        assertEquals(SourceAssetStatus.READY, cachingAdapter.validateAsset(asset("/valid.cbz")).status)
+        assertEquals(SourceAssetStatus.UNSUPPORTED_FORMAT, cachingAdapter.validateAsset(asset("/html.cbz")).status)
+        assertEquals(1, commits)
+    }
+
     @Test fun htmlWithValid206AndStrongEtagNeverBecomesReady() = runBlocking {
         val checked = adapter.validateAsset(asset("/html.cbz"))
         assertEquals(SourceAssetStatus.UNSUPPORTED_FORMAT, checked.status)
         assertNull(checked.verifiedETag)
-        assertEquals(2, requests.size)
+        assertTrue(requests.size >= 2)
     }
 
-    @Test fun rarMagicWithoutFileExtensionIsRejectedBeforeZipParsing() = runBlocking {
+    @Test fun malformedRar4CannotBeMarkedAsReady() = runBlocking {
         assertEquals(SourceAssetStatus.UNSUPPORTED_FORMAT, adapter.validateAsset(asset("/rar")).status)
-        assertEquals(2, requests.size)
+        assertTrue(requests.size >= 2)
     }
 
     @Test fun ignoredRangeAndWeakEtagCannotBecomeReady() = runBlocking {
@@ -112,9 +129,23 @@ class SourceAssetValidationTest {
         assertEquals(SourceAssetStatus.UNSUPPORTED_FORMAT, rejectingDecoder.validateAsset(asset("/valid.cbz")).status)
     }
 
-    @Test fun gatedLinkIsNotOpenedByValidation() = runBlocking {
+    @Test fun gatedHtmlResponseNeverBecomesAReadableAsset() = runBlocking {
         val checked = adapter.validateAsset(asset("/dls/opaque"))
         assertEquals(SourceAssetStatus.NEEDS_USER_ACTION, checked.status)
-        assertTrue(requests.isEmpty())
+        assertEquals(1, requests.size) // Header-only normal request; HTML cannot become a file.
+    }
+
+    @Test fun normalDls302IsResolvedThenTheActualCbzIsValidated() = runBlocking {
+        val checked = adapter.validateAsset(asset("/dls/redirect"))
+        assertEquals(SourceAssetStatus.READY, checked.status)
+        assertEquals("$base/valid.cbz", checked.verifiedUrl)
+        assertTrue(requests.first().startsWith("/dls/redirect:"))
+        assertTrue(requests.any { it.startsWith("/valid.cbz:") })
+    }
+
+    @Test fun zipMagicWinsOverAMisleadingCbrExtension() = runBlocking {
+        val checked = adapter.validateAsset(asset("/actually-zip.cbr").copy(declaredFormat = "CBR"))
+        assertEquals(SourceAssetStatus.READY, checked.status)
+        assertEquals("CBZ", checked.declaredFormat)
     }
 }

@@ -2,13 +2,21 @@ package org.watchersarchive.app
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.horizontalScroll
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
@@ -43,7 +53,7 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
 
     suspend fun loadSaved() {
         try {
-            records = repository.getComicsRecords()
+            records = repository.getComicsRecords().filter { it.source == "getcomics" }
             guides = repository.savedOfficialGuides()
             characters = repository.savedOfficialCharacters()
         } catch (c: CancellationException) { throw c }
@@ -70,7 +80,7 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
         finally { searching = false }
     }
 
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("discovery-list"), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
                 placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp))
@@ -99,19 +109,8 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
             if (results.isEmpty() && !searching) item { Text("没有匹配的条目。", color = Color.Gray) }
         } else {
             item { Text("大事件专题", style = MaterialTheme.typography.titleLarge) }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(recommendationCollections, key = { it.id }) { collection ->
-                        Card(onClick = { source = collection }, modifier = Modifier.width(220.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text(collection.title, style = MaterialTheme.typography.titleLarge)
-                                Text(collection.description, color = Color.Gray, style = MaterialTheme.typography.bodySmall, maxLines = 3)
-                                Text("查看相关漫画", color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
+            items(recommendationCollections, key = { "collection:${it.id}" }) { collection ->
+                EventCollectionCard(collection, records, repository) { source = collection }
             }
             if (guides.isNotEmpty() || characters.isNotEmpty()) {
                 item { Text("官方指南与角色", style = MaterialTheme.typography.titleLarge) }
@@ -166,49 +165,183 @@ internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourc
 @Composable
 internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceRecord) -> Unit) {
     val scope = rememberCoroutineScope()
-    var names by remember { mutableStateOf(listOf("全部")) }
-    var selected by remember { mutableStateOf("全部") }
+    var names by remember { mutableStateOf(emptyList<String>()) }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
     var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
-    var ids by remember { mutableStateOf(emptySet<String>()) }
+    var memberships by remember { mutableStateOf(emptyMap<String, Set<String>>()) }
     var error by remember { mutableStateOf<String?>(null) }
     var showCreate by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var creating by remember { mutableStateOf(false) }
-    LaunchedEffect(selected) {
-        try {
-            names = listOf("全部") + repository.shelfNames()
-            records = repository.getComicsRecords()
-            ids = repository.shelfItems(selected)
-        } catch (c: CancellationException) { throw c }
+    var actionBook by remember { mutableStateOf<CatalogSourceRecord?>(null) }
+    var showMove by remember { mutableStateOf(false) }
+    var updating by remember { mutableStateOf(false) }
+    var importing by remember { mutableStateOf(false) }
+    var importNotice by remember { mutableStateOf<String?>(null) }
+
+    suspend fun reload() {
+        names = repository.shelfNames()
+        records = repository.getComicsRecords()
+        memberships = names.associateWith { repository.shelfItems(it) }
+    }
+    val pickComic = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            importing = true; error = null
+            try { val record = repository.importLocalComic(uri.toString()); reload(); importNotice = "已导入：${record.title}" }
+            catch (c: CancellationException) { throw c }
+            catch (e: Exception) { error = e.message ?: "此文件暂时无法读取，请选择本地 CBZ 或非固实 RAR4。" }
+            finally { importing = false }
+        }
+    }
+    LaunchedEffect(Unit) {
+        try { reload() }
+        catch (c: CancellationException) { throw c }
         catch (_: Exception) { error = "无法加载书架，请稍后重试。" }
     }
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
+    BackHandler(enabled = selectedFolder != null) { selectedFolder = null }
+    val customFolders = names.filter { it != "默认书架" }
+    val groupedIds = customFolders.flatMap { memberships[it].orEmpty() }.toSet()
+    val allIds = memberships.values.flatten().toSet()
+    val visibleIds = selectedFolder?.let { memberships[it].orEmpty() } ?: (allIds - groupedIds)
+    val books = records.filter { it.externalId in visibleIds }
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("shelf-grid"),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("我的书架", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                TextButton(onClick = { showCreate = true }) { Text("新建分类") }
+                if (selectedFolder != null) TextButton(onClick = { selectedFolder = null }) { Text("‹ 书架") }
+                Text(selectedFolder ?: "我的书架", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                if (selectedFolder == null) TextButton(onClick = { showCreate = true }) { Text("新建分类") }
+                if (selectedFolder == null) TextButton(enabled = !importing, onClick = { pickComic.launch(arrayOf("*/*")) }) { Text(if (importing) "导入中…" else "导入") }
             }
         }
-        item {
-            // Same-axis verticalScroll inside LazyColumn caused the 0.3.0 measure crash.
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                names.forEach { name -> FilterChip(selected == name, onClick = { selected = name }, label = { Text(name) }) }
+        error?.let { message -> item(span = { GridItemSpan(maxLineSpan) }) { Text(message, color = MaterialTheme.colorScheme.error) } }
+        importNotice?.let { message -> item(span = { GridItemSpan(maxLineSpan) }) { Text(message, color = Color.Gray, style = MaterialTheme.typography.bodySmall) } }
+        if (selectedFolder == null) {
+            items(customFolders, key = { "folder:$it" }) { name ->
+                val memberRecords = records.filter { it.externalId in memberships[name].orEmpty() }
+                ShelfFolderTile(name, memberRecords, repository) { selectedFolder = name }
             }
         }
-        error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
-        val books = records.filter { it.externalId in ids }
-        items(books, key = { it.externalId }) { ComicSourceRow(it, repository) { onSource(it) } }
-        if (books.isEmpty()) item { Text("书架还没有漫画。在漫画详情页点击“加入书架”即可。", color = Color.Gray) }
+        items(books, key = { it.externalId }) { record ->
+            ShelfBookTile(record, repository, onLongClick = { actionBook = record }) { onSource(record) }
+        }
+        if (books.isEmpty() && (selectedFolder != null || customFolders.isEmpty())) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(if (selectedFolder == null) "书架还没有漫画。在漫画详情页点击“加入书架”即可。" else "这个分类还没有漫画。可在漫画详情页加入此分类。", color = Color.Gray)
+            }
+        }
     }
     if (showCreate) AlertDialog(onDismissRequest = { showCreate = false }, title = { Text("新建分类") }, text = {
         Column { OutlinedTextField(newName, { newName = it }, singleLine = true, label = { Text("分类名称") }); error?.let { Text(it, color = MaterialTheme.colorScheme.error) } }
     }, confirmButton = { TextButton(enabled = newName.isNotBlank() && newName.trim() != "全部" && !creating, onClick = { scope.launch {
         creating = true
-        try { repository.createShelf(newName); names = listOf("全部") + repository.shelfNames(); selected = newName.trim(); newName = ""; error = null; showCreate = false }
+        try { repository.createShelf(newName); reload(); newName = ""; error = null; showCreate = false }
         catch (c: CancellationException) { throw c }
         catch (e: Exception) { error = e.message ?: "创建失败，请重试。" }
         finally { creating = false }
     } }) { Text("创建") } }, dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } })
+
+    actionBook?.let { book ->
+        fun performShelfChange(change: suspend () -> Unit) {
+            scope.launch {
+                updating = true
+                try { change(); reload(); actionBook = null; showMove = false; error = null }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { error = "书架操作未完成，请稍后重试。"; actionBook = null; showMove = false }
+                finally { updating = false }
+            }
+        }
+        if (showMove) {
+            AlertDialog(onDismissRequest = { if (!updating) { showMove = false; actionBook = null } },
+                title = { Text("移动到分类") }, text = {
+                    Column {
+                        names.filter { it != selectedFolder }.forEach { name ->
+                            TextButton(modifier = Modifier.testTag("shelf-move-target:$name"), enabled = !updating, onClick = {
+                                performShelfChange { repository.moveToShelf(selectedFolder, name, book.externalId) }
+                            }) { Text(if (name == "默认书架") "直接放在书架" else name) }
+                        }
+                    }
+                }, confirmButton = { TextButton(enabled = !updating, onClick = { showMove = false; actionBook = null }) { Text("取消") } })
+        } else {
+            AlertDialog(onDismissRequest = { if (!updating) actionBook = null },
+                title = { Text(book.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                text = {
+                    Column {
+                        selectedFolder?.let { current ->
+                            TextButton(enabled = !updating, onClick = {
+                                performShelfChange { repository.moveToShelf(current, "默认书架", book.externalId) }
+                            }) { Text("移出当前分类") }
+                        }
+                        TextButton(enabled = !updating, onClick = { showMove = true }) { Text("移动到其他分类") }
+                        TextButton(enabled = !updating, onClick = {
+                            performShelfChange { repository.removeFromShelf("全部", book.externalId) }
+                        }) { Text("从书架移除", color = MaterialTheme.colorScheme.error) }
+                        Text("仅调整书架，不删除漫画文件、阅读进度或笔记。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    }
+                }, confirmButton = { TextButton(enabled = !updating, onClick = { actionBook = null }) { Text("取消") } })
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalFoundationApi::class)
+internal fun ShelfBookTile(record: CatalogSourceRecord, repository: ReaderRepository, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).testTag("shelf-book:${record.externalId}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CoverImage(record.coverUrl, repository, Modifier.fillMaxWidth().aspectRatio(0.68f))
+        Text(record.title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+internal fun ShelfFolderTile(name: String, records: List<CatalogSourceRecord>, repository: ReaderRepository, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("shelf-folder:$name"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(Modifier.fillMaxWidth().aspectRatio(0.68f), shape = RoundedCornerShape(6.dp), color = Color(0xFFE9E4DF), shadowElevation = 1.dp) {
+            Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("分类 · ${records.size} 本", color = Color(0xFF7D6654), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(2) { row ->
+                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            repeat(2) { column ->
+                                val record = records.getOrNull(row * 2 + column)
+                                if (record != null) CoverImage(record.coverUrl, repository, Modifier.weight(1f).fillMaxHeight())
+                                else Box(Modifier.weight(1f).fillMaxHeight().background(Color.White.copy(alpha = 0.55f), RoundedCornerShape(3.dp)))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Text(name, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+internal fun EventCollectionCard(collection: RecommendationCollection, records: List<CatalogSourceRecord>, repository: ReaderRepository, onClick: () -> Unit) {
+    val matchingCover = records.firstOrNull { it.title.contains(collection.searchTerm, ignoreCase = true) && !it.coverUrl.isNullOrBlank() }?.coverUrl
+    var eventCover by remember(collection.id, matchingCover) { mutableStateOf(collection.coverUrl ?: matchingCover) }
+    LaunchedEffect(collection.id, matchingCover) {
+        if (eventCover == null) {
+            try { eventCover = repository.eventCover(collection) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Existing covers and event metadata remain visible offline. */ }
+        }
+    }
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("event-card:${collection.id}"), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            CoverImage(eventCover, repository, Modifier.width(92.dp).height(136.dp))
+            Column(Modifier.weight(1f).padding(start = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(collection.title, style = MaterialTheme.typography.titleLarge)
+                Text(collection.description, color = Color.Gray, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text("查看相关漫画 ›", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
 }
 
 @Composable
@@ -230,7 +363,7 @@ internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: Reader
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(enabled = !preparing, modifier = Modifier.weight(1f), onClick = { scope.launch {
-                    preparing = true; message = "正在准备阅读…"
+                    preparing = true; message = "正在打开漫画，首次打开较大的 CBR 合集需要建立页码索引，请稍候…"
                     try { onRead(repository.prepareSourceReading(record)); message = null }
                     catch (c: CancellationException) { throw c }
                     catch (e: Exception) { message = e.message ?: "暂时无法打开该漫画。" }
@@ -247,7 +380,7 @@ internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: Reader
         }
         item { Text("简介", style = MaterialTheme.typography.titleMedium); Text(record.synopsis ?: "来源暂未提供简介。", Modifier.padding(top = 8.dp)) }
         item {
-            Text("GetComics · ${record.sourcePublishedAt ?: "发布时间未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+            Text("${if (record.source == "local") "本地文件" else "GetComics"} · ${record.sourcePublishedAt ?: "发布时间未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
             Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
         }
     }
@@ -275,9 +408,9 @@ internal fun ComicSourceRow(record: CatalogSourceRecord, repository: ReaderRepos
 
 @Composable
 internal fun CoverImage(url: String?, repository: ReaderRepository, modifier: Modifier = Modifier) {
-    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var bitmap by remember(url) { mutableStateOf(url?.let(repository::peekCover)) }
     LaunchedEffect(url) {
-        bitmap = null
+        bitmap = url?.let(repository::peekCover)
         try { bitmap = url?.let { repository.loadCover(it) } }
         catch (c: CancellationException) { throw c }
         catch (_: Exception) { /* A failed image must not crash the catalogue. */ }

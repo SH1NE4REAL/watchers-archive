@@ -28,7 +28,7 @@ internal object SourceHttpClient {
             connection.readTimeout = 15_000
             connection.useCaches = false
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("User-Agent", "WatchersArchive-Metadata/0.4")
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; WatchersArchive/0.4)")
             val cancellation = currentCoroutineContext()[Job]?.onSourceCancellation { connection.disconnect() }
             try {
                 val status = connection.responseCode
@@ -72,9 +72,15 @@ internal fun Job.onSourceCancellation(action: () -> Unit): DisposableHandle =
 
 internal fun safeSourceUrl(value: String?, base: String? = null): String? = runCatching {
     if (value.isNullOrBlank()) return@runCatching null
-    val uri = if (base == null) URI(value.trim()) else URI(base).resolve(value.trim())
-    val scheme = uri.scheme?.lowercase(Locale.ROOT)
+    var uri = if (base == null) URI(value.trim()) else URI(base).resolve(value.trim())
+    var scheme = uri.scheme?.lowercase(Locale.ROOT)
     val host = uri.host?.lowercase(Locale.ROOT) ?: return@runCatching null
+    // GetComics currently publishes its own /dls and image links as http://.
+    // Canonicalize that one known source to HTTPS; do not permit arbitrary cleartext.
+    if (scheme == "http" && host in setOf("getcomics.org", "www.getcomics.org")) {
+        uri = URI("https" + uri.toASCIIString().substring(4))
+        scheme = "https"
+    }
     val isLoopback = host in setOf("localhost", "127.0.0.1", "[::1]", "::1")
     if ((scheme != "https" && !(scheme == "http" && isLoopback)) || uri.userInfo != null) return@runCatching null
     uri.normalize().toASCIIString()

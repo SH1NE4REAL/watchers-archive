@@ -7,10 +7,10 @@ import java.util.zip.Inflater
 
 /** Bounded random-access ZIP/ZIP64 reader. It writes no files and never fetches the whole archive. */
 class ZipArchiveReader(
-    private val source: HttpRangeSource,
+    private val source: ArchiveByteSource,
     private val limits: ReaderLimits = ReaderLimits(),
-) {
-    fun open(token: CancellationToken = CancellationToken()): ArchiveIndex {
+) : ComicArchiveReader {
+    override fun open(token: CancellationToken): ArchiveIndex {
         val identity = source.discover(token)
         if (identity.length < 22) corrupt("文件过短，不是 ZIP 归档")
         var transferred = 1L
@@ -154,10 +154,10 @@ class ZipArchiveReader(
         return ArchiveIndex(identity, pages.toList(), directoryOffset, isZip64)
     }
 
-    fun readPage(
+    override fun readPage(
         index: ArchiveIndex,
         pageIndex: Int,
-        token: CancellationToken = CancellationToken(),
+        token: CancellationToken,
     ): ByteArray {
         token.throwIfCancelled()
         val page = index.pages.getOrNull(pageIndex) ?: throw ArchiveException(ArchiveError.INVALID_LENGTH, "页码超出范围")

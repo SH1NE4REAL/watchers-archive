@@ -48,6 +48,38 @@ class ShelfStore(private val file: File) {
 
     fun allItems(): Set<String> = synchronized(lock) { shelves().flatMap { items(it) }.toSet() }
 
+    /** Only collection membership changes; source records and user reading data are untouched. */
+    fun remove(shelfName: String, comicId: String) = synchronized(lock) {
+        val previous = Properties().also { it.putAll(properties) }
+        try {
+            val names = if (shelfName == "全部") shelves() else listOf(shelfName)
+            names.forEach { name ->
+                val key = "shelf.${encode(name)}.items"
+                if (properties.containsKey(key)) properties.setProperty(key, (items(name) - comicId).joinToString(","))
+            }
+            commit()
+        } catch (failure: Throwable) { properties.clear(); properties.putAll(previous); throw failure }
+    }
+
+    /** Move a root book or one category membership in one atomic snapshot. */
+    fun move(from: String?, to: String, comicId: String) = synchronized(lock) {
+        val clean = to.trim()
+        require(clean.isNotBlank() && clean.length <= 40 && clean != "全部") { "请选择有效的分类。" }
+        val previous = Properties().also { it.putAll(properties) }
+        try {
+            if (from == null || from == "全部") {
+                shelves().forEach { name -> properties.setProperty("shelf.${encode(name)}.items", (items(name) - comicId).joinToString(",")) }
+            } else {
+                val key = "shelf.${encode(from)}.items"
+                properties.setProperty(key, (items(from) - comicId).joinToString(","))
+            }
+            val prefix = "shelf.${encode(clean)}."
+            properties.setProperty(prefix + "name", clean)
+            properties.setProperty(prefix + "items", (items(clean) + comicId).joinToString(","))
+            commit()
+        } catch (failure: Throwable) { properties.clear(); properties.putAll(previous); throw failure }
+    }
+
     private fun encode(value: String) = Base64.getUrlEncoder().withoutPadding().encodeToString(value.toByteArray(Charsets.UTF_8))
 
     private fun commit() {

@@ -1,7 +1,7 @@
 # 观察者漫格 · Phase 1
 
-当前修复版：**0.3.1**。启动先进入“官方推荐”，底部仅有“官方推荐 / 我的书架 / 缓存与设置”。
-来源条目详情只有“开始阅读”和“加入书架”；正文检查在后台执行，HTML、CBR、损坏文件和缺少强 ETag 的来源不会进入阅读器。
+当前版本：**0.4.0**。启动先进入“官方推荐”，底部仅有“官方推荐 / 我的书架 / 缓存与设置”。
+来源条目详情只有“开始阅读”和“加入书架”；正文检查在后台执行，HTML、损坏文件和缺少强 ETag 的远程来源不会进入阅读器。支持 ZIP/ZIP64 和普通非固实 RAR4/CBR；RAR5、固实、加密、分卷和 PPM 压缩明确拒绝。
 来源站拒绝访问时保留本地快照，真实来源不依赖电脑测试 IP。大事件专题是有来源入口的检索集合，不能视为已下载、完整或官方排序的漫画合集。
 
 Windows 的 Gradle test worker 无法正确加载中文路径下的类时，使用指向同一工作区的 ASCII Junction：
@@ -75,21 +75,45 @@ For an Android emulator without `adb reverse`, set the app's test endpoint to
 `http://10.0.2.2:8765` on the cache/settings screen. The app refuses to fall back
 to a full download when a source returns HTTP 200 to a Range request.
 
-## Dependency-free core verification
+## Core verification
 
-The pure Kotlin reader and cache tests can also be run without Gradle after the
-Kotlin compiler jars are available. The following command is the exact standalone
-entry point used during Phase 1 verification:
+The core now includes Junrar for bounded RAR4 reading, so use Gradle's runtime
+classpath rather than the old stdlib-only standalone command. Start the fixture
+server, then run:
 
 ```powershell
-$src = (Get-ChildItem core/src/main/kotlin,core/src/test/kotlin -Recurse -Filter *.kt | % FullName)
-$cp = (Resolve-Path .tools/kotlin/*.jar | % Path) -join [IO.Path]::PathSeparator
-java -cp $cp org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -jvm-target 17 `
-  -classpath .tools/kotlin/kotlin-stdlib-2.0.21.jar -d core/build/core-tests.jar $src
-$run = (Resolve-Path core/build/core-tests.jar,.tools/kotlin/*.jar | % Path) -join [IO.Path]::PathSeparator
-java -cp $run org.watchersarchive.core.CoreTestMainKt http://127.0.0.1:8765
+python tools/range_server.py --bind 127.0.0.1 --port 8765
+# In a second shell, with the ASCII workspace/build environment above:
+.\gradlew.bat :core:verifyCore -PtestServer=http://127.0.0.1:8765 --no-daemon
 ```
 
-The runner prints every Range request and checks standard ZIP, ZIP64 offsets above
-4 GiB, malformed responses, cancellation, CRC/compression/path errors, the cache
-hard limit, pinning/LRU, crash cleanup, and persistent progress/bookmarks/notes.
+The runner checks standard ZIP, ZIP64 and large offsets, local byte sources,
+non-solid RAR4, cancellation, CRC, memory/transfer limits and persistent data.
+It never needs a complete multi-GB fixture file.
+
+## 0.4.0 behaviour
+
+- Event collections are full-width vertical cards with sourced cover images.
+- The shelf is a three-column cover grid. Named categories appear as cover folders.
+- Long-press a book to move it between categories, return it to the main shelf or remove
+  all shelf memberships. These actions never delete source files, progress, bookmarks or notes.
+- Cover loading has a 16MiB bitmap memory budget, shared requests, bounded thumbnails
+  and the same 500,000,000-byte disk budget as reading pages. Cached covers are shown
+  immediately; the first load still needs network access.
+- GetComics' own published HTTP image/download links are canonicalized to HTTPS.
+  Only normal public redirects/public download APIs are resolved; login/CAPTCHA/HTML
+  interstitials are never bypassed.
+- Supported RAR4 files use bounded header/page reads. Initial indexing can take time
+  because RAR4 has no ZIP central directory. A 2MiB version-bound block cache retains
+  header data separately so validation and opening do not fetch the index twice.
+- Validated first-page bytes are reused through the normal CacheManager budget.
+- The shelf's Import action opens Android's system document picker. Only the selected
+  seekable document is read through persistent URI permission and 64-bit pread; no
+  whole archive is copied. Cloud/pipe providers without seek support are rejected.
+- Junrar's codec allocation is protected before extraction; PPM compression is rejected
+  before allocating its potentially archive-controlled heap. See THIRD_PARTY_NOTICES.md.
+
+One bounded real source check read page 1 of GetComics post 409443 (RAR4):
+121 pages, 237,924,661B archive, 2,446,144B transferred including indexing,
+1987x3056 JPEG decoded with CRC verification. No full archive or image body was saved.
+This is a JVM + real HTTP proof, not physical-phone acceptance.

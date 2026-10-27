@@ -58,16 +58,21 @@ interface ReaderRepository {
     suspend fun refreshOfficialGuide(): OfficialGuide
     suspend fun refreshOfficialCharacter(): OfficialCharacterProfile
     suspend fun loadCover(url: String): Bitmap?
+    fun peekCover(url: String): Bitmap? = null
+    suspend fun eventCover(collection: RecommendationCollection): String? = collection.coverUrl
     suspend fun inspectGetComics(record: CatalogSourceRecord): SourceAssetInspection
     suspend fun validateSourceAsset(asset: SourceAsset): SourceAsset
     suspend fun shelfNames(): List<String>
     suspend fun createShelf(name: String)
     suspend fun addToShelf(shelf: String, comicId: String)
+    suspend fun removeFromShelf(shelf: String, comicId: String)
+    suspend fun moveToShelf(from: String?, to: String, comicId: String)
     suspend fun shelfItems(shelf: String): Set<String>
     suspend fun searchGetComics(query: String, page: Int = 1): List<CatalogSourceRecord>
     suspend fun savedOfficialGuides(): List<OfficialGuide>
     suspend fun savedOfficialCharacters(): List<OfficialCharacterProfile>
     suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection?
     suspend fun prepareSourceReading(record: CatalogSourceRecord): DemoComic
+    suspend fun importLocalComic(uri: String): CatalogSourceRecord
     fun traceLines(): List<String>
 }

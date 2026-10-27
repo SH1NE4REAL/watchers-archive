@@ -11,8 +11,8 @@ android {
         applicationId = "org.watchersarchive.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true; buildConfig = true }
@@ -37,7 +37,7 @@ android {
 dependencies {
     implementation("org.jsoup:jsoup:1.18.3")
     testImplementation("org.json:json:20240303")
-    implementation(project(":core"))
+    implementation(project(path = ":core", configuration = "androidArchive"))
     implementation("androidx.core:core-ktx:1.15.0")
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.activity:activity-compose:1.9.3")

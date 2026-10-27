@@ -9,17 +9,17 @@ class HttpRangeSource @JvmOverloads constructor(
     private val url: String,
     private val limits: ReaderLimits = ReaderLimits(),
     private val observer: (RangeTrace) -> Unit = {},
-) {
+) : ArchiveByteSource {
     private data class Response(val bytes: ByteArray, val identity: RemoteIdentity)
 
-    fun discover(token: CancellationToken = CancellationToken()): RemoteIdentity =
+    override fun discover(token: CancellationToken): RemoteIdentity =
         fetch(url, null, 0, 1, token).identity
 
-    fun readRange(
+    override fun readRange(
         identity: RemoteIdentity,
         start: Long,
         length: Int,
-        token: CancellationToken = CancellationToken(),
+        token: CancellationToken,
     ): ByteArray {
         if (start < 0 || length <= 0 || start > identity.length - length.toLong()) {
             throw ArchiveException(ArchiveError.INVALID_LENGTH, "字节范围超出文件边界")

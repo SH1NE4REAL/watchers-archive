@@ -37,7 +37,7 @@ enum class ArchiveError {
 class ArchiveException(val code: ArchiveError, message: String, cause: Throwable? = null) :
     Exception(message, cause)
 
-/** Strong ETag is mandatory in Phase 1: Last-Modified alone is not a safe byte identity. */
+/** HTTP uses a strong ETag; a local source uses its own opaque file-version token. */
 data class RemoteIdentity(
     val url: String,
     val length: Long,

@@ -16,7 +16,7 @@ import org.watchersarchive.core.ArchiveException
 import org.watchersarchive.core.CancellationToken
 import org.watchersarchive.core.HttpRangeSource
 import org.watchersarchive.core.ReaderLimits
-import org.watchersarchive.core.ZipArchiveReader
+import org.watchersarchive.core.ComicArchiveReaders
 import java.io.IOException
 import java.net.URI
 import java.net.URLEncoder
@@ -28,6 +28,8 @@ class GetComicsCatalogService(
     private val now: () -> String = { Instant.now().toString() },
     private val decodeImage: (ByteArray) -> Boolean = ::decodeProbeImage,
     private val fetchText: suspend (String) -> String = { SourceHttpClient.text(it) },
+    private val onValidatedPage: (org.watchersarchive.core.ArchiveIndex, ByteArray) -> Unit = { _, _ -> },
+    private val resolveAsset: suspend (SourceAsset) -> SourceAsset = { SourceResolver().resolve(it) },
 ) {
     suspend fun fetchWordPressPosts(
         baseUrl: String = "https://getcomics.org",
@@ -124,9 +126,8 @@ class GetComicsCatalogService(
         val assets = links.map { candidate ->
             val uri = URI(candidate)
             val format = declaredFormat(candidate)
-            val gated = isIntermediate(candidate) || (knownHost(candidate) && format == null)
+            val gated = knownHost(candidate) && format == null && !isPixeldrainShare(candidate)
             val status = when {
-                format in setOf("CBR", "RAR") -> SourceAssetStatus.UNSUPPORTED_FORMAT
                 gated -> SourceAssetStatus.NEEDS_USER_ACTION
                 else -> SourceAssetStatus.METADATA_ONLY
             }
@@ -135,9 +136,8 @@ class GetComicsCatalogService(
                 candidateUrl = candidate, fileName = uri.path.substringAfterLast('/').takeIf { it.isNotBlank() },
                 declaredFormat = format, declaredSize = sizeLabel(document.text()), status = status,
                 reason = when (status) {
-                    SourceAssetStatus.UNSUPPORTED_FORMAT -> "此来源为 CBR/RAR，当前阅读器尚不支持。"
                     SourceAssetStatus.NEEDS_USER_ACTION -> "来源需要在其正常页面完成操作，尚无可直接读取的文件。"
-                    else -> "尚未确认文件格式和页面内容。"
+                    else -> "正在等待来源解析和文件内容检查。"
                 }, checkedAt = now(),
             )
         }
@@ -148,20 +148,20 @@ class GetComicsCatalogService(
         inspectArticleHtml(articleUrl, fetchText(articleUrl))
     }
 
-    /** READY proves ZIP directory + first page + CRC + Android image decode, not merely one byte. */
+    /** READY proves ZIP/RAR4 index + first page + CRC + image decode, not merely one byte. */
     suspend fun validateAsset(asset: SourceAsset): SourceAsset = withContext(Dispatchers.IO) {
         val checked = now()
-        fun result(status: SourceAssetStatus, message: String) = asset.copy(
+        val resolved = resolveAsset(asset)
+        fun result(status: SourceAssetStatus, message: String) = resolved.copy(
             status = status, reason = message, checkedAt = checked,
             verifiedUrl = null, verifiedETag = null, verifiedLength = null, verifiedPageCount = null,
         )
-        val url = safeSourceUrl(asset.candidateUrl)
-            ?: return@withContext result(SourceAssetStatus.UNAUTHORIZED, "文件地址不安全或无效。")
-        if (isIntermediate(url)) return@withContext result(SourceAssetStatus.NEEDS_USER_ACTION, "来源需要在其正常页面完成操作。")
-        if (asset.status == SourceAssetStatus.NEEDS_USER_ACTION) return@withContext result(SourceAssetStatus.NEEDS_USER_ACTION, asset.reason)
-        if (declaredFormat(url) in setOf("CBR", "RAR") || asset.declaredFormat in setOf("CBR", "RAR")) {
-            return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "此文件为 CBR/RAR，当前阅读器尚不支持。")
+        if (resolved.status in setOf(SourceAssetStatus.NEEDS_USER_ACTION, SourceAssetStatus.UNAUTHORIZED,
+                SourceAssetStatus.EXPIRED, SourceAssetStatus.TRANSIENT_ERROR, SourceAssetStatus.RANGE_UNSUPPORTED)) {
+            return@withContext result(resolved.status, resolved.reason)
         }
+        val url = safeSourceUrl(resolved.candidateUrl)
+            ?: return@withContext result(SourceAssetStatus.UNAUTHORIZED, "文件地址不安全或无效。")
         val token = CancellationToken()
         val cancellation = currentCoroutineContext()[Job]?.onSourceCancellation { token.cancel() }
         try {
@@ -170,22 +170,25 @@ class GetComicsCatalogService(
             val source = HttpRangeSource(url, limits)
             val identity = source.discover(token)
             val prefix = source.readRange(identity, 0, minOf(8L, identity.length).toInt(), token)
-            val zipSignature = prefix.size >= 4 && prefix[0] == 0x50.toByte() && prefix[1] == 0x4b.toByte() &&
-                prefix[2] == 0x03.toByte() && prefix[3] == 0x04.toByte()
-            if (!zipSignature) return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "来源返回网页、RAR 或其他非 CBZ 文件。")
-            val reader = ZipArchiveReader(source, limits)
-            val index = reader.open(token)
-            if (index.identity.eTag != identity.eTag || index.identity.length != identity.length) {
-                return@withContext result(SourceAssetStatus.EXPIRED, "来源文件已变化，请重新读取详情。")
+            val rar4Signature = prefix.size >= 7 && prefix.copyOfRange(0, 7).contentEquals(byteArrayOf(0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00))
+            // Some valid ZIP64/SFX archives have bytes before the first local
+            // header. The factory checks a bounded EOCD tail before rejecting
+            // unknown magic; the strict parser still rejects HTML or bad data.
+            ComicArchiveReaders.create(source, limits, token).use { reader ->
+                val index = reader.open(token)
+                if (index.identity.eTag != identity.eTag || index.identity.length != identity.length) {
+                    return@withContext result(SourceAssetStatus.EXPIRED, "来源文件已变化，请重新读取详情。")
+                }
+                val firstPage = reader.readPage(index, 0, token)
+                if (!decodeImage(firstPage)) return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "文件中的页面无法解码。")
+                currentCoroutineContext().ensureActive()
+                onValidatedPage(index, firstPage)
+                resolved.copy(
+                    status = SourceAssetStatus.READY, reason = "文件目录和首张页面已验证。", checkedAt = checked,
+                    declaredFormat = if (rar4Signature) "CBR" else "CBZ", verifiedUrl = index.identity.url, verifiedETag = index.identity.eTag,
+                    verifiedLength = index.identity.length, verifiedPageCount = index.pages.size,
+                )
             }
-            val firstPage = reader.readPage(index, 0, token)
-            if (!decodeImage(firstPage)) return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "文件中的页面无法解码。")
-            currentCoroutineContext().ensureActive()
-            asset.copy(
-                status = SourceAssetStatus.READY, reason = "文件目录和首张页面已验证。", checkedAt = checked,
-                declaredFormat = "CBZ", verifiedUrl = index.identity.url, verifiedETag = index.identity.eTag,
-                verifiedLength = index.identity.length, verifiedPageCount = index.pages.size,
-            )
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: ArchiveException) {
@@ -193,7 +196,7 @@ class GetComicsCatalogService(
             when (error.code) {
                 ArchiveError.RANGE_NOT_SUPPORTED, ArchiveError.INVALID_CONTENT_RANGE -> result(SourceAssetStatus.RANGE_UNSUPPORTED, "此来源暂不支持按页读取。")
                 ArchiveError.UNSUPPORTED_ARCHIVE, ArchiveError.UNSUPPORTED_COMPRESSION, ArchiveError.UNSUPPORTED_IMAGE,
-                ArchiveError.CRC_MISMATCH, ArchiveError.CORRUPT_ARCHIVE, ArchiveError.LIMIT_EXCEEDED -> result(SourceAssetStatus.UNSUPPORTED_FORMAT, "此文件格式、页面大小或完整性不符合当前阅读要求。")
+                ArchiveError.CRC_MISMATCH, ArchiveError.CORRUPT_ARCHIVE, ArchiveError.LIMIT_EXCEEDED -> result(SourceAssetStatus.UNSUPPORTED_FORMAT, error.message ?: "此文件格式、页面大小或完整性不符合当前阅读要求。")
                 ArchiveError.OBJECT_CHANGED -> result(SourceAssetStatus.EXPIRED, "来源文件已变化，请稍后重试。")
                 ArchiveError.IDENTITY_REQUIRED -> result(SourceAssetStatus.METADATA_ONLY, "此来源没有可靠的文件版本标识，暂不能在线阅读。")
                 else -> result(SourceAssetStatus.TRANSIENT_ERROR, "暂时无法读取文件，请稍后重试。")
@@ -219,6 +222,9 @@ class GetComicsCatalogService(
         return listOf("vikingfile.com", "vik1ngfile.site", "pixeldrain.com", "datanodes.to", "terabox.com").any { host == it || host.endsWith(".$it") }
     }
     private fun isIntermediate(url: String): Boolean = URI(url).path.orEmpty().startsWith("/dls/")
+    private fun isPixeldrainShare(url: String): Boolean = URI(url).let { uri ->
+        uri.host?.lowercase(Locale.ROOT) in setOf("pixeldrain.com", "www.pixeldrain.com") && uri.path.orEmpty().startsWith("/u/")
+    }
     private fun sizeLabel(text: String): String? = Regex("(?i)\\bSize\\s*[:：-]\\s*(\\d+(?:[.,]\\d+)?\\s*(?:[KMGT]i?B|bytes))\\b").find(text)?.groupValues?.get(1)?.replace(Regex("\\s+"), " ")
     private fun yearLabel(text: String): String? = Regex("(?i)\\bYear\\s*[:：-]\\s*(\\d{4}(?:\\s*[–-]\\s*\\d{4})?)\\b").find(text)?.groupValues?.get(1)
     private fun formatLabel(text: String): String? = Regex("(?i)\\b(CBZ|ZIP|CBR|RAR)\\b").find(text)?.value?.uppercase(Locale.ROOT)

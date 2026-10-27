@@ -5,6 +5,8 @@ fun main(args: Array<String>) {
     val baseUrl = args.firstOrNull() ?: "http://127.0.0.1:8765"
     println("[core] reader integration: $baseUrl")
     ReaderIntegration.run(baseUrl)
+    LocalArchiveSourceIntegration.run()
+    RarArchiveIntegration.run()
     println("[core] cache and persistence tests")
     runCacheTests { name, test ->
         try {

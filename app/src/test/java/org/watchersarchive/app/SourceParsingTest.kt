@@ -56,6 +56,17 @@ class SourceParsingTest {
         assertEquals("This is the synopsis.", record.synopsis)
     }
 
+    @Test fun legacyGetComicsHttpCoversAndDownloadRoutesUseCanonicalHttps() {
+        val json = """[{"id":12,"link":"https://getcomics.org/marvel/test/","title":{"rendered":"Test"},
+          "yoast_head_json":{"og_image":[{"url":"http://getcomics.org/share/uploads/cover.jpg"}]},
+          "content":{"rendered":"<a href='http://getcomics.org/dls/opaque'>Download</a>"}}]"""
+        val record = service.parseWordPressPosts(json, "https://getcomics.org/wp-json/wp/v2/posts").single()
+        assertEquals("https://getcomics.org/share/uploads/cover.jpg", record.coverUrl)
+        val assets = service.inspectArticleHtml(record.canonicalUrl, "<a href='http://getcomics.org/dls/opaque'>Download</a>").assets
+        assertEquals("https://getcomics.org/dls/opaque", assets.single().candidateUrl)
+        assertEquals(SourceAssetStatus.METADATA_ONLY, assets.single().status)
+    }
+
     @Test fun articleCandidatesResolveRelativeLinksAndKeepGatedHostsUnavailable() {
         val article = """<article id="post-12">
           <a href='/dls/opaque'>Download</a><a href='https://vikingfile.com/f/abc'>Host</a>
@@ -65,9 +76,9 @@ class SourceParsingTest {
         val inspection = service.inspectArticleHtml("https://getcomics.org/marvel/test/", article)
         assertEquals(4, inspection.assets.size)
         assertFalse(inspection.canStartRemoteReader)
-        assertEquals(2, inspection.assets.count { it.status == SourceAssetStatus.NEEDS_USER_ACTION })
-        assertEquals(1, inspection.assets.count { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT })
-        assertEquals(1, inspection.assets.count { it.status == SourceAssetStatus.METADATA_ONLY })
+        assertEquals(1, inspection.assets.count { it.status == SourceAssetStatus.NEEDS_USER_ACTION })
+        assertEquals(0, inspection.assets.count { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT })
+        assertEquals(3, inspection.assets.count { it.status == SourceAssetStatus.METADATA_ONLY })
     }
 
     @Test fun searchIsSentToRemoteCategoryInsteadOfOnlyFilteringLatestSnapshot() = runBlocking {
