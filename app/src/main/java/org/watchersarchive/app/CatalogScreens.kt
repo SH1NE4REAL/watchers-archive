@@ -440,7 +440,7 @@ internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: Reader
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(enabled = !preparing, modifier = Modifier.weight(1f), onClick = { scope.launch {
-                    preparing = true; message = "正在打开漫画，首次打开较大的 CBR 合集需要建立页码索引，请稍候…"
+                    preparing = true; message = "正在打开漫画…"
                     try { onRead(repository.prepareSourceReading(record)); message = null }
                     catch (c: CancellationException) { throw c }
                     catch (e: Exception) { message = e.message ?: "暂时无法打开该漫画。" }
@@ -455,10 +455,10 @@ internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: Reader
             if (preparing) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 10.dp))
             message?.let { Text(it, Modifier.padding(top = 10.dp), color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
         }
+        item { DownloadComicAction(record, repository) }
         item { Text("简介", style = MaterialTheme.typography.titleMedium); Text(record.synopsis ?: "来源暂未提供简介。", Modifier.padding(top = 8.dp)) }
         item {
-            Text("${if (record.source == "local") "本地文件" else "GetComics"} · ${record.sourcePublishedAt ?: "发布时间未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-            Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+            Text("来源：${if (record.source == "local") "手机本地文件" else "GetComics"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
         }
     }
     if (chooseShelf) AlertDialog(onDismissRequest = { chooseShelf = false }, title = { Text("加入书架") }, text = {

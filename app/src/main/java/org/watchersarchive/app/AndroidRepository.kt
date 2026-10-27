@@ -8,9 +8,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -59,6 +61,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private lateinit var catalogMetadata: CatalogMetadataStore
         private lateinit var shelfStore: ShelfStore
         private lateinit var catalogSnapshots: CatalogSnapshots
+        private lateinit var offlineStore: OfflineDownloadStore
+        val downloadJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
         /**
          * Cache and persistent records are opened lazily from a suspend API. The
@@ -77,6 +81,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                     val createdSnapshots = CatalogSnapshots(File(root, "catalog-snapshots.json"))
                     val createdLibrary = PersistentLibrary(File(root, "persistent-library"))
                     try {
+                        val createdOffline = OfflineDownloadStore(File(root, "offline-downloads"))
                         demoComics.forEach { comic ->
                             createdLibrary.registerComic(comic.id, comic.title, comic.path, true)
                         }
@@ -85,6 +90,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                         catalogMetadata = createdCatalog
                         shelfStore = createdShelves
                         catalogSnapshots = createdSnapshots
+                        offlineStore = createdOffline
                         initialized = true
                     } catch (error: Throwable) {
                         createdLibrary.close()
@@ -102,6 +108,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val metadata: CatalogMetadataStore get() = check(initialized) { "Repository state is not initialized" }.let { catalogMetadata }
         val shelves: ShelfStore get() = check(initialized) { "Repository state is not initialized" }.let { shelfStore }
         val snapshots: CatalogSnapshots get() = check(initialized) { "Repository state is not initialized" }.let { catalogSnapshots }
+        val offline: OfflineDownloadStore get() = check(initialized) { "Repository state is not initialized" }.let { offlineStore }
     }
 
     private val base: String
@@ -129,7 +136,12 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                     "该来源尚无已验证的漫画文件，请在详情页重试。"
                 }
             }
-            source = archiveSource(comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}")
+            val offline = if (comic.isTestContent) null else state.offline.completed(comic.id)
+            source = if (offline != null) OfflineArchiveSource(offline, state.limits)
+                else {
+                    require(comic.sourceUrl?.startsWith("file:") != true) { "离线文件已不可用，请重新下载漫画。" }
+                    archiveSource(comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}")
+                }
             reader = ComicArchiveReaders.create(source, state.limits, token)
             val index = reader.open(token)
             if (!comic.isTestContent && (index.identity.eTag != comic.verifiedETag || index.identity.length != comic.verifiedLength)) {
@@ -340,6 +352,12 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     override suspend fun prepareSourceReading(record: CatalogSourceRecord): DemoComic = withContext(Dispatchers.IO) {
         state.ensureInitialized()
         if (record.source == "local") return@withContext prepareLocalReading(record)
+        state.offline.completed(record.externalId)?.let { download ->
+            return@withContext DemoComic(record.externalId, record.title, record.synopsis.orEmpty(), download.spec.fileName.orEmpty(),
+                series = "GetComics", year = record.yearLabel.orEmpty(), isTestContent = false,
+                sourceUrl = download.file.toURI().toString(), sourceAssetStatus = SourceAssetStatus.READY,
+                sourceRecordId = record.externalId, verifiedETag = download.spec.eTag, verifiedLength = download.spec.length)
+        }
         val raw = inspectGetComics(record)
         val checked = mutableListOf<SourceAsset>()
         var ready: SourceAsset? = null
@@ -369,6 +387,97 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             pageCountHint = asset.verifiedPageCount, isTestContent = false, sourceUrl = asset.verifiedUrl,
             sourceAssetStatus = SourceAssetStatus.READY, sourceRecordId = record.externalId,
             verifiedETag = asset.verifiedETag, verifiedLength = asset.verifiedLength)
+    }
+
+    override suspend fun offlineStatus(comicId: String): OfflineDownloadStatus? = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.offline.status(comicId)
+    }
+
+    override suspend fun offlineDownloads(): List<OfflineDownloadStatus> = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.offline.statuses()
+    }
+
+    override suspend fun downloadComic(record: CatalogSourceRecord, wifiOnly: Boolean) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        require(record.source != "local") { "这部漫画已保存在手机中，可以直接阅读。" }
+        if (state.offline.completed(record.externalId) != null) return@withContext
+        if (state.offline.status(record.externalId)?.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) return@withContext
+        val previous = state.offline.spec(record.externalId)
+        // A prior worker's final PAUSED/FAILED write must finish before QUEUED
+        // is saved for its replacement, including a retry from article details.
+        if (previous != null) pauseDownload(record.externalId)
+        // Resuming uses the durable version-bound checkpoint; a worker rechecks
+        // length/ETag before accepting any new bytes.
+        val spec = previous ?: prepareSourceReading(record).let { comic ->
+            OfflineDownloadSpec(record.externalId, record.title, checkNotNull(comic.sourceUrl),
+                checkNotNull(comic.verifiedETag), checkNotNull(comic.verifiedLength), comic.path)
+        }
+        // Once preparation succeeded, commit this explicit request even if the
+        // detail composition is disposed while WorkManager persists its task.
+        withContext(NonCancellable) {
+            state.metadata.upsertAll(listOf(record))
+            state.shelves.add("默认书架", record.externalId)
+            state.offline.enqueue(spec)
+            try { OfflineDownloads.schedule(state.context, record.externalId, wifiOnly); Unit }
+            catch (failure: Exception) {
+                state.offline.markFailed(record.externalId, "下载任务未能启动，请重试。")
+                throw failure
+            }
+        }
+    }
+
+    override suspend fun pauseDownload(comicId: String) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        OfflineDownloads.pause(state.context, comicId)
+        state.downloadJobs[comicId]?.let { running ->
+            if (running != currentCoroutineContext()[Job]) running.cancelAndJoin()
+        }
+        state.offline.markPaused(comicId)
+    }
+
+    override suspend fun resumeDownload(comicId: String, wifiOnly: Boolean) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        if (state.offline.completed(comicId) != null) return@withContext
+        pauseDownload(comicId)
+        state.offline.enqueue(checkNotNull(state.offline.spec(comicId)) { "请从漫画详情重新下载。" })
+        OfflineDownloads.schedule(state.context, comicId, wifiOnly)
+        Unit
+    }
+
+    override suspend fun removeOfflineComic(comicId: String) = withContext(Dispatchers.IO) {
+        pauseDownload(comicId)
+        // Store leases also protect local archive reads. This only removes this
+        // app's explicit download, never shelf/progress or a user's SAF document.
+        state.offline.remove(comicId)
+    }
+
+    internal suspend fun runOfflineDownload(comicId: String, onProgress: (OfflineDownloadStatus) -> Unit) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        val job = checkNotNull(currentCoroutineContext()[Job])
+        check(state.downloadJobs.putIfAbsent(comicId, job) == null) { "这部漫画正在下载。" }
+        val token = CancellationToken()
+        val cancellation = job.onCancellation { token.cancel() }
+        try {
+            val spec = checkNotNull(state.offline.spec(comicId)) { "下载任务已不存在。" }
+            OfflineDownloadEngine(state.offline, state.limits).download(spec, token, onProgress)
+            currentCoroutineContext().ensureActive()
+            Unit
+        } finally {
+            cancellation.dispose()
+            state.downloadJobs.remove(comicId, job)
+        }
+    }
+
+    internal suspend fun markOfflineDownloadFailure(comicId: String, message: String) = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.offline.markFailed(comicId, message)
+    }
+
+    internal suspend fun markOfflineDownloadRetry(comicId: String) = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.offline.spec(comicId)?.let { state.offline.enqueue(it) }; Unit
+    }
+
+    internal suspend fun markOfflineDownloadPaused(comicId: String) = withContext(Dispatchers.IO) {
+        state.ensureInitialized(); state.offline.markPaused(comicId)
     }
     override suspend fun importLocalComic(uri: String): CatalogSourceRecord = withContext(Dispatchers.IO) {
         state.ensureInitialized()

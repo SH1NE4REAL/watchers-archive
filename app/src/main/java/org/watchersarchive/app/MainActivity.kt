@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -66,7 +68,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,7 +76,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.view.WindowCompat
@@ -83,6 +83,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlin.math.abs
 import java.net.URI
+import org.watchersarchive.core.ArchiveError
+import org.watchersarchive.core.ArchiveException
 
 private val ArchiveRed = Color(0xFFBE2834)
 private val PageBackground = Color(0xFFF4F4F5)
@@ -197,7 +199,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
 }
 
 @Composable
-private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack: () -> Unit) {
+internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var session by remember(comic.id) { mutableStateOf<ReaderSession?>(null) }
     var page by remember(comic.id) { mutableStateOf<ReaderPage?>(null) }
@@ -206,23 +208,19 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
     var error by remember(comic.id) { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var bookmarks by remember(comic.id) { mutableStateOf(emptySet<Int>()) }
-    var cache by remember { mutableStateOf<CacheSnapshot?>(null) }
-    var traces by remember { mutableStateOf(emptyList<String>()) }
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(false) }
-    var diagnosticsVisible by remember(comic.id) { mutableStateOf(false) }
     var translationVisible by remember(comic.id) { mutableStateOf(false) }
     LaunchedEffect(page?.index) { translationVisible = false }
     suspend fun load(index: Int) {
         requestedIndex = index; busy = true; error = null; notice = null
         try {
             page = checkNotNull(session) { "尚未打开归档，请重新打开。" }.loadPage(index)
-            cache = repository.cacheSnapshot()
         } catch (e: CancellationException) {
-            notice = "读取已取消；未完成页面不会提交缓存。"; throw e
+            notice = "已取消读取。"; throw e
         } catch (e: Exception) {
-            error = e.message ?: e.javaClass.simpleName
-        } finally { busy = false; traces = repository.traceLines().takeLast(8) }
+            error = readerErrorMessage(e)
+        } finally { busy = false }
     }
 
     LaunchedEffect(comic.id) {
@@ -233,7 +231,7 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                 val restored = repository.lastPage(comic.id).coerceIn(0, (session!!.totalPages - 1).coerceAtLeast(0))
                 load(restored)
             } catch (e: CancellationException) { notice = "读取已取消。"; throw e }
-            catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+            catch (e: Exception) { error = readerErrorMessage(e) }
             finally { busy = false }
         }
         try { awaitCancellation() }
@@ -250,10 +248,6 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
             }
         }
     }
-    LaunchedEffect(comic.id) {
-        while (true) { traces = repository.traceLines().takeLast(8); delay(750) }
-    }
-
     // Keep the displayed page pinned while Compose owns the corresponding UI. When
     // navigation replaces it (or the screen leaves composition), release only that
     // page lease; the session still owns any in-flight/candidate leases.
@@ -282,7 +276,7 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
         } ?: Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (busy) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp))
             Spacer(Modifier.height(14.dp))
-            Text(if (busy) "正在读取归档目录与页面…" else "未取得可显示页面", color = Color.White)
+            Text(if (busy) "正在打开漫画…" else "暂时无法显示漫画", color = Color.White)
             error?.let { Text(it, color = Color(0xFFFFB4AB), modifier = Modifier.padding(20.dp)) }
         }
 
@@ -305,7 +299,8 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                             try {
                                 repository.setBookmark(comic.id, current.index, current.index !in bookmarks)
                                 bookmarks = repository.bookmarkPages(comic.id)
-                            } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                            } catch (e: CancellationException) { throw e }
+                            catch (_: Exception) { error = "书签未能保存，请重试。" }
                         }
                     }) { Text(if (page?.index?.let { it in bookmarks } == true) "已书签" else "书签", color = Color.White) }
                     TextButton(enabled = page != null && !busy, onClick = { translationVisible = true }) { Text("译文", color = Color.White) }
@@ -315,25 +310,11 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = ArchiveRed)
                     error?.let { ErrorText(it) }
                     notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.LightGray, modifier = Modifier.padding(vertical = 4.dp)) }
-                    page?.let {
-                        Text("${if (it.fromCache) "页面缓存命中" else "页面已解码"} · 本次传输 ${it.transferredBytes} 字节", color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
-                    }
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(enabled = !busy && (page?.index ?: 0) > 0, modifier = Modifier.weight(1f), onClick = { task = scope.launch { load((page?.index ?: 0) - 1) } }) { Text("上一页") }
                         Button(enabled = !busy && page != null && page!!.index + 1 < page!!.total, modifier = Modifier.weight(1f), onClick = { task = scope.launch { load(page!!.index + 1) } }) { Text("下一页") }
                         if (busy) OutlinedButton(onClick = { task?.cancel() }) { Text("取消") }
                         else if (error != null && session != null) OutlinedButton(onClick = { task = scope.launch { load(requestedIndex) } }) { Text("重试") }
-                    }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("缓存 ${cache?.let { formatBytes(it.committedBytes) } ?: "—"} / 500 MB", Modifier.weight(1f), color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
-                        TextButton(onClick = { scope.launch {
-                            try { notice = repository.clearCache(); cache = repository.cacheSnapshot() }
-                            catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-                        } }) { Text("清理缓存", style = MaterialTheme.typography.labelSmall) }
-                        TextButton(onClick = { diagnosticsVisible = !diagnosticsVisible }) { Text(if (diagnosticsVisible) "隐藏日志" else "调试", style = MaterialTheme.typography.labelSmall) }
-                    }
-                    if (diagnosticsVisible && traces.isNotEmpty()) Column(Modifier.fillMaxWidth().height(82.dp).verticalScroll(rememberScrollState()).background(Color(0xFF242428)).padding(6.dp)) {
-                        traces.forEach { Text(it, color = Color.LightGray, fontSize = 9.sp, fontFamily = FontFamily.Monospace, lineHeight = 12.sp) }
                     }
                 }
             }
@@ -342,7 +323,8 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
 }
 
 @Composable
-private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -> Unit) {
+@OptIn(ExperimentalFoundationApi::class)
+internal fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -> Unit) {
     val scope = rememberCoroutineScope()
     var snapshot by remember { mutableStateOf<CacheSnapshot?>(null) }
     var endpoint by remember { mutableStateOf(repository.baseUrl) }
@@ -353,35 +335,39 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
     var preload by remember { mutableStateOf(repository.prefetchEnabled) }
     LaunchedEffect(Unit) {
         try { snapshot = repository.cacheSnapshot() }
-        catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+        catch (e: CancellationException) { throw e }
+        catch (_: Exception) { error = "暂时无法读取存储状态，请稍后重试。" }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("版本 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        Text("版本 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall,
+            modifier = if (BuildConfig.DEBUG) Modifier.combinedClickable(onClick = {}, onLongClick = { showDeveloper = !showDeveloper }) else Modifier)
+        OfflineDownloadsCard(repository)
         WhiteCard {
             Text("临时阅读缓存", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("${snapshot?.let { formatBytes(it.committedBytes) } ?: "—"} / 500 MB", style = MaterialTheme.typography.headlineSmall)
             LinearProgressIndicator(progress = { snapshot?.let { (it.committedBytes.toDouble() / it.limitBytes).toFloat().coerceIn(0f, 1f) } ?: 0f }, modifier = Modifier.fillMaxWidth())
-            Text("硬上限 500,000,000 字节\n已提交：${snapshot?.committedBytes ?: "—"} 字节\n未提交（预留+临时）：${snapshot?.reservedBytes ?: "—"} 字节\n被读取任务占用：${snapshot?.pinnedEntries ?: "—"} 项", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(enabled = !busy, onClick = { scope.launch {
                 busy = true; error = null
-                try { result = repository.clearCache(); snapshot = repository.cacheSnapshot() }
-                catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+                try { repository.clearCache(); snapshot = repository.cacheSnapshot(); result = "已清理可释放的临时内容。" }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { error = "暂时无法清理，请稍后重试。" }
                 finally { busy = false }
-            } }) { Text("清理可清理缓存") }
-            Text("目录、阅读进度、书签与笔记独立持久保存。当前使用的页面不会被清理。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            } }) { Text("清理临时内容") }
+            Text("自动管理，最多占用 500 MB。清理不会删除阅读进度、书签或笔记。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
         WhiteCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("连续翻页加速", fontWeight = FontWeight.Bold)
-                    Text("阅读当前页时最多预读后面两页，计入原有缓存上限，可关闭以减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text("提前准备后续页面，让翻页更顺畅。关闭可减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 }
                 androidx.compose.material3.Switch(checked = preload, onCheckedChange = { preload = it; repository.prefetchEnabled = it })
             }
         }
-        TextButton(onClick = { showDeveloper = !showDeveloper }) { Text(if (showDeveloper) "收起开发测试" else "开发测试") }
-        if (showDeveloper) WhiteCard {
+        if (BuildConfig.DEBUG && showDeveloper) WhiteCard {
             Text("开发测试（仅测试漫画需要电脑）", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            TextButton(onClick = { showDeveloper = false }) { Text("收起开发验证") }
+            Text("硬上限 500,000,000 字节\n已提交：${snapshot?.committedBytes ?: "—"} 字节\n未提交（预留+临时）：${snapshot?.reservedBytes ?: "—"} 字节\n被读取任务占用：${snapshot?.pinnedEntries ?: "—"} 项", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(endpoint, { endpoint = it }, Modifier.fillMaxWidth(), label = { Text("服务器基础地址") }, singleLine = true)
             Text("模拟器： http://10.0.2.2:8765\nadb reverse 后： http://127.0.0.1:8765", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             Button(onClick = {
@@ -395,12 +381,26 @@ private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) ->
         }
         result?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { ErrorText(it) }
-        if (showDeveloper) WhiteCard {
+        if (BuildConfig.DEBUG && showDeveloper) WhiteCard {
             Text("测试漫画", fontWeight = FontWeight.Bold)
             Text("目录、书架和真实来源不使用上述电脑地址。只有以下自建测试漫画依赖测试服务器。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             repository.comics.forEach { comic -> TextButton(onClick = { onOpenTest(comic) }) { Text(comic.title) } }
         }
     }
+}
+
+private fun readerErrorMessage(failure: Exception): String = when (failure) {
+    is ArchiveException -> when (failure.code) {
+        ArchiveError.CANCELLED -> "已取消读取。"
+        ArchiveError.NETWORK, ArchiveError.HTTP_ERROR -> "暂时无法加载，请检查网络后重试。"
+        ArchiveError.OBJECT_CHANGED -> "漫画来源已更新，请返回详情重新打开。"
+        ArchiveError.CORRUPT_ARCHIVE, ArchiveError.CRC_MISMATCH, ArchiveError.INVALID_LENGTH -> "漫画文件可能已损坏，请重新打开后重试。"
+        ArchiveError.UNSUPPORTED_ARCHIVE, ArchiveError.UNSUPPORTED_COMPRESSION, ArchiveError.UNSUPPORTED_IMAGE -> "当前版本暂不支持这部漫画的文件格式。"
+        ArchiveError.LIMIT_EXCEEDED -> "这部漫画的文件或页面过大，暂时无法打开。"
+        ArchiveError.RANGE_NOT_SUPPORTED, ArchiveError.INVALID_CONTENT_RANGE, ArchiveError.IDENTITY_REQUIRED -> "此漫画来源暂时无法稳定读取，请稍后重试。"
+    }
+    is SecurityException -> "无法访问本地文件，请重新导入漫画。"
+    else -> "暂时无法打开漫画，请返回后重试。"
 }
 
 @Composable
