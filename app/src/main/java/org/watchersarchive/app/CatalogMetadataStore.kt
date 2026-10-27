@@ -29,7 +29,8 @@ class CatalogMetadataStore(private val file: File) {
             properties.setProperty(prefix + "cover", record.coverUrl.orEmpty())
             properties.setProperty(prefix + "published", record.sourcePublishedAt.orEmpty())
             properties.setProperty(prefix + "modified", record.sourceModifiedAt.orEmpty())
-            properties.setProperty(prefix + "discovered", record.firstDiscoveredAt)
+            // Refreshing an existing article must preserve its first discovery.
+            if (!properties.containsKey(prefix + "discovered")) properties.setProperty(prefix + "discovered", record.firstDiscoveredAt)
             properties.setProperty(prefix + "categories", record.categories.joinToString("\u001e"))
             properties.setProperty(prefix + "year", record.yearLabel.orEmpty())
             properties.setProperty(prefix + "size", record.sizeLabel.orEmpty())
@@ -49,7 +50,7 @@ class CatalogMetadataStore(private val file: File) {
                     source = properties.getProperty(prefix + "source", "getcomics"),
                     externalId = id,
                     canonicalUrl = properties.getProperty(prefix + "url", ""),
-                    title = properties.getProperty(prefix + "title", id),
+                    title = sourceText(properties.getProperty(prefix + "title", id)),
                     synopsis = properties.getProperty(prefix + "synopsis", "").ifBlank { null },
                     coverUrl = properties.getProperty(prefix + "cover", "").ifBlank { null },
                     sourcePublishedAt = properties.getProperty(prefix + "published", "").ifBlank { null },
@@ -57,7 +58,8 @@ class CatalogMetadataStore(private val file: File) {
                     firstDiscoveredAt = properties.getProperty(prefix + "discovered", ""),
                     categories = properties.getProperty(prefix + "categories", "").split('\u001e').filter { it.isNotBlank() },
                     yearLabel = properties.getProperty(prefix + "year", "").ifBlank { null },
-                    sizeLabel = properties.getProperty(prefix + "size", "").ifBlank { null },
+                    sizeLabel = Regex("(?i)\\b\\d+(?:[.,]\\d+)?\\s*(?:[KMGT]i?B|bytes)\\b")
+                        .find(properties.getProperty(prefix + "size", ""))?.value,
                     formatLabel = properties.getProperty(prefix + "format", "").ifBlank { null },
                     confidence = runCatching { SourceConfidence.valueOf(properties.getProperty(prefix + "confidence", "UNKNOWN")) }
                         .getOrDefault(SourceConfidence.UNKNOWN),

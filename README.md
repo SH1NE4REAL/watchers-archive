@@ -1,9 +1,30 @@
 # 观察者漫格 · Phase 1
 
+当前修复版：**0.3.1**。启动先进入“官方推荐”，底部仅有“官方推荐 / 我的书架 / 缓存与设置”。
+来源条目详情只有“开始阅读”和“加入书架”；正文检查在后台执行，HTML、CBR、损坏文件和缺少强 ETag 的来源不会进入阅读器。
+来源站拒绝访问时保留本地快照，真实来源不依赖电脑测试 IP。大事件专题是有来源入口的检索集合，不能视为已下载、完整或官方排序的漫画合集。
+
+Windows 的 Gradle test worker 无法正确加载中文路径下的类时，使用指向同一工作区的 ASCII Junction：
+
+```powershell
+$alias = "$env:LOCALAPPDATA\Temp\watchers-workspace"
+if (!(Test-Path $alias)) { New-Item -ItemType Junction -Path $alias -Target $PWD.Path }
+Set-Location $alias
+$env:GRADLE_USER_HOME = "$env:LOCALAPPDATA\Temp\gradle-home-phase1"
+$env:ANDROID_USER_HOME = "$env:LOCALAPPDATA\Temp\android-user-phase1"
+$env:TEMP = "$PWD\.tools\tmp"
+$env:TMP = $env:TEMP
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin --no-daemon --max-workers=2
+```
+
+这套测试包含 Robolectric Activity/Compose 布局、原生 BitmapFactory、触摸输入、来源解析、真实 loopback Range、持久化和取消租约交接。
+报告在 `app/build/reports/tests/testDebugUnitTest/index.html`。它们是主机运行测试；不能替代手机上的 instrumentation 或手动视觉验收。
+SDK、Robolectric 运行包、下载缓存和测试生成物均保持 Git 忽略。已有提交与用户数据库不被重置。
+
 This is an Android-first prototype for validating remote CBZ/ZIP64 page reads and
-the 500,000,000-byte temporary-cache boundary. Every comic shown by the app and
-every archive served by the fixture server is synthetic test content; it is not a
-Marvel catalogue or Marvel artwork.
+the 500,000,000-byte temporary-cache boundary. Every archive served by the fixture
+server is synthetic test content. Source articles in the catalogue come from
+GetComics; they are separate from readable files and from official Marvel relations.
 
 ## Build prerequisites
 

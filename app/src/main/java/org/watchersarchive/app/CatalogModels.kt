@@ -42,6 +42,10 @@ data class SourceAsset(
     val status: SourceAssetStatus,
     val reason: String,
     val checkedAt: String,
+    val verifiedUrl: String? = null,
+    val verifiedETag: String? = null,
+    val verifiedLength: Long? = null,
+    val verifiedPageCount: Int? = null,
 )
 
 data class SourceAssetInspection(
@@ -91,5 +95,15 @@ data class OfficialRelationEvidence(
     val sourceType: String,
     val fetchedAt: String,
     val confidence: SourceConfidence,
+)
+
+/** A sourced collection remains browsable when the official site is unreachable. */
+data class RecommendationCollection(
+    val id: String,
+    val title: String,
+    val description: String,
+    val sourceUrl: String,
+    val searchTerm: String,
+    val sourceLabel: String,
 )
 

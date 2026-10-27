@@ -1,239 +1,244 @@
 package org.watchersarchive.app
 
+import android.graphics.BitmapFactory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import org.jsoup.Jsoup
+import org.jsoup.parser.Parser
+import org.watchersarchive.core.ArchiveError
+import org.watchersarchive.core.ArchiveException
+import org.watchersarchive.core.CancellationToken
+import org.watchersarchive.core.HttpRangeSource
+import org.watchersarchive.core.ReaderLimits
+import org.watchersarchive.core.ZipArchiveReader
 import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.URI
-import java.net.URL
+import java.net.URLEncoder
 import java.time.Instant
 import java.util.Locale
-import java.util.regex.Pattern
 
-/**
- * GetComics metadata adapter. It reads public RSS/WordPress metadata and article
- * HTML only. It never follows a download host or claims that an article has a
- * stable, authorized, Range-capable file.
- */
+/** Public article metadata and bounded file validation. No login/CAPTCHA/download-page bypass. */
 class GetComicsCatalogService(
     private val now: () -> String = { Instant.now().toString() },
+    private val decodeImage: (ByteArray) -> Boolean = ::decodeProbeImage,
+    private val fetchText: suspend (String) -> String = { SourceHttpClient.text(it) },
 ) {
     suspend fun fetchWordPressPosts(
         baseUrl: String = "https://getcomics.org",
         categoryId: Int = 3,
         page: Int = 1,
         perPage: Int = 20,
+        search: String? = null,
     ): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
-        require(perPage in 1..100)
-        val endpoint = "$baseUrl/wp-json/wp/v2/posts?categories=$categoryId&page=$page&per_page=$perPage" +
-            "&_fields=id,date_gmt,modified_gmt,link,title,excerpt,categories,content"
-        parseWordPressPosts(getText(endpoint), endpoint)
+        require(perPage in 1..100 && page >= 1 && categoryId > 0)
+        val endpoint = "${baseUrl.trimEnd('/')}/wp-json/wp/v2/posts?categories=$categoryId&page=$page&per_page=$perPage" +
+            "&_fields=id,date_gmt,modified_gmt,link,title,excerpt,categories,content,yoast_head_json" +
+            search?.trim()?.takeIf { it.isNotBlank() }?.let { "&search=" + URLEncoder.encode(it, "UTF-8") }.orEmpty()
+        parseWordPressPosts(fetchText(endpoint), endpoint)
     }
 
-    suspend fun fetchRss(feedUrl: String = "https://getcomics.org/cat/marvel/feed/") =
-        withContext(Dispatchers.IO) { parseRss(getText(feedUrl), feedUrl) }
+    suspend fun fetchRss(feedUrl: String = "https://getcomics.org/cat/marvel/feed/"): List<CatalogSourceRecord> =
+        withContext(Dispatchers.IO) { parseRss(fetchText(feedUrl), feedUrl) }
 
     suspend fun enrichCover(record: CatalogSourceRecord): CatalogSourceRecord = withContext(Dispatchers.IO) {
         if (!record.coverUrl.isNullOrBlank()) return@withContext record
-        val html = runCatching { getText(record.canonicalUrl) }.getOrNull() ?: return@withContext record
-        val cover = Regex("(?i)<meta[^>]+property=[\\\"']og:image[\\\"'][^>]+content=[\\\"']([^\\\"']+)").find(html)?.groupValues?.get(1)
-            ?: firstImageUrl(html)
-        record.copy(coverUrl = cover)
+        try {
+            val document = Jsoup.parse(fetchText(record.canonicalUrl), record.canonicalUrl)
+            record.copy(coverUrl = findImage(document, record.canonicalUrl))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: IOException) {
+            record
+        }
     }
 
     fun parseWordPressPosts(json: String, endpoint: String, discoveredAt: String = now()): List<CatalogSourceRecord> {
         val array = JSONArray(json)
         return (0 until array.length()).mapNotNull { index ->
             val post = array.optJSONObject(index) ?: return@mapNotNull null
-            val id = post.optString("id").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            val title = htmlText(post.optJSONObject("title")?.optString("rendered").orEmpty())
-            val excerpt = htmlText(post.optJSONObject("excerpt")?.optString("rendered").orEmpty())
-            val content = post.optJSONObject("content")?.optString("rendered").orEmpty()
-            val cover = firstImageUrl(content)
-            val categories = post.optJSONArray("categories").toStringList()
+            val id = post.opt("id")?.toString()?.takeIf { it.toLongOrNull() != null } ?: return@mapNotNull null
+            val link = safeSourceUrl(post.text("link"), endpoint) ?: return@mapNotNull null
+            val title = sourceText(post.optJSONObject("title")?.text("rendered").orEmpty()).ifBlank { "GetComics article $id" }
+            val excerptHtml = post.optJSONObject("excerpt")?.text("rendered").orEmpty()
+            val content = post.optJSONObject("content")?.text("rendered").orEmpty()
+            val excerpt = sourceText(excerptHtml)
+            val contentText = sourceText(content)
+            val yoast = post.optJSONObject("yoast_head_json")
+            val coverFromYoast = yoast?.optJSONArray("og_image")?.optJSONObject(0)?.text("url")
+            val cover = safeSourceUrl(coverFromYoast, link)
+                ?: findImage(Jsoup.parse(content, link), link)
+                ?: findImage(Jsoup.parse(excerptHtml, link), link)
             CatalogSourceRecord(
-                source = "getcomics",
-                externalId = "post:$id",
-                canonicalUrl = post.optString("link", endpoint),
-                title = title.ifBlank { "GetComics article $id" },
-                synopsis = excerpt.ifBlank { null },
+                source = "getcomics", externalId = "post:$id", canonicalUrl = link, title = title,
+                synopsis = synopsis(excerpt).ifBlank { synopsis(contentText) }.ifBlank { null },
                 coverUrl = cover,
-                sourcePublishedAt = post.optString("date_gmt").takeIf { it.isNotBlank() },
-                sourceModifiedAt = post.optString("modified_gmt").takeIf { it.isNotBlank() },
+                sourcePublishedAt = normalizedSourceDate(post.text("date_gmt")),
+                sourceModifiedAt = normalizedSourceDate(post.text("modified_gmt")),
                 firstDiscoveredAt = discoveredAt,
-                categories = categories,
-                yearLabel = findLabel(excerpt, "year"),
-                sizeLabel = findLabel(excerpt, "size"),
-                formatLabel = findFormat(content),
-                confidence = SourceConfidence.MEDIUM,
+                categories = post.optJSONArray("categories")?.let { cats -> (0 until cats.length()).map { cats.opt(it).toString() } }.orEmpty(),
+                yearLabel = yearLabel("$excerpt $contentText") ?: Regex("\\((\\d{4})\\)").find(title)?.groupValues?.get(1),
+                sizeLabel = sizeLabel("$excerpt $contentText"),
+                formatLabel = formatLabel(contentText), confidence = SourceConfidence.MEDIUM,
             )
         }
     }
 
     fun parseRss(xml: String, feedUrl: String, discoveredAt: String = now()): List<CatalogSourceRecord> {
-        val itemPattern = Pattern.compile("(?is)<item\\b[^>]*>(.*?)</item>")
-        val matcher = itemPattern.matcher(xml)
-        val output = mutableListOf<CatalogSourceRecord>()
-        while (matcher.find()) {
-            val item = matcher.group(1)
-            val link = xmlTag(item, "link") ?: continue
-            val guid = xmlTag(item, "guid") ?: link
-            val title = htmlText(xmlTag(item, "title").orEmpty())
-            val description = htmlText(xmlTag(item, "description").orEmpty())
-            output += CatalogSourceRecord(
-                source = "getcomics",
-                externalId = "rss:$guid",
-                canonicalUrl = link,
-                title = title,
-                synopsis = description.ifBlank { null },
-                coverUrl = firstImageUrl(xmlTag(item, "description").orEmpty()),
-                sourcePublishedAt = xmlTag(item, "pubDate"),
-                sourceModifiedAt = null,
+        val document = Jsoup.parse(xml, feedUrl, Parser.xmlParser())
+        return document.getElementsByTag("item").mapNotNull { item ->
+            fun field(name: String): String = item.getElementsByTag(name).firstOrNull()?.text().orEmpty()
+            val link = safeSourceUrl(field("link"), feedUrl) ?: return@mapNotNull null
+            val guid = field("guid")
+            val postId = field("post-id").ifBlank { field("wp:post-id") }.takeIf { it.toLongOrNull() != null }
+                ?: Regex("[?&]p=(\\d+)").find(guid)?.groupValues?.get(1)
+            val descriptionHtml = field("description").ifBlank { field("content:encoded") }
+            val description = sourceText(descriptionHtml)
+            val title = sourceText(field("title"))
+            CatalogSourceRecord(
+                source = "getcomics", externalId = postId?.let { "post:$it" } ?: "article:$link", canonicalUrl = link,
+                title = title, synopsis = synopsis(description).ifBlank { null },
+                coverUrl = findImage(Jsoup.parse(descriptionHtml, link), link),
+                sourcePublishedAt = normalizedSourceDate(field("pubDate")), sourceModifiedAt = null,
                 firstDiscoveredAt = discoveredAt,
-                categories = Pattern.compile("(?is)<category[^>]*>(.*?)</category>").matcher(item).let { categories ->
-                    buildList { while (categories.find()) add(htmlText(categories.group(1))) }
-                },
-                yearLabel = findLabel(description, "year"),
-                sizeLabel = findLabel(description, "size"),
-                formatLabel = findFormat(item),
-                confidence = SourceConfidence.LOW,
+                categories = item.getElementsByTag("category").map { sourceText(it.text()) },
+                yearLabel = yearLabel(description) ?: Regex("\\((\\d{4})\\)").find(title)?.groupValues?.get(1),
+                sizeLabel = sizeLabel(description), formatLabel = formatLabel(description), confidence = SourceConfidence.LOW,
             )
         }
-        return output
     }
 
-    /**
-     * Inspects article HTML without opening a download host. A candidate is never
-     * marked READY until a separate, authorized file probe proves format, length,
-     * ETag and Range behavior.
-     */
     fun inspectArticleHtml(articleUrl: String, articleHtml: String): SourceAssetInspection {
-        val recordId = "article:" + articleUrl.hashCode().toUInt().toString(16)
-        val links = Regex("(?i)href\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']").findAll(articleHtml)
-            .map { it.groupValues[1] }
-            .filter { it.contains("/dls/") || knownHost(it) }
+        val article = safeSourceUrl(articleUrl) ?: return SourceAssetInspection(articleUrl, emptyList(), false)
+        val document = Jsoup.parse(articleHtml, article)
+        val postId = document.selectFirst("article[id^=post-]")?.id()?.removePrefix("post-")?.takeIf { it.toLongOrNull() != null }
+        val recordId = postId?.let { "post:$it" } ?: "article:$article"
+        val links = document.select("a[href]").mapNotNull { safeSourceUrl(it.attr("href"), article) }
+            .filter { candidate -> isIntermediate(candidate) || knownHost(candidate) || declaredFormat(candidate) != null }
             .distinct()
-            .toList()
-        val assets = links.mapIndexed { index, candidate ->
-            val uri = runCatching { URI(candidate) }.getOrNull()
-            val path = uri?.path.orEmpty()
-            val format = Regex("(?i)\\.(cbz|zip|cbr|rar)(?:$|[?#])").find(path)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
-            val host = uri?.host
+        val assets = links.map { candidate ->
+            val uri = URI(candidate)
+            val format = declaredFormat(candidate)
+            val gated = isIntermediate(candidate) || (knownHost(candidate) && format == null)
             val status = when {
-                candidate.contains("/dls/") -> SourceAssetStatus.NEEDS_USER_ACTION
-                format == "CBR" || format == "RAR" -> SourceAssetStatus.UNSUPPORTED_FORMAT
+                format in setOf("CBR", "RAR") -> SourceAssetStatus.UNSUPPORTED_FORMAT
+                gated -> SourceAssetStatus.NEEDS_USER_ACTION
                 else -> SourceAssetStatus.METADATA_ONLY
             }
             SourceAsset(
-                id = "$recordId:asset:$index",
-                sourceRecordId = recordId,
-                host = host,
-                candidateUrl = candidate,
-                fileName = path.substringAfterLast('/').takeIf { it.isNotBlank() },
-                declaredFormat = format,
-                declaredSize = findLabel(htmlText(articleHtml), "size"),
-                status = status,
+                id = "$recordId:asset:${stableHash(candidate)}", sourceRecordId = recordId, host = uri.host,
+                candidateUrl = candidate, fileName = uri.path.substringAfterLast('/').takeIf { it.isNotBlank() },
+                declaredFormat = format, declaredSize = sizeLabel(document.text()), status = status,
                 reason = when (status) {
-                    SourceAssetStatus.NEEDS_USER_ACTION -> "GetComics 中间路由，需用户正常操作；未取得稳定文件地址。"
-                    SourceAssetStatus.UNSUPPORTED_FORMAT -> "当前核心读取器只验证 ZIP/CBZ，未启用 CBR/RAR。"
-                    else -> "文章候选链接，尚未验证文件响应、授权和 Range。"
-                },
-                checkedAt = now(),
+                    SourceAssetStatus.UNSUPPORTED_FORMAT -> "此来源为 CBR/RAR，当前阅读器尚不支持。"
+                    SourceAssetStatus.NEEDS_USER_ACTION -> "来源需要在其正常页面完成操作，尚无可直接读取的文件。"
+                    else -> "尚未确认文件格式和页面内容。"
+                }, checkedAt = now(),
             )
         }
         return SourceAssetInspection(articleUrl, assets, false)
     }
 
     suspend fun inspectArticle(articleUrl: String): SourceAssetInspection = withContext(Dispatchers.IO) {
-        inspectArticleHtml(articleUrl, getText(articleUrl))
+        inspectArticleHtml(articleUrl, fetchText(articleUrl))
     }
 
-    /** Performs only a bounded one-byte Range probe; it never downloads the file. */
+    /** READY proves ZIP directory + first page + CRC + Android image decode, not merely one byte. */
     suspend fun validateAsset(asset: SourceAsset): SourceAsset = withContext(Dispatchers.IO) {
-        if (asset.status == SourceAssetStatus.NEEDS_USER_ACTION || asset.status == SourceAssetStatus.UNSUPPORTED_FORMAT) return@withContext asset
         val checked = now()
-        val connection = runCatching { URL(asset.candidateUrl).openConnection() as HttpURLConnection }.getOrNull()
-            ?: return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件地址无效。", checkedAt = checked)
+        fun result(status: SourceAssetStatus, message: String) = asset.copy(
+            status = status, reason = message, checkedAt = checked,
+            verifiedUrl = null, verifiedETag = null, verifiedLength = null, verifiedPageCount = null,
+        )
+        val url = safeSourceUrl(asset.candidateUrl)
+            ?: return@withContext result(SourceAssetStatus.UNAUTHORIZED, "文件地址不安全或无效。")
+        if (isIntermediate(url)) return@withContext result(SourceAssetStatus.NEEDS_USER_ACTION, "来源需要在其正常页面完成操作。")
+        if (asset.status == SourceAssetStatus.NEEDS_USER_ACTION) return@withContext result(SourceAssetStatus.NEEDS_USER_ACTION, asset.reason)
+        if (declaredFormat(url) in setOf("CBR", "RAR") || asset.declaredFormat in setOf("CBR", "RAR")) {
+            return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "此文件为 CBR/RAR，当前阅读器尚不支持。")
+        }
+        val token = CancellationToken()
+        val cancellation = currentCoroutineContext()[Job]?.onSourceCancellation { token.cancel() }
         try {
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 15_000
-            connection.instanceFollowRedirects = true
-            connection.setRequestProperty("Range", "bytes=0-0")
-            connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("User-Agent", "WatchersArchive-AssetProbe/1.0")
-            val status = connection.responseCode
-            if (status == 200) return@withContext asset.copy(status = SourceAssetStatus.RANGE_UNSUPPORTED, reason = "服务器忽略 Range，已拒绝完整响应。", checkedAt = checked)
-            if (status !in 200..299) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件探测返回 HTTP $status。", checkedAt = checked)
-            val range = connection.getHeaderField("Content-Range")
-            val match = Regex("bytes 0-0/(\\d+)").matchEntire(range?.trim().orEmpty())
-            val tag = connection.getHeaderField("ETag")?.trim()
-            if (status != 206 || match == null) return@withContext asset.copy(status = SourceAssetStatus.RANGE_UNSUPPORTED, reason = "缺少有效 206 Content-Range。", checkedAt = checked)
-            if (tag.isNullOrBlank() || tag.startsWith("W/")) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "缺少强 ETag，不能绑定文件版本。", checkedAt = checked)
-            connection.inputStream.use { input ->
-                if (input.read() < 0) return@withContext asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "Range 响应为空。", checkedAt = checked)
+            currentCoroutineContext().ensureActive()
+            val limits = ReaderLimits(maxPageBytes = 16 * 1024 * 1024, maxCompressedPageBytes = 16 * 1024 * 1024)
+            val source = HttpRangeSource(url, limits)
+            val identity = source.discover(token)
+            val prefix = source.readRange(identity, 0, minOf(8L, identity.length).toInt(), token)
+            val zipSignature = prefix.size >= 4 && prefix[0] == 0x50.toByte() && prefix[1] == 0x4b.toByte() &&
+                prefix[2] == 0x03.toByte() && prefix[3] == 0x04.toByte()
+            if (!zipSignature) return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "来源返回网页、RAR 或其他非 CBZ 文件。")
+            val reader = ZipArchiveReader(source, limits)
+            val index = reader.open(token)
+            if (index.identity.eTag != identity.eTag || index.identity.length != identity.length) {
+                return@withContext result(SourceAssetStatus.EXPIRED, "来源文件已变化，请重新读取详情。")
             }
-            asset.copy(status = SourceAssetStatus.READY, reason = "已验证 206、Content-Range 和强 ETag；可继续由阅读器绑定。", checkedAt = checked, declaredSize = match.groupValues[1])
-        } catch (error: Exception) {
-            asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "文件探测失败：${error.message ?: error.javaClass.simpleName}", checkedAt = checked)
+            val firstPage = reader.readPage(index, 0, token)
+            if (!decodeImage(firstPage)) return@withContext result(SourceAssetStatus.UNSUPPORTED_FORMAT, "文件中的页面无法解码。")
+            currentCoroutineContext().ensureActive()
+            asset.copy(
+                status = SourceAssetStatus.READY, reason = "文件目录和首张页面已验证。", checkedAt = checked,
+                declaredFormat = "CBZ", verifiedUrl = index.identity.url, verifiedETag = index.identity.eTag,
+                verifiedLength = index.identity.length, verifiedPageCount = index.pages.size,
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: ArchiveException) {
+            currentCoroutineContext().ensureActive()
+            when (error.code) {
+                ArchiveError.RANGE_NOT_SUPPORTED, ArchiveError.INVALID_CONTENT_RANGE -> result(SourceAssetStatus.RANGE_UNSUPPORTED, "此来源暂不支持按页读取。")
+                ArchiveError.UNSUPPORTED_ARCHIVE, ArchiveError.UNSUPPORTED_COMPRESSION, ArchiveError.UNSUPPORTED_IMAGE,
+                ArchiveError.CRC_MISMATCH, ArchiveError.CORRUPT_ARCHIVE, ArchiveError.LIMIT_EXCEEDED -> result(SourceAssetStatus.UNSUPPORTED_FORMAT, "此文件格式、页面大小或完整性不符合当前阅读要求。")
+                ArchiveError.OBJECT_CHANGED -> result(SourceAssetStatus.EXPIRED, "来源文件已变化，请稍后重试。")
+                ArchiveError.IDENTITY_REQUIRED -> result(SourceAssetStatus.METADATA_ONLY, "此来源没有可靠的文件版本标识，暂不能在线阅读。")
+                else -> result(SourceAssetStatus.TRANSIENT_ERROR, "暂时无法读取文件，请稍后重试。")
+            }
+        } catch (_: IOException) {
+            currentCoroutineContext().ensureActive()
+            result(SourceAssetStatus.TRANSIENT_ERROR, "暂时无法连接文件来源。")
         } finally {
-            connection.disconnect()
+            cancellation?.dispose()
         }
     }
 
-    private fun getText(endpoint: String): String {
-        val uri = URI(endpoint)
-        require(uri.scheme == "https" || uri.scheme == "http")
-        val connection = URL(endpoint).openConnection() as HttpURLConnection
-        connection.connectTimeout = 10_000
-        connection.readTimeout = 15_000
-        connection.instanceFollowRedirects = true
-        connection.setRequestProperty("Accept-Encoding", "identity")
-        connection.setRequestProperty("User-Agent", "WatchersArchive-Metadata/1.0")
-        return connection.inputStream.use { input ->
-            if (connection.responseCode !in 200..299) throw IOException("Metadata HTTP ${connection.responseCode}")
-            val bytes = input.readBytesLimited(2 * 1024 * 1024)
-            bytes.toString(Charsets.UTF_8)
-        }.also { connection.disconnect() }
+    private fun findImage(document: org.jsoup.nodes.Document, base: String): String? {
+        val og = document.selectFirst("meta[property=og:image],meta[name=og:image]")?.attr("content")
+        safeSourceUrl(og, base)?.let { return it }
+        val image = document.selectFirst("article img, .post-content img, .entry-content img, img") ?: return null
+        return sequenceOf("data-src", "data-lazy-src", "src").mapNotNull { safeSourceUrl(image.attr(it), base) }.firstOrNull()
     }
 
-    private fun knownHost(url: String): Boolean = runCatching {
+    private fun declaredFormat(url: String): String? = Regex("(?i)\\.(cbz|zip|cbr|rar)$").find(URI(url).path.orEmpty())?.groupValues?.get(1)?.uppercase(Locale.ROOT)
+    private fun knownHost(url: String): Boolean {
         val host = URI(url).host.orEmpty().lowercase(Locale.ROOT)
-        host.endsWith("vikingfile.com") || host.endsWith("pixeldrain.com") ||
-            host.endsWith("datanodes.to") || host.endsWith("terabox.com")
-    }.getOrDefault(false)
-
-    private fun htmlText(value: String): String = value
-        .replace(Regex("(?is)<script.*?</script>|<style.*?</style>"), " ")
-        .replace(Regex("(?is)<[^>]+>"), " ")
-        .replace("&nbsp;", " ").replace("&amp;", "&")
-        .replace("&quot;", "\"").replace("&#8211;", "–").replace("&#8212;", "—")
-        .replace("&#8217;", "’").replace("&#8216;", "‘").replace("&#8220;", "“").replace("&#8221;", "”")
-        .replace(Regex("\\s+"), " ").trim()
-
-    private fun firstImageUrl(html: String): String? = Regex("(?i)<img[^>]+src=[\\\"']([^\\\"']+)").find(html)?.groupValues?.get(1)
-
-    private fun findFormat(text: String): String? = Regex("(?i)\\b(CBZ|ZIP|CBR|RAR)\\b").find(text)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
-
-    private fun findLabel(text: String, label: String): String? = Regex("(?i)\\b$label\\s*[:\\-]\\s*([^,;|]+)").find(text)?.groupValues?.get(1)?.trim()
-
-    private fun xmlTag(value: String, tag: String): String? = Regex("(?is)<$tag(?:\\s[^>]*)?>(.*?)</$tag>").find(value)?.groupValues?.get(1)?.trim()
-
-    private fun JSONArray?.toStringList(): List<String> = if (this == null) emptyList() else (0 until length()).mapNotNull { optString(it).takeIf(String::isNotBlank) }
-
-    private fun java.io.InputStream.readBytesLimited(limit: Int): ByteArray {
-        val output = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        var total = 0
-        while (true) {
-            val count = read(buffer)
-            if (count < 0) break
-            total += count
-            if (total > limit) throw IOException("Metadata response exceeds limit")
-            output.write(buffer, 0, count)
-        }
-        return output.toByteArray()
+        return listOf("vikingfile.com", "vik1ngfile.site", "pixeldrain.com", "datanodes.to", "terabox.com").any { host == it || host.endsWith(".$it") }
     }
+    private fun isIntermediate(url: String): Boolean = URI(url).path.orEmpty().startsWith("/dls/")
+    private fun sizeLabel(text: String): String? = Regex("(?i)\\bSize\\s*[:：-]\\s*(\\d+(?:[.,]\\d+)?\\s*(?:[KMGT]i?B|bytes))\\b").find(text)?.groupValues?.get(1)?.replace(Regex("\\s+"), " ")
+    private fun yearLabel(text: String): String? = Regex("(?i)\\bYear\\s*[:：-]\\s*(\\d{4}(?:\\s*[–-]\\s*\\d{4})?)\\b").find(text)?.groupValues?.get(1)
+    private fun formatLabel(text: String): String? = Regex("(?i)\\b(CBZ|ZIP|CBR|RAR)\\b").find(text)?.value?.uppercase(Locale.ROOT)
+    private fun synopsis(text: String): String = text
+        .replace(Regex("(?i)\\bYear\\s*[:：-]\\s*\\d{4}(?:\\s*[–-]\\s*\\d{4})?\\s*[|•]?"), " ")
+        .replace(Regex("(?i)\\bSize\\s*[:：-]\\s*(?:\\d+(?:[.,]\\d+)?\\s*(?:[KMGT]i?B|bytes)|-\\s*MB)\\s*[|•]?"), " ")
+        .replace(Regex("\\s+"), " ").trim()
+    private fun JSONObject.text(key: String): String? = if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() && it != "null" }
+    private fun stableHash(value: String): String = java.security.MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).take(12).joinToString("") { "%02x".format(it) }
 }
 
+private fun decodeProbeImage(bytes: ByteArray): Boolean {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    val width = bounds.outWidth.toLong()
+    val height = bounds.outHeight.toLong()
+    if (width <= 0 || height <= 0 || width > 16_384 || height > 16_384 || width * height > 20_000_000) return false
+    var sample = 1
+    while (((width + sample - 1) / sample) * ((height + sample - 1) / sample) > 2_000_000) sample *= 2
+    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return false
+    bitmap.recycle()
+    return true
+}

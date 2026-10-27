@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,7 +85,7 @@ import java.net.URI
 
 private val ArchiveRed = Color(0xFFBE2834)
 private val PageBackground = Color(0xFFF4F4F5)
-private enum class Screen { Library, Detail, Reader, SourceDetail, Official, Cache }
+private enum class Screen { Library, Reader, SourceDetail, Official, Cache }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,20 +106,20 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun ArchiveApp(repository: ReaderRepository) {
-    var screen by remember { mutableStateOf(Screen.Library) }
+    var screen by remember { mutableStateOf(Screen.Official) }
     var selected by remember { mutableStateOf<DemoComic?>(null) }
     var selectedSource by remember { mutableStateOf<CatalogSourceRecord?>(null) }
+    var detailParent by remember { mutableStateOf(Screen.Official) }
     val view = LocalView.current
     val activity = view.context as? Activity
     val goBack = {
         screen = when (screen) {
-            Screen.Reader -> Screen.Detail
-            Screen.SourceDetail -> Screen.Official
-            Screen.Detail -> Screen.Library
-            else -> Screen.Library
+            Screen.Reader -> if (selectedSource != null) Screen.SourceDetail else Screen.Cache
+            Screen.SourceDetail -> detailParent
+            else -> Screen.Official
         }
     }
-    BackHandler(enabled = screen != Screen.Library) { goBack() }
+    BackHandler(enabled = screen != Screen.Official) { goBack() }
     DisposableEffect(screen, activity) {
         val window = activity?.window
         val controller = window?.let { WindowInsetsControllerCompat(it, view) }
@@ -144,7 +143,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
         // Keep the reader outside Scaffold so its content can draw edge-to-edge. The
         // reader owns its own transient controls and never inherits app chrome insets.
         Box(Modifier.fillMaxSize().background(Color.Black)) {
-            selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
+            selected?.let { ReaderScreen(it, repository) { screen = if (selectedSource != null) Screen.SourceDetail else Screen.Cache } }
         }
         return
     }
@@ -156,10 +155,10 @@ private fun ArchiveApp(repository: ReaderRepository) {
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (screen != Screen.Library) TextButton(onClick = goBack) { Text("返回") }
+                    if (screen == Screen.SourceDetail) TextButton(onClick = goBack) { Text("返回") }
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
                         Text("观察者漫格", fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                        Text("THE WATCHER'S ARCHIVE · 阅读内核验证", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Text("THE WATCHER'S ARCHIVE", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                     }
                 }
             }
@@ -167,14 +166,14 @@ private fun ArchiveApp(repository: ReaderRepository) {
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
-                    selected = screen == Screen.Library || screen == Screen.Detail,
-                    onClick = { screen = Screen.Library },
-                    icon = { Text("▤", fontSize = 22.sp) }, label = { Text("我的书架") },
-                )
-                NavigationBarItem(
-                    selected = screen == Screen.Official,
+                    selected = screen == Screen.Official || (screen == Screen.SourceDetail && detailParent == Screen.Official),
                     onClick = { screen = Screen.Official },
                     icon = { Text("★", fontSize = 22.sp) }, label = { Text("官方推荐") },
+                )
+                NavigationBarItem(
+                    selected = screen == Screen.Library || (screen == Screen.SourceDetail && detailParent == Screen.Library),
+                    onClick = { screen = Screen.Library },
+                    icon = { Text("▤", fontSize = 22.sp) }, label = { Text("我的书架") },
                 )
                 NavigationBarItem(
                     selected = screen == Screen.Cache,
@@ -186,134 +185,15 @@ private fun ArchiveApp(repository: ReaderRepository) {
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (screen) {
-                Screen.Library -> LibraryScreen(repository.comics, repository) { selected = it; screen = Screen.Detail }
-                Screen.Detail -> selected?.let { DetailScreen(it, repository) { screen = Screen.Reader } }
-                Screen.Reader -> selected?.let { ReaderScreen(it, repository) { screen = Screen.Detail } }
-                Screen.SourceDetail -> selectedSource?.let { record -> SourceDetailScreen(record, repository, { screen = Screen.Official }) { comic -> selected = comic; screen = Screen.Reader } }
-                Screen.Official -> OfficialScreen(repository) { selectedSource = it; screen = Screen.SourceDetail }
-                Screen.Cache -> CacheScreen(repository)
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryScreen(comics: List<DemoComic>, repository: ReaderRepository, onSelect: (DemoComic) -> Unit) {
-    var query by remember { mutableStateOf("") }
-    var shelves by remember { mutableStateOf(listOf("全部")) }
-    var selectedShelf by remember { mutableStateOf("全部") }
-    var shelfItems by remember { mutableStateOf(emptySet<String>()) }
-    var newShelf by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { shelves = listOf("全部") + repository.shelfNames() }
-    LaunchedEffect(selectedShelf) {
-        shelfItems = if (selectedShelf == "全部") emptySet() else repository.shelfItems(selectedShelf)
-    }
-    val visibleComics = comics.filter { comic ->
-        (selectedShelf == "全部" || comic.id in shelfItems) &&
-            (comic.title.contains(query, true) || comic.description.contains(query, true))
-    }
-    LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(),
-                placeholder = { Text("搜索测试漫画") }, singleLine = true, shape = RoundedCornerShape(16.dp))
-        }
-        item { Text("我的书架", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 8.dp)) }
-        item {
-            Row(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                shelves.forEach { shelf ->
-                    TextButton(onClick = { selectedShelf = shelf }) { Text(if (selectedShelf == shelf) "[$shelf]" else shelf, color = if (selectedShelf == shelf) ArchiveRed else Color.Gray) }
+                Screen.Library -> ShelfScreen(repository) { selectedSource = it; detailParent = Screen.Library; screen = Screen.SourceDetail }
+                Screen.SourceDetail -> selectedSource?.let { record ->
+                    ArticleDetailScreen(record, repository) { comic -> selected = comic; screen = Screen.Reader }
                 }
+                Screen.Official -> DiscoveryScreen(repository) { selectedSource = it; detailParent = Screen.Official; screen = Screen.SourceDetail }
+                Screen.Cache -> CacheScreen(repository) { comic -> selectedSource = null; selected = comic; screen = Screen.Reader }
+                Screen.Reader -> Unit
             }
         }
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(newShelf, { newShelf = it }, Modifier.weight(1f), label = { Text("新建书架分类") }, singleLine = true)
-                TextButton(onClick = { scope.launch { repository.createShelf(newShelf); shelves = listOf("全部") + repository.shelfNames(); newShelf = "" } }) { Text("添加") }
-            }
-        }
-        item { Text("封面、简介和阅读入口已连接。", color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
-        items(visibleComics, key = { it.id }) { comic ->
-            Card(onClick = { onSelect(comic) }, colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TestCover(comic, Modifier.width(78.dp).height(108.dp))
-                    Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                        Text(comic.title, fontWeight = FontWeight.Bold)
-                        Text("${comic.series} · ${comic.year}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.height(6.dp))
-                        Text(comic.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        Text("点击查看简介并开始阅读", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    }
-                    Text("›", fontSize = 24.sp, color = Color.Gray)
-                }
-            }
-        }
-        item { Spacer(Modifier.height(16.dp)) }
-    }
-}
-
-@Composable
-private fun TestCover(comic: DemoComic, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)),
-        color = Color(0xFFF8E6E8),
-        tonalElevation = 1.dp,
-    ) {
-        Column(
-            Modifier.fillMaxSize().padding(10.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("THE WATCHER'S", color = ArchiveRed, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            Column {
-                Text("ARCHIVE", color = Color(0xFF26262A), fontSize = 15.sp, fontWeight = FontWeight.Black)
-                Text("TEST EDITION", color = ArchiveRed, fontSize = 8.sp)
-            }
-            Text("${comic.id.uppercase()}\n${comic.year}", color = Color(0xFF5F5A5E), fontSize = 8.sp)
-        }
-    }
-}
-
-@Composable
-private fun DetailScreen(comic: DemoComic, repository: ReaderRepository, onRead: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var last by remember(comic.id) { mutableIntStateOf(0) }
-    var bookmarks by remember(comic.id) { mutableStateOf(emptySet<Int>()) }
-    var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(comic.id) {
-        try { last = repository.lastPage(comic.id); bookmarks = repository.bookmarkPages(comic.id) }
-        catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-    }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        WhiteCard {
-            Row(verticalAlignment = Alignment.Top) {
-                TestCover(comic, Modifier.width(112.dp).height(156.dp))
-                Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("测试内容", color = ArchiveRed, style = MaterialTheme.typography.labelMedium)
-                    Text(comic.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("${comic.series} · ${comic.year}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Text(comic.description, style = MaterialTheme.typography.bodyLarge)
-            Text("简介", fontWeight = FontWeight.Bold)
-            Text("这是观察者漫格的本地阅读内核验证条目。它用于验证从目录、详情到阅读器的完整流程；内容与漫威官方目录无关。", color = Color.DarkGray)
-            Text("来源：本地测试服务器\n${repository.baseUrl}/${comic.path}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        }
-        WhiteCard {
-            Text("最近阅读：第 ${last + 1} 页")
-            Text("书签：${if (bookmarks.isEmpty()) "暂无" else bookmarks.sorted().joinToString { "第 ${it + 1} 页" }}")
-            Text("页码是持久数据；清理临时缓存后仍应保留。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        }
-        error?.let { ErrorText(it) }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(onClick = onRead, modifier = Modifier.weight(1f)) { Text("开始阅读") }
-            OutlinedButton(onClick = {
-                scope.launch { repository.addToShelf("默认书架", comic.id) }
-            }, modifier = Modifier.weight(1f)) { Text("加入书架") }
-        }
-        Text("只有取得有效 Range 响应、解析归档并成功解码后，阅读器才会显示页面。错误端点用于验证拒绝与取消行为。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 
@@ -330,16 +210,8 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
     var cache by remember { mutableStateOf<CacheSnapshot?>(null) }
     var traces by remember { mutableStateOf(emptyList<String>()) }
     var task by remember { mutableStateOf<Job?>(null) }
-    var controlsVisible by remember(comic.id) { mutableStateOf(true) }
+    var controlsVisible by remember(comic.id) { mutableStateOf(false) }
     var diagnosticsVisible by remember(comic.id) { mutableStateOf(false) }
-    var zoom by remember(comic.id) { mutableStateOf(1f) }
-    var imageOffset by remember(comic.id) { mutableStateOf(Offset.Zero) }
-
-    LaunchedEffect(page?.index) {
-        zoom = 1f
-        imageOffset = Offset.Zero
-    }
-
     suspend fun load(index: Int) {
         requestedIndex = index; busy = true; error = null; notice = null
         try {
@@ -389,52 +261,12 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
         onDispose { displayedPage?.release?.invoke() }
     }
 
-    val gestureModifier = Modifier
-        .pointerInput(controlsVisible) {
-            detectTapGestures(onTap = { controlsVisible = !controlsVisible })
-        }
-
-    Box(
-        Modifier.fillMaxSize().background(Color.Black).then(gestureModifier),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         page?.let { current ->
-            Image(
-                current.bitmap.asImageBitmap(),
-                "测试漫画第 ${current.index + 1} 页",
-                Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = zoom
-                        scaleY = zoom
-                        translationX = imageOffset.x
-                        translationY = imageOffset.y
-                    }
-                    .pointerInput(page?.index) {
-                        var swipeDistance = 0f
-                        var swipeTriggered = false
-                        detectTransformGestures { _, pan, gestureZoom, _ ->
-                            if (gestureZoom == 1f && zoom <= 1.01f) {
-                                swipeDistance += pan.x
-                                if (!swipeTriggered && !busy && abs(swipeDistance) > 80f) {
-                                    val target = current.index + if (swipeDistance < 0f) 1 else -1
-                                    if (target in 0 until current.total) task = scope.launch { load(target) }
-                                    swipeTriggered = true
-                                }
-                                return@detectTransformGestures
-                            }
-                            zoom = (zoom * gestureZoom).coerceIn(1f, 4f)
-                            imageOffset = if (zoom <= 1.01f) Offset.Zero else imageOffset + pan
-                        }
-                    }
-                    .pointerInput(page?.index) {
-                        detectTapGestures(onDoubleTap = {
-                            zoom = if (zoom > 1.01f) 1f else 2f
-                            imageOffset = Offset.Zero
-                        })
-                    },
-                contentScale = ContentScale.Fit,
-            )
+            ReaderGestureSurface(current.bitmap, current.index, enabled = !busy,
+                onPrevious = { if (!busy && current.index > 0) { busy = true; task = scope.launch { load(current.index - 1) } } },
+                onNext = { if (!busy && current.index + 1 < current.total) { busy = true; task = scope.launch { load(current.index + 1) } } },
+                onToggleControls = { controlsVisible = !controlsVisible })
         } ?: Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (busy) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp))
             Spacer(Modifier.height(14.dp))
@@ -447,13 +279,13 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
             // tapping the page hides this layer for distraction-free reading.
             Column(Modifier.fillMaxSize()) {
                 Row(
-                    Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .72f)).padding(horizontal = 12.dp, vertical = 10.dp),
+                    Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .72f)).windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onBack) { Text("‹ 返回", color = Color.White, fontSize = 16.sp) }
                     Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         Text(comic.title, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text("自建测试 · ${page?.let { "第 ${it.index + 1} / ${it.total} 页" } ?: "读取中"}", color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
+                        Text("${if (comic.isTestContent) "测试内容 · " else ""}${page?.let { "第 ${it.index + 1} / ${it.total} 页" } ?: "读取中"}", color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
                     }
                     TextButton(enabled = page != null && !busy, onClick = {
                         val current = page ?: return@TextButton
@@ -466,7 +298,7 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                     }) { Text(if (page?.index?.let { it in bookmarks } == true) "已书签" else "书签", color = Color.White) }
                 }
                 Spacer(Modifier.weight(1f))
-                Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .76f)).padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .76f)).windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal = 14.dp, vertical = 10.dp)) {
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = ArchiveRed)
                     error?.let { ErrorText(it) }
                     notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.LightGray, modifier = Modifier.padding(vertical = 4.dp)) }
@@ -492,284 +324,25 @@ private fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack:
                     }
                 }
             }
-        } else {
-            Text("点击屏幕显示阅读控制", color = Color.White.copy(alpha = .7f), style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
         }
     }
 }
 
 @Composable
-private fun LatestScreen(repository: ReaderRepository, onRead: (DemoComic) -> Unit) {
-    val scope = rememberCoroutineScope()
-    var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var inspections by remember { mutableStateOf(emptyMap<String, SourceAssetInspection>()) }
-    suspend fun refresh() {
-        busy = true
-        error = null
-        try { records = repository.refreshGetComics() }
-        catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-        finally { busy = false }
-    }
-    LaunchedEffect(Unit) { records = repository.getComicsRecords() }
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("最新更新", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("GetComics 来源文章元数据 · 正文资产需单独验证", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-            }
-            Button(enabled = !busy, onClick = { scope.launch { refresh() } }) { Text(if (busy) "更新中…" else "刷新") }
-        }
-        error?.let { ErrorText(it) }
-        if (records.isEmpty() && !busy) {
-            WhiteCard {
-                Text("还没有保存的来源文章", fontWeight = FontWeight.Bold)
-                Text("刷新后会读取 GetComics Marvel 分类的公开元数据。文章不会自动变成可读正文。", color = Color.Gray)
-            }
-        }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(records, key = { it.externalId }) { record ->
-                Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.Top) {
-                            SourceCover(record.coverUrl, repository, Modifier.width(72.dp).height(102.dp))
-                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                                Text(record.title, fontWeight = FontWeight.Bold)
-                                Text("来源发布时间：${record.sourcePublishedAt ?: "未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                                Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                        record.yearLabel?.let { Text("年份：$it", color = Color.Gray, style = MaterialTheme.typography.labelSmall) }
-                        record.sizeLabel?.let { Text("大小：$it", color = Color.Gray, style = MaterialTheme.typography.labelSmall) }
-                        val inspection = inspections[record.externalId]
-                        if (inspection == null) {
-                            OutlinedButton(onClick = { scope.launch {
-                                try {
-                                    val result = repository.inspectGetComics(record)
-                                    inspections = inspections + (record.externalId to result)
-                                } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-                            } }) { Text("检查可读文件") }
-                        } else {
-                            inspection.assets.forEach { asset ->
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text("${asset.host ?: "未知宿主"} · ${asset.status}", color = if (asset.status == SourceAssetStatus.READY) Color(0xFF238636) else Color.Gray, style = MaterialTheme.typography.labelSmall)
-                                        Text(asset.reason, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                                    }
-                                    if (asset.status == SourceAssetStatus.METADATA_ONLY) {
-                                        TextButton(onClick = { scope.launch {
-                                            try {
-                                                val checked = repository.validateSourceAsset(asset)
-                                                val updated = inspection.copy(assets = inspection.assets.map { if (it.id == checked.id) checked else it })
-                                                inspections = inspections + (record.externalId to updated)
-                                            } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
-                                        } }) { Text("验证") }
-                                    }
-                                    if (asset.status == SourceAssetStatus.READY) {
-                                        Button(onClick = {
-                                            onRead(DemoComic(
-                                                id = "${record.externalId}:${asset.id}",
-                                                title = record.title,
-                                                description = record.synopsis ?: "GetComics 来源文章",
-                                                path = asset.fileName ?: asset.candidateUrl,
-                                                series = "GetComics 来源条目",
-                                                year = record.yearLabel ?: "未知年份",
-                                                isTestContent = false,
-                                                sourceUrl = asset.candidateUrl,
-                                                sourceAssetStatus = SourceAssetStatus.READY,
-                                            ))
-                                        }) { Text("开始阅读") }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OfficialScreen(repository: ReaderRepository, onOpenRecord: (CatalogSourceRecord) -> Unit) {
-    val scope = rememberCoroutineScope()
-    var guide by remember { mutableStateOf<OfficialGuide?>(null) }
-    var character by remember { mutableStateOf<OfficialCharacterProfile?>(null) }
-    var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
-    var query by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) { records = repository.getComicsRecords() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("官方推荐", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Marvel 官方指南和角色资料 · 不从 GetComics 推断剧情关系", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-            }
-            Button(enabled = !busy, onClick = { scope.launch {
-                busy = true; error = null
-                try {
-                    guide = repository.refreshOfficialGuide()
-                    character = repository.refreshOfficialCharacter()
-                    records = repository.refreshGetComics()
-                } catch (_: Exception) { error = "官方资料暂时不可用，请检查网络后重试。" }
-                finally { busy = false }
-            } }) { Text(if (busy) "读取中…" else "读取官方资料") }
-        }
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("搜索所有漫画") },
-            placeholder = { Text("标题、系列或年份") },
-            singleLine = true,
-        )
-        if (query.isNotBlank()) {
-            val matches = records.filter { it.title.contains(query, true) || it.yearLabel.orEmpty().contains(query, true) } +
-                repository.comics.filter { it.title.contains(query, true) }
-            WhiteCard {
-                Text("搜索结果：${matches.size}", fontWeight = FontWeight.Bold)
-                matches.take(30).forEach { item ->
-                    Text(if (item is CatalogSourceRecord) item.title else (item as DemoComic).title, color = ArchiveRed)
-                }
-            }
-        }
-        if (records.isNotEmpty()) {
-            WhiteCard {
-                Text("最近更新", fontWeight = FontWeight.Bold)
-                records.take(12).forEach { record ->
-                    TextButton(onClick = { onOpenRecord(record) }) {
-                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-                            Text(record.title, fontWeight = FontWeight.Medium)
-                            Text("${record.yearLabel ?: "未知年份"} · ${record.sizeLabel ?: "大小未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-        }
-        error?.let { ErrorText(it) }
-        guide?.let { current ->
-            WhiteCard {
-                Text(current.title, fontWeight = FontWeight.Bold)
-                current.description?.let { Text(it, color = Color.DarkGray) }
-                Text("来源：${current.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
-                current.sections.forEach { section ->
-                    Text("${section.order}. ${section.title}", fontWeight = FontWeight.Bold)
-                    section.issues.take(12).forEach { issue ->
-                        Text("${issue.order}. Issue ${issue.issueExternalId ?: "未知"} · ${issue.sourceUrl}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    }
-                }
-            }
-        }
-        character?.let { current ->
-            WhiteCard {
-                Text("官方角色资料：${current.name}", fontWeight = FontWeight.Bold)
-                current.overview?.let { Text(it, color = Color.DarkGray) }
-                Text("来源：${current.sourceUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
-                Text("角色资料不是某一期的出场证明；具体关系需要 issue/API 证据。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        if (guide == null && character == null && !busy) {
-            WhiteCard {
-                Text("尚未读取官方资料", fontWeight = FontWeight.Bold)
-                Text("点击“读取官方资料”后保存官方阅读指南和角色资料的来源证据。", color = Color.Gray)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SourceCover(url: String?, repository: ReaderRepository, modifier: Modifier) {
-    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    LaunchedEffect(url) {
-        bitmap = url?.let { runCatching { repository.loadCover(it) }.getOrNull() }
-    }
-    Surface(modifier.clip(RoundedCornerShape(8.dp)), color = Color(0xFFF8E6E8)) {
-        if (bitmap != null) {
-            Image(bitmap!!.asImageBitmap(), "来源封面", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("封面", color = ArchiveRed, style = MaterialTheme.typography.labelSmall) }
-        }
-    }
-}
-
-@Composable
-private fun SourceDetailScreen(record: CatalogSourceRecord, repository: ReaderRepository, onBack: () -> Unit, onRead: (DemoComic) -> Unit) {
-    val scope = rememberCoroutineScope()
-    var inspection by remember(record.externalId) { mutableStateOf<SourceAssetInspection?>(null) }
-    var error by remember(record.externalId) { mutableStateOf<String?>(null) }
-    var busy by remember(record.externalId) { mutableStateOf(true) }
-    LaunchedEffect(record.externalId) {
-        try {
-            val raw = repository.inspectGetComics(record)
-            val checked = raw.assets.map { asset ->
-                if (asset.status == SourceAssetStatus.METADATA_ONLY) repository.validateSourceAsset(asset) else asset
-            }
-            inspection = raw.copy(assets = checked)
-        } catch (e: Exception) { error = "来源文件暂时无法验证，请稍后重试。" }
-        finally { busy = false }
-    }
-    val ready = inspection?.assets?.firstOrNull { it.status == SourceAssetStatus.READY }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TextButton(onClick = onBack) { Text("返回", color = ArchiveRed) }
-        WhiteCard {
-            Row(verticalAlignment = Alignment.Top) {
-                SourceCover(record.coverUrl, repository, Modifier.width(120.dp).height(168.dp))
-                Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(record.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    record.yearLabel?.let { Text("年份：$it", color = Color.Gray) }
-                    record.sizeLabel?.let { Text("大小：$it", color = Color.Gray) }
-                    Text("来源文章：${record.canonicalUrl}", color = ArchiveRed, style = MaterialTheme.typography.labelSmall)
-                }
-            }
-            record.synopsis?.let { Text(it, color = Color.DarkGray) }
-        }
-        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        error?.let { ErrorText(it) }
-        if (!busy && error == null) {
-            Text(
-                if (ready != null) "已验证可读文件：${ready.fileName ?: ready.host ?: "来源资产"}"
-                else "正文文件未通过 Range/ETag 验证，暂不能开始阅读。",
-                color = if (ready != null) Color(0xFF238636) else Color.Gray,
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(enabled = ready != null, modifier = Modifier.weight(1f), onClick = {
-                    val asset = ready ?: return@Button
-                    val comic = DemoComic(
-                        id = "${record.externalId}:${asset.id}",
-                        title = record.title,
-                        description = record.synopsis ?: "GetComics 来源文章",
-                        path = asset.fileName ?: asset.candidateUrl,
-                        series = "GetComics 来源条目",
-                        year = record.yearLabel ?: "未知年份",
-                        isTestContent = false,
-                        sourceUrl = asset.candidateUrl,
-                        sourceAssetStatus = SourceAssetStatus.READY,
-                    )
-                    onRead(comic)
-                }) { Text("开始阅读") }
-                OutlinedButton(modifier = Modifier.weight(1f), onClick = {
-                    scope.launch { repository.addToShelf("默认书架", record.externalId) }
-                }) { Text("加入书架") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CacheScreen(repository: ReaderRepository) {
+private fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -> Unit) {
     val scope = rememberCoroutineScope()
     var snapshot by remember { mutableStateOf<CacheSnapshot?>(null) }
     var endpoint by remember { mutableStateOf(repository.baseUrl) }
     var result by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var showDeveloper by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         try { snapshot = repository.cacheSnapshot() }
         catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("观察者漫格 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         WhiteCard {
             Text("临时阅读缓存", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("${snapshot?.let { formatBytes(it.committedBytes) } ?: "—"} / 500 MB", style = MaterialTheme.typography.headlineSmall)
@@ -783,8 +356,9 @@ private fun CacheScreen(repository: ReaderRepository) {
             } }) { Text("清理可清理缓存") }
             Text("目录、阅读进度、书签与笔记独立持久保存。当前使用的页面不会被清理。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
-        WhiteCard {
-            Text("本地测试服务器", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        TextButton(onClick = { showDeveloper = !showDeveloper }) { Text(if (showDeveloper) "收起开发测试" else "开发测试") }
+        if (showDeveloper) WhiteCard {
+            Text("开发测试（仅测试漫画需要电脑）", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             OutlinedTextField(endpoint, { endpoint = it }, Modifier.fillMaxWidth(), label = { Text("服务器基础地址") }, singleLine = true)
             Text("模拟器： http://10.0.2.2:8765\nadb reverse 后： http://127.0.0.1:8765", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             Button(onClick = {
@@ -798,9 +372,10 @@ private fun CacheScreen(repository: ReaderRepository) {
         }
         result?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { ErrorText(it) }
-        WhiteCard {
-            Text("验证边界", fontWeight = FontWeight.Bold)
-            Text("此版本验证标准 CBZ、合成 ZIP64、Range 错误、网络中断和对象变化。尚未接入漫威目录与任何漫画下载站。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        if (showDeveloper) WhiteCard {
+            Text("测试漫画", fontWeight = FontWeight.Bold)
+            Text("目录、书架和真实来源不使用上述电脑地址。只有以下自建测试漫画依赖测试服务器。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            repository.comics.forEach { comic -> TextButton(onClick = { onOpenTest(comic) }) { Text(comic.title) } }
         }
     }
 }

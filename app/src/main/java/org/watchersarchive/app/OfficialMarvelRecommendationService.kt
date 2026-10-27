@@ -2,66 +2,93 @@ package org.watchersarchive.app
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.time.Instant
-import java.util.Locale
 
-/** Official-source guide and character metadata. It never infers story order. */
+/** Parse only links actually present in official guide content; never invent prerequisite issues. */
 class OfficialMarvelRecommendationService(
     private val now: () -> String = { Instant.now().toString() },
+    private val fetchText: suspend (String) -> String = { SourceHttpClient.text(it) },
 ) {
     suspend fun fetchGuide(url: String): OfficialGuide = withContext(Dispatchers.IO) {
-        parseGuide(url, getText(url))
+        requireOfficialUrl(url)
+        parseGuide(url, fetchText(url))
     }
 
     fun parseGuide(url: String, html: String, fetchedAt: String = now()): OfficialGuide {
-        val title = firstMatch(html, "(?is)<h1[^>]*>(.*?)</h1>")?.clean() ?: "Marvel Official Guide"
-        val description = firstMatch(html, "(?is)<meta[^>]+name=[\\\"']description[\\\"'][^>]+content=[\\\"']([^\\\"']+)")?.clean()
-        val issuePattern = Regex("(?i)href=[\\\"']([^\\\"']*/comics/issue/([0-9]+)/[^\\\"']*)[\\\"']")
-        val issues = issuePattern.findAll(html).distinctBy { it.groupValues[2] }.mapIndexed { index, match ->
-            OfficialGuideIssue(index + 1, match.groupValues[2], absoluteUrl(url, match.groupValues[1]), "Official guide issue link")
-        }.toList()
-        val sectionTitles = Regex("(?is)<h2[^>]*>(.*?)</h2>").findAll(html).map { it.groupValues[1].clean() }.filter { it.isNotBlank() }.toList()
-        val sections = if (sectionTitles.isEmpty()) listOf(OfficialGuideSection(1, "Official guide order", issues)) else
-            sectionTitles.mapIndexed { index, section -> OfficialGuideSection(index + 1, section, if (index == 0) issues else emptyList()) }
-        val externalId = Regex("/guides/([0-9]+)/").find(url)?.groupValues?.get(1)
+        val document = Jsoup.parse(html, url)
+        val content = document.selectFirst("main") ?: document.selectFirst("article") ?: document.body()
+        content.select("nav,header,footer,script,style,[role=navigation],.related-content,.relatedContent").remove()
+        val title = content.selectFirst("h1")?.text()?.takeIf { it.isNotBlank() }
+            ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.takeIf { it.isNotBlank() }
+            ?: throw IOException("官方指南页面暂不可解析")
+        val description = document.selectFirst("meta[name=description],meta[property=og:description]")
+            ?.attr("content")?.let(::sourceText)?.takeIf { it.isNotBlank() }
+        val sections = mutableListOf<OfficialGuideSection>()
+        var sectionTitle = "指南列出的漫画"
+        var issues = mutableListOf<OfficialGuideIssue>()
+        val seen = mutableSetOf<String>()
+        fun flush() {
+            if (issues.isNotEmpty()) {
+                sections += OfficialGuideSection(sections.size + 1, sectionTitle, issues.toList())
+                issues = mutableListOf()
+            }
+        }
+        // DOM order plus the nearest preceding content heading preserve the guide's
+        // displayed grouping. A role/related navigation link cannot create an issue.
+        content.getAllElements().forEach { element ->
+            if (element.tagName() in setOf("h2", "h3")) {
+                val heading = element.text().trim()
+                if (heading.isNotEmpty()) { flush(); sectionTitle = heading }
+            }
+            if (element.tagName() != "a") return@forEach
+            val linked = safeSourceUrl(element.attr("href"), url) ?: return@forEach
+            val host = URI(linked).host.orEmpty().lowercase()
+            if (host != "marvel.com" && host != "www.marvel.com") return@forEach
+            val id = Regex("/comics/issue/(\\d+)(?:/|$)").find(URI(linked).path.orEmpty())?.groupValues?.get(1) ?: return@forEach
+            if (!seen.add(id)) return@forEach
+            issues += OfficialGuideIssue(
+                order = issues.size + 1,
+                issueExternalId = id,
+                sourceUrl = linked,
+                sourceEvidence = "Marvel 官方指南「$title」/「$sectionTitle」显示顺序；不是故事内部时间线。",
+            )
+        }
+        flush()
+        if (sections.isEmpty()) throw IOException("官方指南尚未返回可核实的漫画清单")
+        val externalId = Regex("/guides/(\\d+)(?:/|$)").find(url)?.groupValues?.get(1)
         return OfficialGuide(externalId, title, description, url, fetchedAt, sections)
     }
 
     suspend fun fetchCharacter(url: String): OfficialCharacterProfile = withContext(Dispatchers.IO) {
-        parseCharacter(url, getText(url))
+        requireOfficialUrl(url)
+        parseCharacter(url, fetchText(url))
     }
 
     fun parseCharacter(url: String, html: String, fetchedAt: String = now()): OfficialCharacterProfile {
-        val slug = url.trimEnd('/').substringAfterLast('/')
-        val name = firstMatch(html, "(?is)<h1[^>]*>(.*?)</h1>")?.clean() ?: slug
-        val overview = firstMatch(html, "(?is)<meta[^>]+name=[\\\"']description[\\\"'][^>]+content=[\\\"']([^\\\"']+)")?.clean()
-        val related = Regex("(?i)href=[\\\"']([^\\\"']*/characters/[^\\\"']+)[\\\"']").findAll(html)
-            .map { absoluteUrl(url, it.groupValues[1]) }.distinct().toList()
+        val document = Jsoup.parse(html, url)
+        val content = document.selectFirst("main") ?: document.selectFirst("article") ?: document.body()
+        content.select("nav,header,footer,script,style,[role=navigation]").remove()
+        val name = content.selectFirst("h1")?.text()?.takeIf { it.isNotBlank() }
+            ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.takeIf { it.isNotBlank() }
+            ?: throw IOException("官方角色页面暂不可解析")
+        val overview = document.selectFirst("meta[name=description],meta[property=og:description]")?.attr("content")
+            ?.let(::sourceText)?.takeIf { it.isNotBlank() }
+        val related = content.select("a[href]").mapNotNull { anchor ->
+            safeSourceUrl(anchor.attr("href"), url)?.takeIf { target ->
+                URI(target).host.orEmpty() in setOf("marvel.com", "www.marvel.com") && URI(target).path.orEmpty().startsWith("/characters/")
+            }
+        }.filter { it.trimEnd('/') != url.trimEnd('/') }.distinct()
+        val slug = Regex("/characters/([^/]+)").find(URI(url).path.orEmpty())?.groupValues?.get(1)
+            ?: throw IOException("官方角色地址无效")
         return OfficialCharacterProfile(slug, name, url, overview, emptyList(), related, fetchedAt)
     }
 
-    private fun getText(url: String): String {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 10_000
-        connection.readTimeout = 15_000
-        connection.setRequestProperty("Accept-Encoding", "identity")
-        connection.setRequestProperty("User-Agent", "WatchersArchive-OfficialMetadata/1.0")
-        return connection.inputStream.use { input ->
-            if (connection.responseCode !in 200..299) throw IOException("Official metadata HTTP ${connection.responseCode}")
-            input.readBytesLimited(4 * 1024 * 1024).toString(Charsets.UTF_8)
-        }.also { connection.disconnect() }
-    }
-
-    private fun firstMatch(value: String, pattern: String): String? = Regex(pattern).find(value)?.groupValues?.getOrNull(1)
-    private fun absoluteUrl(base: String, value: String): String = if (value.startsWith("http")) value else URL(URL(base), value).toString()
-    private fun String.clean(): String = replace(Regex("(?is)<[^>]+>"), " ").replace(Regex("\\s+"), " ").trim()
-    private fun java.io.InputStream.readBytesLimited(limit: Int): ByteArray {
-        val output = java.io.ByteArrayOutputStream(); val buffer = ByteArray(8192); var total = 0
-        while (true) { val count = read(buffer); if (count < 0) break; total += count; if (total > limit) throw IOException("Official metadata response exceeds limit"); output.write(buffer, 0, count) }
-        return output.toByteArray()
+    private fun requireOfficialUrl(url: String) {
+        val parsed = safeSourceUrl(url)?.let(::URI)
+        require(parsed?.scheme == "https" && parsed.host.orEmpty() in setOf("www.marvel.com", "marvel.com")) { "仅支持 Marvel 官方 HTTPS 页面" }
     }
 }
-

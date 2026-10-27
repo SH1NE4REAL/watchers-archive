@@ -1,0 +1,289 @@
+package org.watchersarchive.app
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+@Composable
+internal fun DiscoveryScreen(repository: ReaderRepository, onOpen: (CatalogSourceRecord) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
+    var guides by remember { mutableStateOf(emptyList<OfficialGuide>()) }
+    var characters by remember { mutableStateOf(emptyList<OfficialCharacterProfile>()) }
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
+    var refreshing by remember { mutableStateOf(false) }
+    var searching by remember { mutableStateOf(false) }
+    var searchPage by remember { mutableIntStateOf(1) }
+    var moreResults by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var searchNotice by remember { mutableStateOf<String?>(null) }
+    var officialNotice by remember { mutableStateOf<String?>(null) }
+    var source by remember { mutableStateOf<RecommendationCollection?>(null) }
+    val context = LocalContext.current
+
+    suspend fun loadSaved() {
+        try {
+            records = repository.getComicsRecords()
+            guides = repository.savedOfficialGuides()
+            characters = repository.savedOfficialCharacters()
+        } catch (c: CancellationException) { throw c }
+        catch (_: Exception) { notice = "暂时无法读取保存的目录，可稍后重试。" }
+    }
+    suspend fun refreshArticles() {
+        refreshing = true; notice = null
+        try { records = repository.refreshGetComics() }
+        catch (c: CancellationException) { throw c }
+        catch (_: Exception) { notice = "暂时无法更新，已保留上次保存的漫画。" }
+        finally { refreshing = false }
+    }
+    LaunchedEffect(Unit) { loadSaved() }
+    LaunchedEffect(query) {
+        searchNotice = null
+        searchPage = 1; moreResults = false
+        if (query.trim().length < 2) { results = emptyList(); searching = false; return@LaunchedEffect }
+        results = records.filter { it.title.contains(query.trim(), true) }
+        delay(650)
+        searching = true
+        try { results = repository.searchGetComics(query); moreResults = results.size == 30 }
+        catch (c: CancellationException) { throw c }
+        catch (_: Exception) { searchNotice = "在线搜索暂时不可用，显示已保存的匹配条目。" }
+        finally { searching = false }
+    }
+
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item {
+            OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
+                placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp))
+        }
+        if (query.isNotBlank()) {
+            item { Text(if (searching) "正在搜索…" else "搜索结果", style = MaterialTheme.typography.titleMedium) }
+            item { Text("检索 GetComics 漫威分类，结果受来源收录范围限制。", color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
+            searchNotice?.let { item { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) } }
+            items(results, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
+            if (moreResults) item {
+                TextButton(enabled = !searching, onClick = { scope.launch {
+                    val requestedQuery = query
+                    val next = searchPage + 1
+                    searching = true
+                    try {
+                        val batch = repository.searchGetComics(requestedQuery, next)
+                        if (query == requestedQuery) {
+                            results = (results + batch).distinctBy { it.externalId }
+                            searchPage = next; moreResults = batch.size == 30
+                        }
+                    } catch (c: CancellationException) { throw c }
+                    catch (_: Exception) { searchNotice = "下一页暂时无法加载，请稍后重试。" }
+                    finally { searching = false }
+                } }) { Text("加载更多") }
+            }
+            if (results.isEmpty() && !searching) item { Text("没有匹配的条目。", color = Color.Gray) }
+        } else {
+            item { Text("大事件专题", style = MaterialTheme.typography.titleLarge) }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(recommendationCollections, key = { it.id }) { collection ->
+                        Card(onClick = { source = collection }, modifier = Modifier.width(220.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(collection.title, style = MaterialTheme.typography.titleLarge)
+                                Text(collection.description, color = Color.Gray, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+                                Text("查看相关漫画", color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+            if (guides.isNotEmpty() || characters.isNotEmpty()) {
+                item { Text("官方指南与角色", style = MaterialTheme.typography.titleLarge) }
+                items(guides, key = { it.canonicalUrl }) { guide ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(guide.title, style = MaterialTheme.typography.titleMedium)
+                            guide.description?.let { Text(it, maxLines = 3, style = MaterialTheme.typography.bodySmall) }
+                            Text("${guide.sections.sumOf { it.issues.size }} 个官方页面条目", color = Color.Gray)
+                            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(guide.canonicalUrl))) }) { Text("查看官方指南") }
+                        }
+                    }
+                }
+                items(characters, key = { it.externalSlug }) { c ->
+                    Card(onClick = { query = c.name }, colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Column(Modifier.padding(16.dp)) { Text(c.name, style = MaterialTheme.typography.titleMedium); c.overview?.let { Text(it, maxLines = 3) } }
+                    }
+                }
+            }
+            item {
+                TextButton(onClick = { scope.launch {
+                    officialNotice = "正在更新官方资料…"
+                    try { repository.refreshOfficialGuide(); guides = repository.savedOfficialGuides(); officialNotice = null }
+                    catch (c: CancellationException) { throw c }
+                    catch (_: Exception) { officialNotice = "官方站暂不可用，专题入口和已保存资料仍可查看。" }
+                    try { repository.refreshOfficialCharacter(); characters = repository.savedOfficialCharacters() }
+                    catch (c: CancellationException) { throw c }
+                    catch (_: Exception) { /* Independent source: do not hide the article list. */ }
+                } }) { Text("更新官方资料") }
+                officialNotice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray) }
+            }
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("最近更新", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                    TextButton(enabled = !refreshing, onClick = { scope.launch { refreshArticles() } }) { Text(if (refreshing) "更新中…" else "刷新") }
+                }
+                notice?.let { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
+            }
+            items(records, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
+            if (records.isEmpty()) item { Text("点击刷新获取漫画。无需连接电脑测试服务器。", color = Color.Gray) }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+    }
+    source?.let { collection ->
+        AlertDialog(onDismissRequest = { source = null }, title = { Text(collection.title) },
+            text = { Column { Text(collection.description); Spacer(Modifier.height(10.dp)); Text(collection.sourceLabel, color = Color.Gray); Text(collection.sourceUrl, style = MaterialTheme.typography.bodySmall) } },
+            confirmButton = { TextButton(onClick = { query = collection.searchTerm; source = null }) { Text("查看相关漫画") } },
+            dismissButton = { TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(collection.sourceUrl))) }) { Text("官方来源") } })
+    }
+}
+
+@Composable
+internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceRecord) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var names by remember { mutableStateOf(listOf("全部")) }
+    var selected by remember { mutableStateOf("全部") }
+    var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
+    var ids by remember { mutableStateOf(emptySet<String>()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var showCreate by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
+    LaunchedEffect(selected) {
+        try {
+            names = listOf("全部") + repository.shelfNames()
+            records = repository.getComicsRecords()
+            ids = repository.shelfItems(selected)
+        } catch (c: CancellationException) { throw c }
+        catch (_: Exception) { error = "无法加载书架，请稍后重试。" }
+    }
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("我的书架", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                TextButton(onClick = { showCreate = true }) { Text("新建分类") }
+            }
+        }
+        item {
+            // Same-axis verticalScroll inside LazyColumn caused the 0.3.0 measure crash.
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                names.forEach { name -> FilterChip(selected == name, onClick = { selected = name }, label = { Text(name) }) }
+            }
+        }
+        error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
+        val books = records.filter { it.externalId in ids }
+        items(books, key = { it.externalId }) { ComicSourceRow(it, repository) { onSource(it) } }
+        if (books.isEmpty()) item { Text("书架还没有漫画。在漫画详情页点击“加入书架”即可。", color = Color.Gray) }
+    }
+    if (showCreate) AlertDialog(onDismissRequest = { showCreate = false }, title = { Text("新建分类") }, text = {
+        Column { OutlinedTextField(newName, { newName = it }, singleLine = true, label = { Text("分类名称") }); error?.let { Text(it, color = MaterialTheme.colorScheme.error) } }
+    }, confirmButton = { TextButton(enabled = newName.isNotBlank() && newName.trim() != "全部" && !creating, onClick = { scope.launch {
+        creating = true
+        try { repository.createShelf(newName); names = listOf("全部") + repository.shelfNames(); selected = newName.trim(); newName = ""; error = null; showCreate = false }
+        catch (c: CancellationException) { throw c }
+        catch (e: Exception) { error = e.message ?: "创建失败，请重试。" }
+        finally { creating = false }
+    } }) { Text("创建") } }, dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } })
+}
+
+@Composable
+internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: ReaderRepository, onRead: (DemoComic) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var preparing by remember(record.externalId) { mutableStateOf(false) }
+    var message by remember(record.externalId) { mutableStateOf<String?>(null) }
+    var chooseShelf by remember(record.externalId) { mutableStateOf(false) }
+    var shelfNames by remember { mutableStateOf(emptyList<String>()) }
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item { Row(verticalAlignment = Alignment.Top) {
+            CoverImage(record.coverUrl, repository, Modifier.width(110.dp).height(164.dp))
+            Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(record.title, style = MaterialTheme.typography.titleLarge)
+                record.sizeLabel?.let { Text(it, color = Color.Gray) }
+                record.yearLabel?.let { Text(it, color = Color.Gray) }
+            }
+        } }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(enabled = !preparing, modifier = Modifier.weight(1f), onClick = { scope.launch {
+                    preparing = true; message = "正在准备阅读…"
+                    try { onRead(repository.prepareSourceReading(record)); message = null }
+                    catch (c: CancellationException) { throw c }
+                    catch (e: Exception) { message = e.message ?: "暂时无法打开该漫画。" }
+                    finally { preparing = false }
+                } }) { Text(if (preparing) "准备中…" else "开始阅读") }
+                OutlinedButton(modifier = Modifier.weight(1f), onClick = { scope.launch {
+                    try { shelfNames = repository.shelfNames(); chooseShelf = true }
+                    catch (c: CancellationException) { throw c }
+                    catch (_: Exception) { message = "暂时无法读取书架。" }
+                } }) { Text("加入书架") }
+            }
+            if (preparing) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 10.dp))
+            message?.let { Text(it, Modifier.padding(top = 10.dp), color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
+        }
+        item { Text("简介", style = MaterialTheme.typography.titleMedium); Text(record.synopsis ?: "来源暂未提供简介。", Modifier.padding(top = 8.dp)) }
+        item {
+            Text("GetComics · ${record.sourcePublishedAt ?: "发布时间未知"}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+            Text("首次发现：${record.firstDiscoveredAt}", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+        }
+    }
+    if (chooseShelf) AlertDialog(onDismissRequest = { chooseShelf = false }, title = { Text("加入书架") }, text = {
+        Column { shelfNames.forEach { name -> TextButton(onClick = { scope.launch {
+            try { repository.addToShelf(name, record.externalId); message = "已加入$name"; chooseShelf = false }
+            catch (c: CancellationException) { throw c }
+            catch (_: Exception) { message = "加入书架失败，请重试。"; chooseShelf = false }
+        } }) { Text(name) } } }
+    }, confirmButton = { TextButton(onClick = { chooseShelf = false }) { Text("取消") } })
+}
+
+@Composable
+internal fun ComicSourceRow(record: CatalogSourceRecord, repository: ReaderRepository, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            CoverImage(record.coverUrl, repository, Modifier.width(66.dp).height(96.dp))
+            Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(record.title, style = MaterialTheme.typography.titleMedium, maxLines = 3)
+                Text(record.sizeLabel ?: "大小未知", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun CoverImage(url: String?, repository: ReaderRepository, modifier: Modifier = Modifier) {
+    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(url) {
+        bitmap = null
+        try { bitmap = url?.let { repository.loadCover(it) } }
+        catch (c: CancellationException) { throw c }
+        catch (_: Exception) { /* A failed image must not crash the catalogue. */ }
+    }
+    Surface(modifier, shape = RoundedCornerShape(6.dp), color = Color(0xFFF3E6E7)) {
+        bitmap?.let { Image(it.asImageBitmap(), "漫画封面", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("暂无封面", color = Color.Gray, style = MaterialTheme.typography.labelSmall) }
+    }
+}

@@ -15,6 +15,9 @@ data class DemoComic(
     val isTestContent: Boolean = true,
     val sourceUrl: String? = null,
     val sourceAssetStatus: SourceAssetStatus? = null,
+    val sourceRecordId: String? = null,
+    val verifiedETag: String? = null,
+    val verifiedLength: Long? = null,
 )
 
 data class ReaderPage(
@@ -61,5 +64,10 @@ interface ReaderRepository {
     suspend fun createShelf(name: String)
     suspend fun addToShelf(shelf: String, comicId: String)
     suspend fun shelfItems(shelf: String): Set<String>
+    suspend fun searchGetComics(query: String, page: Int = 1): List<CatalogSourceRecord>
+    suspend fun savedOfficialGuides(): List<OfficialGuide>
+    suspend fun savedOfficialCharacters(): List<OfficialCharacterProfile>
+    suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection?
+    suspend fun prepareSourceReading(record: CatalogSourceRecord): DemoComic
     fun traceLines(): List<String>
 }

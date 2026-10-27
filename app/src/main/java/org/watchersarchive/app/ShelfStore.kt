@@ -26,7 +26,7 @@ class ShelfStore(private val file: File) {
 
     fun createShelf(name: String) = synchronized(lock) {
         val clean = name.trim()
-        require(clean.isNotBlank() && clean.length <= 40)
+        require(clean.isNotBlank() && clean.length <= 40 && clean != "全部") { "分类名称需为 1–40 个字，且不能使用“全部”。" }
         val key = encode(clean)
         if (!properties.containsKey("shelf.$key.name")) {
             properties.setProperty("shelf.$key.name", clean)
@@ -45,6 +45,8 @@ class ShelfStore(private val file: File) {
     fun items(shelfName: String): Set<String> = synchronized(lock) {
         properties.getProperty("shelf.${encode(shelfName)}.items", "").split(',').filter { it.isNotBlank() }.toSet()
     }
+
+    fun allItems(): Set<String> = synchronized(lock) { shelves().flatMap { items(it) }.toSet() }
 
     private fun encode(value: String) = Base64.getUrlEncoder().withoutPadding().encodeToString(value.toByteArray(Charsets.UTF_8))
 
