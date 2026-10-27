@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun DiscoveryScreen(
@@ -81,12 +83,23 @@ internal fun DiscoveryScreen(
     }
     BackHandler(enabled = query.isNotBlank()) { clearSearch() }
 
+    suspend fun savedMatches(text: String): List<CatalogSourceRecord> {
+        val saved = records
+        return withContext(Dispatchers.Default) {
+            CatalogSearchMatcher.rank(saved, text, CatalogSearchAliases.expandedTerms(text))
+        }
+    }
+
     suspend fun loadSaved() {
         try {
             records = repository.getComicsRecords().filter { it.source == "getcomics" }
             guides = repository.savedOfficialGuides()
             characters = repository.savedOfficialCharacters()
-            if (query.isNotBlank() && results.isEmpty()) results = records.filter { it.title.contains(query.trim(), true) }
+            val requested = query.trim()
+            if (requested.isNotBlank() && results.isEmpty()) {
+                val matching = savedMatches(requested)
+                if (query.trim() == requested && results.isEmpty()) results = matching
+            }
         } catch (c: CancellationException) { throw c }
         catch (_: Exception) { notice = "暂时无法读取保存的目录，可稍后重试。" }
     }
@@ -119,10 +132,14 @@ internal fun DiscoveryScreen(
         // and section actions already reset the list when the user requests it.
         if (requestedQuery.length < 2) { results = emptyList(); searching = false; return@LaunchedEffect }
         searchState.listState.scrollToItem(0)
-        results = records.filter { it.title.contains(requestedQuery, true) }
+        results = savedMatches(requestedQuery)
         delay(650)
         searching = true
-        try { results = repository.searchGetComics(requestedQuery); moreResults = results.size == 30 }
+        try {
+            val response = repository.searchCatalogue(requestedQuery)
+            results = response.records; moreResults = response.hasMore
+            if (response.offlineFallback) searchNotice = "部分在线结果暂不可用，已保留取得的漫画。"
+        }
         catch (c: CancellationException) { throw c }
         catch (_: Exception) { searchNotice = "在线搜索暂时不可用，显示已保存的匹配条目。" }
         finally { searching = false }
@@ -171,17 +188,18 @@ internal fun DiscoveryScreen(
             if (query.isNotBlank()) {
                 item { Text(if (searching) "正在搜索…" else "搜索结果", style = MaterialTheme.typography.titleMedium, color = red) }
                 searchNotice?.let { item { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) } }
-                items(results, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
+                items(results, key = { "${it.source}|${it.externalId}" }) { ComicSourceRow(it, repository) { onOpen(it) } }
                 if (moreResults) item {
                     TextButton(enabled = !searching, onClick = { scope.launch {
                         val requestedQuery = query
                         val next = searchPage + 1
                         searching = true
                         try {
-                            val batch = repository.searchGetComics(requestedQuery, next)
+                            val batch = repository.searchCatalogue(requestedQuery, next)
                             if (query == requestedQuery) {
-                                results = (results + batch).distinctBy { it.externalId }
-                                searchPage = next; moreResults = batch.size == 30
+                                results = (results + batch.records).distinctBy { it.source to it.externalId }
+                                searchPage = next; moreResults = batch.hasMore
+                                if (batch.offlineFallback) searchNotice = "部分在线结果暂不可用，已保留取得的漫画。"
                             }
                         } catch (c: CancellationException) { throw c }
                         catch (_: Exception) { searchNotice = "下一页暂时无法加载，请稍后重试。" }

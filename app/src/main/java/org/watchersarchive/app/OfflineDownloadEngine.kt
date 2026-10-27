@@ -4,7 +4,6 @@ import org.watchersarchive.core.ArchiveByteSource
 import org.watchersarchive.core.ArchiveError
 import org.watchersarchive.core.ArchiveException
 import org.watchersarchive.core.CancellationToken
-import org.watchersarchive.core.HttpRangeSource
 import org.watchersarchive.core.ReaderLimits
 import org.watchersarchive.core.RemoteIdentity
 import java.io.Closeable
@@ -16,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class OfflineDownloadEngine(
     private val store: OfflineDownloadStore,
     private val limits: ReaderLimits = ReaderLimits(),
-    private val sourceFactory: (OfflineDownloadSpec) -> ArchiveByteSource = { HttpRangeSource(it.url, limits) },
+    private val sourceFactory: (OfflineDownloadSpec) -> ArchiveByteSource = { StreamingHttpRangeSource(it.url, limits) },
     private val freeSpace: (File) -> Long = { it.usableSpace },
     private val reserveBytes: Long = 64L * 1024 * 1024,
     private val chunkBytes: Int = minOf(limits.maxRangeBytes, 4 * 1024 * 1024),
@@ -51,18 +50,53 @@ class OfflineDownloadEngine(
                     output.seek(committed)
                     store.update(spec, OfflineDownloadState.DOWNLOADING, committed)
                     onProgress(checkNotNull(store.status(spec.comicId)))
+                    var streamingFallbackUsed = false
                     while (committed < spec.length) {
                         token.throwIfCancelled()
-                        val count = minOf(chunkBytes.toLong(), spec.length - committed).toInt()
+                        val streaming = source as? OfflineRangeTransfer
+                        val window = if (streaming == null) chunkBytes else minOf(
+                            streaming.maxTransferBytes,
+                            if (streamingFallbackUsed) chunkBytes else 16 * 1024 * 1024,
+                        )
+                        if (window <= 0) throw ArchiveException(ArchiveError.LIMIT_EXCEEDED, "离线下载窗口无效")
+                        val count = minOf(window.toLong(), spec.length - committed).toInt()
                         ensureSpace(count.toLong())
-                        val bytes = source.readRange(identity, committed, count, token)
-                        if (bytes.size != count) throw ArchiveException(ArchiveError.INVALID_LENGTH, "下载片段不完整，未保存损坏内容")
-                        token.throwIfCancelled()
                         try {
-                            output.write(bytes)
+                            if (streaming != null) {
+                                var provisional = 0L
+                                var reported = 0L
+                                streaming.transferRange(identity, committed, count, token) { bytes, offset, length ->
+                                    token.throwIfCancelled()
+                                    if (length <= 0 || offset < 0 || offset > bytes.size - length || provisional > count - length.toLong()) {
+                                        throw ArchiveException(ArchiveError.INVALID_LENGTH, "下载片段超出预期范围")
+                                    }
+                                    ensureSpace(length.toLong())
+                                    output.write(bytes, offset, length)
+                                    provisional += length
+                                    // UI progress may be provisional. Only store.update
+                                    // below advances the durable resume checkpoint.
+                                    if (provisional - reported >= 1024 * 1024 || provisional == count.toLong()) {
+                                        onProgress(OfflineDownloadStatus(spec.comicId, spec.title, OfflineDownloadState.DOWNLOADING,
+                                            committed + provisional, spec.length))
+                                        reported = provisional
+                                    }
+                                }
+                                if (provisional != count.toLong()) throw ArchiveException(ArchiveError.INVALID_LENGTH, "下载片段不完整")
+                            } else {
+                                val bytes = source.readRange(identity, committed, count, token)
+                                if (bytes.size != count) throw ArchiveException(ArchiveError.INVALID_LENGTH, "下载片段不完整，未保存损坏内容")
+                                token.throwIfCancelled()
+                                output.write(bytes)
+                            }
+                            token.throwIfCancelled()
                             output.fd.sync()
                         } catch (error: Exception) {
                             runCatching { output.setLength(committed) }
+                            if (streaming != null && !streamingFallbackUsed && count > chunkBytes &&
+                                error is ArchiveException && error.code in setOf(ArchiveError.INVALID_CONTENT_RANGE, ArchiveError.INVALID_LENGTH)) {
+                                streamingFallbackUsed = true
+                                continue
+                            }
                             throw error
                         }
                         // Persist the durable checkpoint before allowing this offset to be reused.

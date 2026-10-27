@@ -82,6 +82,7 @@ class LibraryVisualRuntimeTest {
             override suspend fun offlineDownloads() = emptyList<OfflineDownloadStatus>()
             override suspend fun cacheSnapshot() = CacheSnapshot(0, 0, 500_000_000, 0)
             override suspend fun searchGetComics(query: String, page: Int) = books.filter { it.title.contains(query, true) }
+            override suspend fun searchCatalogue(query: String, page: Int) = CatalogSearchPage(searchGetComics(query, page), false)
             override suspend fun eventCover(collection: RecommendationCollection) = books.first().coverUrl
             override fun peekCover(url: String) = covers[(url.hashCode() and Int.MAX_VALUE) % covers.size]
             override suspend fun loadCover(url: String) = peekCover(url)

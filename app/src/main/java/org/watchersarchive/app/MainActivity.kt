@@ -435,6 +435,7 @@ private fun SettingsToggleRow(title: String, description: String, checked: Boole
 }
 
 private fun readerErrorMessage(failure: Exception): String = when (failure) {
+    is ComicSourceException -> failure.message ?: "漫画来源暂时无法访问，请稍后重试。"
     is ArchiveException -> when (failure.code) {
         ArchiveError.CANCELLED -> "已取消读取。"
         ArchiveError.NETWORK, ArchiveError.HTTP_ERROR -> "暂时无法加载，请检查网络后重试。"

@@ -48,7 +48,8 @@ internal class SourceResolver(
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) {
                     currentCoroutineContext().ensureActive()
-                    return asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR, reason = "暂时无法连接 Pixeldrain，请稍后重试。")
+                    return asset.copy(status = SourceAssetStatus.TRANSIENT_ERROR,
+                        reason = "暂时无法连接 Pixeldrain；来源可能暂时不可达或已达到今日免费额度，请稍后重试。")
                 }
             }
             if (!uri.path.orEmpty().startsWith("/dls/")) {

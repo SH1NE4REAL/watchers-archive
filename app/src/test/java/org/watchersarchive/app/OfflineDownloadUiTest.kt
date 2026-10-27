@@ -86,6 +86,22 @@ class OfflineDownloadUiTest {
         assertEquals(false, wifi)
     }
 
+    @Test fun sourceConnectionFailureKeepsItsSpecificMessageInsteadOfSuggestingDiskSpace() {
+        val actual = AndroidRepository(ApplicationProvider.getApplicationContext())
+        val repository = object : ReaderRepository by actual {
+            override suspend fun offlineStatus(comicId: String): OfflineDownloadStatus? = null
+            override suspend fun downloadComic(record: CatalogSourceRecord, wifiOnly: Boolean) {
+                throw ComicSourceException(SourceAssetStatus.TRANSIENT_ERROR, "暂时无法连接 Pixeldrain，请稍后重试。")
+            }
+        }
+        compose.setContent { MaterialTheme { DownloadComicAction(record, repository) } }
+        compose.onNodeWithTag("download-comic").performClick()
+        compose.onNodeWithTag("confirm-download").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("暂时无法连接 Pixeldrain，请稍后重试。").assertIsDisplayed()
+        compose.onNodeWithText("空间充足", substring = true).assertDoesNotExist()
+    }
+
     private fun verifyManagerResume(allowMobileData: Boolean, defaultAllowMobileData: Boolean = false) {
         val actual = AndroidRepository(ApplicationProvider.getApplicationContext())
         var calls = 0

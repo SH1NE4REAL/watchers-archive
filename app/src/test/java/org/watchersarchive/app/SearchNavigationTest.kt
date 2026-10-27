@@ -46,6 +46,7 @@ class SearchNavigationTest {
             override suspend fun savedOfficialGuides() = emptyList<OfficialGuide>()
             override suspend fun savedOfficialCharacters() = emptyList<OfficialCharacterProfile>()
             override suspend fun searchGetComics(query: String, page: Int): List<CatalogSourceRecord> { searches.incrementAndGet(); return records }
+            override suspend fun searchCatalogue(query: String, page: Int) = CatalogSearchPage(searchGetComics(query, page), false)
             override suspend fun eventCover(collection: RecommendationCollection): String? = null
             override suspend fun loadCover(url: String) = null
             override fun peekCover(url: String) = null

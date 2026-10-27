@@ -14,6 +14,9 @@ enum class SourceAssetStatus {
     TRANSIENT_ERROR,
 }
 
+/** Curated source failure text which is safe to present without protocol diagnostics. */
+class ComicSourceException(val status: SourceAssetStatus, message: String) : java.io.IOException(message)
+
 data class CatalogSourceRecord(
     val source: String,
     val externalId: String,

@@ -128,7 +128,10 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
                     repository.downloadComic(record, wifiOnly = !allowMobileData)
                     message = if (allowMobileData) "已加入下载队列，可使用 Wi-Fi 或手机流量下载。" else "已加入下载队列，连接 Wi-Fi 后会自动下载。"
                 } catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { message = "暂时无法下载，请确认来源可用和手机空间充足后重试。" }
+                catch (failure: Exception) {
+                    message = if (failure is ComicSourceException) failure.message
+                        else "暂时无法下载，请确认来源可用和手机空间充足后重试。"
+                }
                 finally { busy = false }
             }
         }) { Text("确认下载") } },

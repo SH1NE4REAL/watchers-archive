@@ -82,6 +82,10 @@ interface ReaderRepository {
     suspend fun moveToShelf(from: String?, to: String, comicId: String)
     suspend fun shelfItems(shelf: String): Set<String>
     suspend fun searchGetComics(query: String, page: Int = 1): List<CatalogSourceRecord>
+    suspend fun searchCatalogue(query: String, page: Int = 1): CatalogSearchPage {
+        val records = searchGetComics(query, page)
+        return CatalogSearchPage(records, records.size == 30)
+    }
     suspend fun savedOfficialGuides(): List<OfficialGuide>
     suspend fun savedOfficialCharacters(): List<OfficialCharacterProfile>
     suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection?

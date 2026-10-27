@@ -63,6 +63,15 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private lateinit var catalogSnapshots: CatalogSnapshots
         private lateinit var offlineStore: OfflineDownloadStore
         val downloadJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
+        val downloadProgress = java.util.concurrent.ConcurrentHashMap<String, OfflineDownloadStatus>()
+        val searchService by lazy {
+            CatalogSearchService(
+                localRecords = { metadata.records() },
+                fetch = { query, page, perPage -> GetComicsCatalogService().fetchWordPressPosts(search = query, page = page, perPage = perPage) },
+                persist = { metadata.upsertAll(it) },
+                expandQuery = CatalogSearchAliases::expandedTerms,
+            )
+        }
 
         /**
          * Cache and persistent records are opened lazily from a suspend API. The
@@ -138,6 +147,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val cancellation = currentCoroutineContext()[Job]?.onCancellation { token.cancel() }
         var source: ArchiveByteSource? = null
         var reader: ComicArchiveReader? = null
+        var remoteSource = false
         try {
             if (!comic.isTestContent) {
                 require(comic.sourceAssetStatus == SourceAssetStatus.READY && comic.verifiedETag != null && comic.verifiedLength != null) {
@@ -151,6 +161,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                     val address = comic.sourceUrl?.takeIf { it.isNotBlank() }
                         ?: if (comic.isTestContent) "${baseUrl.trimEnd('/')}/${comic.path}"
                         else throw java.io.IOException("漫画来源不可用，请返回详情重新打开。")
+                    remoteSource = !comic.isTestContent && !address.startsWith("content://")
                     archiveSource(address)
                 }
             reader = ComicArchiveReaders.create(source, state.limits, token)
@@ -162,6 +173,18 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         } catch (failure: Throwable) {
             runCatching { reader?.close() }
             runCatching { (source as? java.io.Closeable)?.close() }
+            if (remoteSource && !token.isCancelled && failure !is CancellationException &&
+                !(failure is ArchiveException && failure.code == org.watchersarchive.core.ArchiveError.CANCELLED)) {
+                // A stale direct URL must not repeatedly bypass source resolution.
+                // Compare its version so another successful validation is retained.
+                runCatching {
+                    val id = comic.sourceRecordId ?: comic.id
+                    state.snapshots.inspection(id)?.let { saved ->
+                        val invalidated = VerifiedReadingPreparation.invalidate(saved, comic)
+                        if (invalidated !== saved) state.snapshots.saveInspection(id, invalidated)
+                    }
+                }
+            }
             throw failure
         } finally { cancellation?.dispose() }
     }
@@ -352,10 +375,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
     override suspend fun savedOfficialGuides(): List<OfficialGuide> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.snapshots.guides() }
     override suspend fun savedOfficialCharacters(): List<OfficialCharacterProfile> = withContext(Dispatchers.IO) { state.ensureInitialized(); state.snapshots.characters() }
-    override suspend fun searchGetComics(query: String, page: Int): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
+    override suspend fun searchGetComics(query: String, page: Int): List<CatalogSourceRecord> = searchCatalogue(query, page).records
+    override suspend fun searchCatalogue(query: String, page: Int): CatalogSearchPage = withContext(Dispatchers.IO) {
         state.ensureInitialized()
-        require(query.trim().length in 2..120) { "请输入至少两个字符。" }
-        GetComicsCatalogService().fetchWordPressPosts(search = query.trim(), page = page, perPage = 30).also { state.metadata.upsertAll(it) }
+        state.searchService.search(query, page)
     }
     override suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection? = withContext(Dispatchers.IO) {
         state.ensureInitialized(); state.snapshots.inspection(record.externalId)
@@ -369,30 +392,35 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                 sourceUrl = download.file.toURI().toString(), sourceAssetStatus = SourceAssetStatus.READY,
                 sourceRecordId = record.externalId, verifiedETag = download.spec.eTag, verifiedLength = download.spec.length)
         }
-        val raw = inspectGetComics(record)
-        val checked = mutableListOf<SourceAsset>()
-        var ready: SourceAsset? = null
-        // Sequential, bounded probes. Landing pages and gated redirects are never bypassed.
-        for (asset in raw.assets.take(6)) {
-            val result = GetComicsCatalogService(onValidatedPage = { index, bytes ->
-                // Reuse the already verified first page when entering the reader.
-                // This obeys the same disk budget and avoids downloading it twice.
-                val key = "${index.identity.url}|${index.identity.eTag}|${index.pages.first().stableId}"
-                try {
-                    val cached = state.cache.acquire(key, record.externalId)
-                    if (cached != null) cached.close() else state.cache.put(key, record.externalId, bytes).close()
-                } catch (_: java.io.IOException) { /* Full cache can safely read on demand instead. */ }
-            }).validateAsset(asset)
-            checked += result
-            if (isVerifiedReady(result)) { ready = result; break }
+        val asset = VerifiedReadingPreparation.resolve(record, state.snapshots.inspection(record.externalId)) {
+            val raw = try { inspectGetComics(record) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: java.io.IOException) {
+                throw ComicSourceException(SourceAssetStatus.TRANSIENT_ERROR, "暂时无法打开漫画来源页面，请检查网络后重试。")
+            }
+            val checked = mutableListOf<SourceAsset>()
+            var ready: SourceAsset? = null
+            // Sequential, bounded probes. Landing pages and gated redirects are never bypassed.
+            for (asset in raw.assets.take(6)) {
+                val result = GetComicsCatalogService(onValidatedPage = { index, bytes ->
+                    // Reuse the already verified first page when entering the reader.
+                    // This obeys the same disk budget and avoids downloading it twice.
+                    val key = "${index.identity.url}|${index.identity.eTag}|${index.pages.first().stableId}"
+                    try {
+                        val cached = state.cache.acquire(key, record.externalId)
+                        if (cached != null) cached.close() else state.cache.put(key, record.externalId, bytes).close()
+                    } catch (_: java.io.IOException) { /* Full cache can safely read on demand instead. */ }
+                }).validateAsset(asset)
+                checked += result
+                if (isVerifiedReady(result)) { ready = result; break }
+            }
+            state.snapshots.saveInspection(record.externalId, raw.copy(assets = checked, canStartRemoteReader = ready != null))
+            val failure = checked.firstOrNull { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT }
+                ?: checked.firstOrNull { it.status == SourceAssetStatus.NEEDS_USER_ACTION }
+                ?: checked.firstOrNull()
+            ready ?: throw ComicSourceException(failure?.status ?: SourceAssetStatus.TRANSIENT_ERROR,
+                failure?.reason ?: "该来源暂未提供可直接阅读的文件，可先加入书架或导入本地漫画。")
         }
-        state.snapshots.saveInspection(record.externalId, raw.copy(assets = checked, canStartRemoteReader = ready != null))
-        val asset = ready ?: throw java.io.IOException(
-            checked.firstOrNull { it.status == SourceAssetStatus.UNSUPPORTED_FORMAT }?.reason
-                ?: checked.firstOrNull { it.status == SourceAssetStatus.NEEDS_USER_ACTION }?.reason
-                ?: checked.firstOrNull()?.reason
-                ?: "该来源暂未提供可直接阅读的文件，可先加入书架或导入本地漫画。"
-        )
         DemoComic(id = record.externalId, title = record.title, description = record.synopsis.orEmpty(),
             path = asset.fileName.orEmpty(), series = "GetComics", year = record.yearLabel.orEmpty(),
             pageCountHint = asset.verifiedPageCount, isTestContent = false, sourceUrl = asset.verifiedUrl,
@@ -401,11 +429,11 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
 
     override suspend fun offlineStatus(comicId: String): OfflineDownloadStatus? = withContext(Dispatchers.IO) {
-        state.ensureInitialized(); state.offline.status(comicId)
+        state.ensureInitialized(); state.downloadProgress[comicId] ?: state.offline.status(comicId)
     }
 
     override suspend fun offlineDownloads(): List<OfflineDownloadStatus> = withContext(Dispatchers.IO) {
-        state.ensureInitialized(); state.offline.statuses()
+        state.ensureInitialized(); state.offline.statuses().map { state.downloadProgress[it.comicId] ?: it }
     }
 
     override suspend fun downloadComic(record: CatalogSourceRecord, wifiOnly: Boolean) = withContext(Dispatchers.IO) {
@@ -470,11 +498,16 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val cancellation = job.onCancellation { token.cancel() }
         try {
             val spec = checkNotNull(state.offline.spec(comicId)) { "下载任务已不存在。" }
-            OfflineDownloadEngine(state.offline, state.limits).download(spec, token, onProgress)
+            OfflineDownloadEngine(state.offline, state.limits).download(spec, token) { status ->
+                if (status.state == OfflineDownloadState.DOWNLOADING) state.downloadProgress[comicId] = status
+                else state.downloadProgress.remove(comicId)
+                onProgress(status)
+            }
             currentCoroutineContext().ensureActive()
             Unit
         } finally {
             cancellation.dispose()
+            state.downloadProgress.remove(comicId)
             state.downloadJobs.remove(comicId, job)
         }
     }
