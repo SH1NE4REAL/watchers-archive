@@ -77,7 +77,7 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
     val context = LocalContext.current
     val status = downloadStatus(repository, record.externalId)
     var confirm by remember(record.externalId) { mutableStateOf(false) }
-    var allowMobileData by remember(record.externalId) { mutableStateOf(false) }
+    var allowMobileData by remember(record.externalId) { mutableStateOf(repository.allowMobileDownloads) }
     var busy by remember(record.externalId) { mutableStateOf(false) }
     var message by remember(record.externalId) { mutableStateOf<String?>(null) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -169,7 +169,7 @@ private fun OfflineDownloadManager(statuses: List<OfflineDownloadStatus>, reposi
     var busy by remember { mutableStateOf<String?>(null) }
     var removing by remember { mutableStateOf<OfflineDownloadStatus?>(null) }
     var resuming by remember { mutableStateOf<OfflineDownloadStatus?>(null) }
-    var allowMobileData by remember { mutableStateOf(false) }
+    var allowMobileData by remember { mutableStateOf(repository.allowMobileDownloads) }
     var error by remember { mutableStateOf<String?>(null) }
     Dialog(onDismissRequest = onDismiss) {
         Surface(Modifier.fillMaxWidth().fillMaxHeight(.85f), shape = MaterialTheme.shapes.large) {
@@ -195,7 +195,7 @@ private fun OfflineDownloadManager(statuses: List<OfflineDownloadStatus>, reposi
                                         catch (_: Exception) { error = "操作未完成，请稍后重试。" }
                                         finally { busy = null }
                                     } else {
-                                        allowMobileData = false
+                                        allowMobileData = repository.allowMobileDownloads
                                         resuming = status
                                     }
                                 }) { Text(if (status.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) "暂停" else "继续") }

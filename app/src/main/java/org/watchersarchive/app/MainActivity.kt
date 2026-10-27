@@ -41,6 +41,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -60,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -101,6 +103,8 @@ class MainActivity : ComponentActivity() {
                     background = PageBackground,
                     surface = Color.White,
                     secondaryContainer = Color(0xFFF9E8E9),
+                    primaryContainer = Color(0xFFFFE0E4),
+                    onPrimaryContainer = Color(0xFF881725),
                 ),
             ) { ArchiveApp(repository) }
         }
@@ -108,7 +112,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun ArchiveApp(repository: ReaderRepository) {
+internal fun ArchiveApp(repository: ReaderRepository) {
     var screen by remember { mutableStateOf(Screen.Official) }
     var selected by remember { mutableStateOf<DemoComic?>(null) }
     var selectedSource by remember { mutableStateOf<CatalogSourceRecord?>(null) }
@@ -124,6 +128,11 @@ private fun ArchiveApp(repository: ReaderRepository) {
         }
     }
     BackHandler(enabled = screen != Screen.Official) { goBack() }
+    DisposableEffect(screen, view) {
+        val previous = view.keepScreenOn
+        if (screen == Screen.Reader) view.keepScreenOn = repository.keepScreenOn
+        onDispose { view.keepScreenOn = previous }
+    }
     DisposableEffect(screen, activity) {
         val window = activity?.window
         val controller = window?.let { WindowInsetsControllerCompat(it, view) }
@@ -154,7 +163,7 @@ private fun ArchiveApp(repository: ReaderRepository) {
     Scaffold(
         containerColor = PageBackground,
         topBar = {
-            Surface(color = PageBackground) {
+            Surface(color = Color(0xFFFFECEE)) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -167,19 +176,26 @@ private fun ArchiveApp(repository: ReaderRepository) {
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
+                    modifier = Modifier.testTag("nav-watchers-library"),
                     selected = screen == Screen.Official || (screen == Screen.SourceDetail && detailParent == Screen.Official),
                     onClick = { screen = Screen.Official },
-                    icon = { Text("★", fontSize = 22.sp) }, label = { Text("官方推荐") },
+                    icon = { HeroGlyph(HeroMotif.Shield, Modifier.size(25.dp),
+                        if (screen == Screen.Official || (screen == Screen.SourceDetail && detailParent == Screen.Official)) ArchiveRed else Color.Gray) },
+                    label = { Text("观察者书库") },
+                    colors = NavigationBarItemDefaults.colors(selectedIconColor = ArchiveRed, selectedTextColor = ArchiveRed, indicatorColor = Color(0xFFFFE0E4)),
                 )
                 NavigationBarItem(
                     selected = screen == Screen.Library || (screen == Screen.SourceDetail && detailParent == Screen.Library),
                     onClick = { screen = Screen.Library },
                     icon = { Text("▤", fontSize = 22.sp) }, label = { Text("我的书架") },
+                    colors = NavigationBarItemDefaults.colors(selectedIconColor = ArchiveRed, selectedTextColor = ArchiveRed, indicatorColor = Color(0xFFFFE0E4)),
                 )
                 NavigationBarItem(
+                    modifier = Modifier.testTag("nav-settings"),
                     selected = screen == Screen.Cache,
                     onClick = { screen = Screen.Cache },
-                    icon = { Text("⚙", fontSize = 22.sp) }, label = { Text("缓存与设置") },
+                    icon = { Text("⚙", fontSize = 22.sp) }, label = { Text("设置") },
+                    colors = NavigationBarItemDefaults.colors(selectedIconColor = ArchiveRed, selectedTextColor = ArchiveRed, indicatorColor = Color(0xFFFFE0E4)),
                 )
             }
         },
@@ -325,44 +341,53 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 internal fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -> Unit) {
-    val scope = rememberCoroutineScope()
     var snapshot by remember { mutableStateOf<CacheSnapshot?>(null) }
     var endpoint by remember { mutableStateOf(repository.baseUrl) }
     var result by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
     var showDeveloper by remember { mutableStateOf(false) }
+    var showStorage by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
     var preload by remember { mutableStateOf(repository.prefetchEnabled) }
-    LaunchedEffect(Unit) {
-        try { snapshot = repository.cacheSnapshot() }
-        catch (e: CancellationException) { throw e }
-        catch (_: Exception) { error = "暂时无法读取存储状态，请稍后重试。" }
+    var keepAwake by remember { mutableStateOf(repository.keepScreenOn) }
+    var allowMobile by remember { mutableStateOf(repository.allowMobileDownloads) }
+    LaunchedEffect(showDeveloper) {
+        if (BuildConfig.DEBUG && showDeveloper) {
+            try { snapshot = repository.cacheSnapshot() }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { error = "暂时无法读取存储状态。" }
+        }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("版本 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall,
-            modifier = if (BuildConfig.DEBUG) Modifier.combinedClickable(onClick = {}, onLongClick = { showDeveloper = !showDeveloper }) else Modifier)
-        OfflineDownloadsCard(repository)
+        Text("阅读", style = MaterialTheme.typography.titleMedium, color = ArchiveRed)
         WhiteCard {
-            Text("临时阅读缓存", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("${snapshot?.let { formatBytes(it.committedBytes) } ?: "—"} / 500 MB", style = MaterialTheme.typography.headlineSmall)
-            LinearProgressIndicator(progress = { snapshot?.let { (it.committedBytes.toDouble() / it.limitBytes).toFloat().coerceIn(0f, 1f) } ?: 0f }, modifier = Modifier.fillMaxWidth())
-            OutlinedButton(enabled = !busy, onClick = { scope.launch {
-                busy = true; error = null
-                try { repository.clearCache(); snapshot = repository.cacheSnapshot(); result = "已清理可释放的临时内容。" }
-                catch (e: CancellationException) { throw e }
-                catch (_: Exception) { error = "暂时无法清理，请稍后重试。" }
-                finally { busy = false }
-            } }) { Text("清理临时内容") }
-            Text("自动管理，最多占用 500 MB。清理不会删除阅读进度、书签或笔记。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            SettingsToggleRow("连续翻页加速", "提前准备后续页面，让翻页更顺畅。", preload, "setting-prefetch") {
+                preload = it; repository.prefetchEnabled = it
+            }
+            SettingsToggleRow("阅读时屏幕常亮", "仅在阅读漫画时保持屏幕亮起。", keepAwake, "setting-keep-screen-on") {
+                keepAwake = it; repository.keepScreenOn = it
+            }
         }
+        Text("下载与存储", style = MaterialTheme.typography.titleMedium, color = ArchiveRed)
+        WhiteCard {
+            SettingsToggleRow("默认允许流量下载", "影响新下载和继续下载的默认选择，已排队任务保持原选择。", allowMobile, "setting-mobile-data") {
+                allowMobile = it; repository.allowMobileDownloads = it
+            }
+        }
+        OfflineDownloadsCard(repository)
         WhiteCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("连续翻页加速", fontWeight = FontWeight.Bold)
-                    Text("提前准备后续页面，让翻页更顺畅。关闭可减少流量。", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text("存储管理", fontWeight = FontWeight.Bold)
+                    Text("临时内容自动整理，离线漫画单独保留。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
-                androidx.compose.material3.Switch(checked = preload, onCheckedChange = { preload = it; repository.prefetchEnabled = it })
+                TextButton(modifier = Modifier.testTag("open-storage-management"), onClick = { showStorage = true }) { Text("管理") }
             }
+        }
+        WhiteCard {
+            TextButton(onClick = { showAbout = true }, modifier = Modifier.fillMaxWidth()) { Text("关于与版本") }
+            Text("版本 ${BuildConfig.VERSION_NAME}", color = Color.Gray, style = MaterialTheme.typography.bodySmall,
+                modifier = if (BuildConfig.DEBUG) Modifier.testTag("settings-version").combinedClickable(onClick = {}, onLongClick = { showDeveloper = !showDeveloper }) else Modifier.testTag("settings-version"))
         }
         if (BuildConfig.DEBUG && showDeveloper) WhiteCard {
             Text("开发测试（仅测试漫画需要电脑）", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -386,6 +411,26 @@ internal fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -
             Text("目录、书架和真实来源不使用上述电脑地址。只有以下自建测试漫画依赖测试服务器。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             repository.comics.forEach { comic -> TextButton(onClick = { onOpenTest(comic) }) { Text(comic.title) } }
         }
+    }
+    if (showStorage) SettingsStorageDialog(repository) { showStorage = false }
+    if (showAbout) androidx.compose.material3.AlertDialog(onDismissRequest = { showAbout = false },
+        title = { Text("关于观察者漫格") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("版本 ${BuildConfig.VERSION_NAME}")
+            Text("个人漫画书库与阅读器。")
+            Text("书架、阅读进度与书签保存在本机。", style = MaterialTheme.typography.bodySmall)
+        } },
+        confirmButton = { TextButton(onClick = { showAbout = false }) { Text("关闭") } })
+}
+
+@Composable
+private fun SettingsToggleRow(title: String, description: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(description, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        }
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.testTag(tag))
     }
 }
 
@@ -414,5 +459,3 @@ private fun WhiteCard(content: @Composable androidx.compose.foundation.layout.Co
 private fun ErrorText(message: String) {
     Text(message, color = ArchiveRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth().background(Color(0xFFFBECEE), RoundedCornerShape(8.dp)).padding(10.dp))
 }
-
-private fun formatBytes(bytes: Long): String = String.format(java.util.Locale.ROOT, "%.2f MB", bytes / 1_000_000.0)

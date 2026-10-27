@@ -81,13 +81,17 @@ class ReaderChromeRuntimeTest {
         val fixture = ReaderFixture()
         compose.setContent { MaterialTheme { CacheScreen(fixture.repository) {} } }
         compose.waitForIdle()
-        compose.onNodeWithText("临时阅读缓存").assertIsDisplayed()
+        compose.onNodeWithText("存储管理").assertExists()
+        compose.onNodeWithText("临时阅读缓存").assertDoesNotExist()
+        compose.onNodeWithText("500 MB", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("清理临时内容").assertDoesNotExist()
         compose.onNodeWithText("开发验证", substring = true).assertDoesNotExist()
         compose.onNodeWithText("服务器基础地址").assertDoesNotExist()
         compose.onNodeWithText("已提交", substring = true).assertDoesNotExist()
         compose.onNodeWithText("预留", substring = true).assertDoesNotExist()
         compose.onNodeWithText("10.0.2.2", substring = true).assertDoesNotExist()
         compose.onNodeWithText("标准 CBZ", substring = true).assertDoesNotExist()
+        compose.runOnIdle { assertEquals(0, fixture.cacheInspections) }
     }
 
     @Test fun sourceFailuresDisplayReadableErrorsWithoutProtocolDetails() {

@@ -74,6 +74,7 @@ class CatalogLayoutTest {
 
     @Test fun eventCardsSpanTheRowAndAreStackedVertically() {
         compose.setContent { MaterialTheme { DiscoveryScreen(repository()) {} } }
+        compose.onNodeWithTag("library-tab:events").performClick()
         compose.waitForIdle()
         val first = compose.onNodeWithTag("event-card:civil-war").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("event-card:secret-wars").fetchSemanticsNode().boundsInRoot

@@ -124,6 +124,14 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         get() = state.preferences.getBoolean("prefetchNextPage", true)
         set(value) { state.preferences.edit().putBoolean("prefetchNextPage", value).apply() }
 
+    override var allowMobileDownloads: Boolean
+        get() = state.preferences.getBoolean("allowMobileDownloads", false)
+        set(value) { state.preferences.edit().putBoolean("allowMobileDownloads", value).apply() }
+
+    override var keepScreenOn: Boolean
+        get() = state.preferences.getBoolean("keepScreenOnWhileReading", false)
+        set(value) { state.preferences.edit().putBoolean("keepScreenOnWhileReading", value).apply() }
+
     override suspend fun open(comic: DemoComic): ReaderSession = withReaderHandoff<Session>(release = { it.closeNow() }) {
         state.ensureInitialized()
         val token = CancellationToken()

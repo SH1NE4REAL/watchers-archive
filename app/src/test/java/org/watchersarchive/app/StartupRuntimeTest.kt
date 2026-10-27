@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,20 +29,28 @@ class StartupRuntimeTest {
     }
 
     @Test fun openingSettingsDoesNotCrashTheActivity() {
-        compose.onNodeWithText("缓存与设置").performClick()
+        compose.onNodeWithTag("nav-settings").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("临时阅读缓存").assertIsDisplayed()
+        compose.onNodeWithText("存储管理").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun activityRecreationRetainsAUsableRootScreen() {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        compose.onNodeWithText("缓存与设置").assertIsDisplayed()
+        compose.onNodeWithTag("nav-settings").assertIsDisplayed()
     }
 
     @Test fun compactRedHeaderReplacesTheLargeApplicationTitle() {
         compose.onNodeWithTag("comic-header-decoration").assertIsDisplayed()
         compose.onNodeWithText("观察者漫格").assertDoesNotExist()
         compose.onNodeWithText("THE WATCHER'S ARCHIVE").assertDoesNotExist()
+    }
+
+    @Test fun firstNavigationDestinationIsNamedWatchersLibrary() {
+        compose.onNodeWithTag("nav-watchers-library").assertIsDisplayed()
+        compose.onNodeWithText("观察者书库").assertIsDisplayed()
+        compose.onNodeWithTag("library-tab:recent").assertIsDisplayed()
+        compose.onNodeWithTag("library-tab:events").assertIsDisplayed()
+        compose.onNodeWithTag("library-tab:official").assertIsDisplayed()
     }
 }

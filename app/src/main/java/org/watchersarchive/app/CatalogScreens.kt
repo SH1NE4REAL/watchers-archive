@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
@@ -49,6 +51,7 @@ internal fun DiscoveryScreen(
     onOpen: (CatalogSourceRecord) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val red = Color(0xFFBF2633)
     var records by remember { mutableStateOf(emptyList<CatalogSourceRecord>()) }
     var guides by remember { mutableStateOf(emptyList<OfficialGuide>()) }
     var characters by remember { mutableStateOf(emptyList<OfficialCharacterProfile>()) }
@@ -61,17 +64,20 @@ internal fun DiscoveryScreen(
     var notice by remember { mutableStateOf<String?>(null) }
     var searchNotice by searchState::notice
     var officialNotice by remember { mutableStateOf<String?>(null) }
+    var updatingOfficial by remember { mutableStateOf(false) }
     var source by remember { mutableStateOf<RecommendationCollection?>(null) }
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val catalogueFocus = remember { FocusRequester() }
     fun clearSearch() {
         searchState.clear()
-        // Keep focus inside this screen on an explicit non-editable target.
-        // clearFocus can let Android restore the first TextField in non-touch mode.
         catalogueFocus.requestFocus()
         keyboard?.hide()
         scope.launch { searchState.listState.scrollToItem(0) }
+    }
+    fun selectSection(section: LibrarySection) {
+        searchState.section = section
+        clearSearch()
     }
     BackHandler(enabled = query.isNotBlank()) { clearSearch() }
 
@@ -91,117 +97,163 @@ internal fun DiscoveryScreen(
         catch (_: Exception) { notice = "暂时无法更新，已保留上次保存的漫画。" }
         finally { refreshing = false }
     }
+    suspend fun refreshOfficial() {
+        updatingOfficial = true
+        officialNotice = "正在更新官方资料…"
+        try {
+            try { repository.refreshOfficialGuide(); guides = repository.savedOfficialGuides(); officialNotice = null }
+            catch (c: CancellationException) { throw c }
+            catch (_: Exception) { officialNotice = "官方站暂不可用，已保存资料和官方入口仍可查看。" }
+            try { repository.refreshOfficialCharacter(); characters = repository.savedOfficialCharacters() }
+            catch (c: CancellationException) { throw c }
+            catch (_: Exception) { /* Independent source: keep saved guides and official links. */ }
+        } finally { updatingOfficial = false }
+    }
     LaunchedEffect(Unit) { loadSaved() }
     LaunchedEffect(query) {
         val requestedQuery = query.trim()
         if (searchState.completedQuery == requestedQuery) return@LaunchedEffect
-        searchState.listState.scrollToItem(0)
         searchNotice = null
         searchPage = 1; moreResults = false
-        if (query.trim().length < 2) { results = emptyList(); searching = false; return@LaunchedEffect }
-        results = records.filter { it.title.contains(query.trim(), true) }
+        // A restored browsing destination keeps its prior scroll. Explicit back
+        // and section actions already reset the list when the user requests it.
+        if (requestedQuery.length < 2) { results = emptyList(); searching = false; return@LaunchedEffect }
+        searchState.listState.scrollToItem(0)
+        results = records.filter { it.title.contains(requestedQuery, true) }
         delay(650)
         searching = true
-        try { results = repository.searchGetComics(query); moreResults = results.size == 30 }
+        try { results = repository.searchGetComics(requestedQuery); moreResults = results.size == 30 }
         catch (c: CancellationException) { throw c }
         catch (_: Exception) { searchNotice = "在线搜索暂时不可用，显示已保存的匹配条目。" }
         finally { searching = false }
         searchState.completedQuery = requestedQuery
     }
 
-    Box(Modifier.fillMaxSize().focusRequester(catalogueFocus).focusable().testTag("discovery-focus-anchor")) {
-    LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("discovery-list"),
-        state = searchState.listState,
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item {
-            OutlinedTextField(
-                query, { query = it }, Modifier.fillMaxWidth().testTag("catalogue-search"), singleLine = true,
-                placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp),
-                leadingIcon = if (query.isNotBlank()) ({
-                    IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-back").semantics { contentDescription = "返回推荐" }) {
-                        Text("‹", style = MaterialTheme.typography.headlineSmall)
-                    }
-                }) else null,
-                trailingIcon = if (query.isNotBlank()) ({
-                    IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-clear").semantics { contentDescription = "清除搜索" }) {
-                        Text("×", style = MaterialTheme.typography.titleLarge)
-                    }
-                }) else null,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { catalogueFocus.requestFocus(); keyboard?.hide() }),
-            )
+    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp).focusRequester(catalogueFocus).focusable().testTag("discovery-focus-anchor")) {
+        OutlinedTextField(
+            query, { query = it }, Modifier.fillMaxWidth().testTag("catalogue-search"), singleLine = true,
+            placeholder = { Text("搜索漫画、系列或大事件") }, shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White, unfocusedContainerColor = Color.White,
+                focusedBorderColor = red, unfocusedBorderColor = red.copy(alpha = .28f), cursorColor = red,
+            ),
+            leadingIcon = if (query.isNotBlank()) ({
+                IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-back").semantics { contentDescription = "返回书库" }) {
+                    Text("‹", style = MaterialTheme.typography.headlineSmall, color = red)
+                }
+            }) else null,
+            trailingIcon = if (query.isNotBlank()) ({
+                IconButton(onClick = ::clearSearch, modifier = Modifier.testTag("search-clear").semantics { contentDescription = "清除搜索" }) {
+                    Text("×", style = MaterialTheme.typography.titleLarge, color = red)
+                }
+            }) else null,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { catalogueFocus.requestFocus(); keyboard?.hide() }),
+        )
+        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag("library-section-buttons"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LibrarySection.entries.forEach { section ->
+                val active = searchState.section == section
+                Button(onClick = { selectSection(section) },
+                    modifier = Modifier.weight(1f).heightIn(min = 44.dp).testTag("library-tab:${section.key}").semantics { selected = active },
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (active) red else red.copy(alpha = .3f)),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (active) red else Color.White, contentColor = if (active) Color.White else red),
+                    contentPadding = PaddingValues(horizontal = 5.dp, vertical = 10.dp),
+                ) { Text(section.label, style = MaterialTheme.typography.labelLarge, maxLines = 1) }
+            }
         }
-        if (query.isNotBlank()) {
-            item { Text(if (searching) "正在搜索…" else "搜索结果", style = MaterialTheme.typography.titleMedium) }
-            item { Text("检索 GetComics 漫威分类，结果受来源收录范围限制。", color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
-            searchNotice?.let { item { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) } }
-            items(results, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
-            if (moreResults) item {
-                TextButton(enabled = !searching, onClick = { scope.launch {
-                    val requestedQuery = query
-                    val next = searchPage + 1
-                    searching = true
-                    try {
-                        val batch = repository.searchGetComics(requestedQuery, next)
-                        if (query == requestedQuery) {
-                            results = (results + batch).distinctBy { it.externalId }
-                            searchPage = next; moreResults = batch.size == 30
+        LazyColumn(
+            Modifier.fillMaxWidth().weight(1f).testTag("discovery-list"),
+            state = searchState.listState,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = PaddingValues(bottom = 20.dp),
+        ) {
+            if (query.isNotBlank()) {
+                item { Text(if (searching) "正在搜索…" else "搜索结果", style = MaterialTheme.typography.titleMedium, color = red) }
+                searchNotice?.let { item { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) } }
+                items(results, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
+                if (moreResults) item {
+                    TextButton(enabled = !searching, onClick = { scope.launch {
+                        val requestedQuery = query
+                        val next = searchPage + 1
+                        searching = true
+                        try {
+                            val batch = repository.searchGetComics(requestedQuery, next)
+                            if (query == requestedQuery) {
+                                results = (results + batch).distinctBy { it.externalId }
+                                searchPage = next; moreResults = batch.size == 30
+                            }
+                        } catch (c: CancellationException) { throw c }
+                        catch (_: Exception) { searchNotice = "下一页暂时无法加载，请稍后重试。" }
+                        finally { searching = false }
+                    } }) { Text("加载更多") }
+                }
+                if (results.isEmpty() && !searching) item { Text("没有匹配的条目。", color = Color.Gray) }
+            } else when (searchState.section) {
+                LibrarySection.Recent -> {
+                    item {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            HeroGlyph(HeroMotif.Star, Modifier.size(20.dp), color = red)
+                            Text("新发现的漫画", Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.titleMedium, color = red)
+                            TextButton(enabled = !refreshing, onClick = { scope.launch { refreshArticles() } }) { Text(if (refreshing) "更新中…" else "刷新") }
                         }
-                    } catch (c: CancellationException) { throw c }
-                    catch (_: Exception) { searchNotice = "下一页暂时无法加载，请稍后重试。" }
-                    finally { searching = false }
-                } }) { Text("加载更多") }
-            }
-            if (results.isEmpty() && !searching) item { Text("没有匹配的条目。", color = Color.Gray) }
-        } else {
-            item { Text("大事件专题", style = MaterialTheme.typography.titleLarge) }
-            items(recommendationCollections, key = { "collection:${it.id}" }) { collection ->
-                EventCollectionCard(collection, records, repository) { source = collection }
-            }
-            if (guides.isNotEmpty() || characters.isNotEmpty()) {
-                item { Text("官方指南与角色", style = MaterialTheme.typography.titleLarge) }
-                items(guides, key = { it.canonicalUrl }) { guide ->
-                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(guide.title, style = MaterialTheme.typography.titleMedium)
-                            guide.description?.let { Text(it, maxLines = 3, style = MaterialTheme.typography.bodySmall) }
-                            Text("${guide.sections.sumOf { it.issues.size }} 个官方页面条目", color = Color.Gray)
-                            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(guide.canonicalUrl))) }) { Text("查看官方指南") }
+                        notice?.let { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
+                    }
+                    items(records, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
+                    if (records.isEmpty()) item { Text("点击刷新，发现最近更新的漫画。", color = Color.Gray) }
+                }
+                LibrarySection.Events -> {
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            HeroGlyph(HeroMotif.Lightning, Modifier.size(20.dp), color = red)
+                            Text("从一场大事件开始", Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium, color = red)
+                        }
+                    }
+                    items(recommendationCollections, key = { "collection:${it.id}" }) { collection ->
+                        EventCollectionCard(collection, records, repository) { source = collection }
+                    }
+                }
+                LibrarySection.Official -> {
+                    item {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            HeroGlyph(HeroMotif.Shield, Modifier.size(20.dp), color = red)
+                            Text("官方指南与角色", Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.titleMedium, color = red)
+                            TextButton(enabled = !updatingOfficial, onClick = { scope.launch { refreshOfficial() } }) { Text(if (updatingOfficial) "更新中…" else "刷新") }
+                        }
+                        officialNotice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray) }
+                    }
+                    items(guides, key = { it.canonicalUrl }) { guide ->
+                        Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(guide.title, style = MaterialTheme.typography.titleMedium)
+                                guide.description?.let { Text(it, maxLines = 3, style = MaterialTheme.typography.bodySmall) }
+                                Text("${guide.sections.sumOf { it.issues.size }} 个阅读条目", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(guide.canonicalUrl))) }) { Text("查看官方指南") }
+                            }
+                        }
+                    }
+                    items(characters, key = { it.externalSlug }) { character ->
+                        Card(onClick = { query = character.name }, colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(character.name, style = MaterialTheme.typography.titleMedium)
+                                character.overview?.let { Text(it, maxLines = 3, style = MaterialTheme.typography.bodySmall) }
+                            }
+                        }
+                    }
+                    if (guides.isEmpty() && characters.isEmpty()) item {
+                        val entry = recommendationCollections.first { it.sourceLabel == "Marvel 官方阅读指南" }
+                        Card(Modifier.fillMaxWidth().testTag("official-guide-entry"), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("漫威官方阅读指南", style = MaterialTheme.typography.titleMedium)
+                                Text("${entry.title} · Marvel 官方网站", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                Text("可直接查看官方指南，也可刷新以保存资料。", style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(entry.sourceUrl))) }) { Text("打开官方指南") }
+                            }
                         }
                     }
                 }
-                items(characters, key = { it.externalSlug }) { c ->
-                    Card(onClick = { query = c.name }, colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                        Column(Modifier.padding(16.dp)) { Text(c.name, style = MaterialTheme.typography.titleMedium); c.overview?.let { Text(it, maxLines = 3) } }
-                    }
-                }
             }
-            item {
-                TextButton(onClick = { scope.launch {
-                    officialNotice = "正在更新官方资料…"
-                    try { repository.refreshOfficialGuide(); guides = repository.savedOfficialGuides(); officialNotice = null }
-                    catch (c: CancellationException) { throw c }
-                    catch (_: Exception) { officialNotice = "官方站暂不可用，专题入口和已保存资料仍可查看。" }
-                    try { repository.refreshOfficialCharacter(); characters = repository.savedOfficialCharacters() }
-                    catch (c: CancellationException) { throw c }
-                    catch (_: Exception) { /* Independent source: do not hide the article list. */ }
-                } }) { Text("更新官方资料") }
-                officialNotice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray) }
-            }
-            item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("最近更新", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                    TextButton(enabled = !refreshing, onClick = { scope.launch { refreshArticles() } }) { Text(if (refreshing) "更新中…" else "刷新") }
-                }
-                notice?.let { Text(it, color = Color.Gray, style = MaterialTheme.typography.bodySmall) }
-            }
-            items(records, key = { it.externalId }) { ComicSourceRow(it, repository) { onOpen(it) } }
-            if (records.isEmpty()) item { Text("点击刷新获取漫画。无需连接电脑测试服务器。", color = Color.Gray) }
         }
-        item { Spacer(Modifier.height(20.dp)) }
-    }
     }
     source?.let { collection ->
         AlertDialog(onDismissRequest = { source = null }, title = { Text(collection.title) },

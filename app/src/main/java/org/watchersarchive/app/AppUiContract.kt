@@ -51,6 +51,13 @@ interface ReaderRepository {
     val comics: List<DemoComic>
     var baseUrl: String
     var prefetchEnabled: Boolean
+    /** Default for new/resumed downloads; never changes an active task's policy. */
+    var allowMobileDownloads: Boolean
+        get() = false
+        set(value) { }
+    var keepScreenOn: Boolean
+        get() = false
+        set(value) { }
     suspend fun open(comic: DemoComic): ReaderSession
     suspend fun lastPage(comicId: String): Int
     suspend fun bookmarkPages(comicId: String): Set<Int>

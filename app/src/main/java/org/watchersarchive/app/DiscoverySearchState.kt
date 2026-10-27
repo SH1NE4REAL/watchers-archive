@@ -7,6 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.listSaver
 
+internal enum class LibrarySection(val label: String, val key: String) {
+    Recent("最近更新", "recent"),
+    Events("大事件专题", "events"),
+    Official("官方推荐", "official"),
+}
+
 /**
  * Owned by the catalogue destination's parent so opening a detail does not throw
  * away its search result or scroll position. Only small navigation state is saved
@@ -16,7 +22,9 @@ internal class DiscoverySearchState(
     query: String = "",
     firstVisibleIndex: Int = 0,
     firstVisibleOffset: Int = 0,
+    section: LibrarySection = LibrarySection.Recent,
 ) {
+    var section by mutableStateOf(section)
     var query by mutableStateOf(query)
     var results by mutableStateOf(emptyList<CatalogSourceRecord>())
     var completedQuery by mutableStateOf<String?>(null)
@@ -36,8 +44,9 @@ internal class DiscoverySearchState(
 
     companion object {
         val Saver = listSaver<DiscoverySearchState, Any>(
-            save = { listOf(it.query, it.listState.firstVisibleItemIndex, it.listState.firstVisibleItemScrollOffset) },
-            restore = { DiscoverySearchState(it[0] as String, it[1] as Int, it[2] as Int) },
+            save = { listOf(it.query, it.listState.firstVisibleItemIndex, it.listState.firstVisibleItemScrollOffset, it.section.name) },
+            restore = { saved -> DiscoverySearchState(saved[0] as String, saved[1] as Int, saved[2] as Int,
+                LibrarySection.entries.firstOrNull { it.name == saved.getOrNull(3) } ?: LibrarySection.Recent) },
         )
     }
 }

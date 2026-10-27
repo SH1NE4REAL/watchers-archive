@@ -11,11 +11,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.SQLiteMode
+import org.robolectric.util.ReflectionHelpers
 import androidx.work.Configuration
 import androidx.work.testing.WorkManagerTestInitHelper
 import org.watchersarchive.core.*
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.util.Base64
 import java.util.UUID
 import java.util.zip.ZipEntry
@@ -41,7 +41,13 @@ class OfflineReadingRuntimeTest {
         } }.toByteArray()
         val id = "offline-runtime:${UUID.randomUUID()}"
         val spec = OfflineDownloadSpec(id, "离线测试漫画", "http://127.0.0.1:1/unavailable.cbz", "\"offline-runtime-v1\"", bytes.size.toLong())
-        val store = OfflineDownloadStore(File(context.filesDir, "watchers-archive-phase1/offline-downloads"))
+        // Robolectric may rebuild Application while reusing a sandbox's project
+        // statics. Install the fixture in the real repository-owned store rather
+        // than assuming the current test Application owns that singleton.
+        val owner = ReflectionHelpers.getField<Any>(repository, "state")
+        val store = ReflectionHelpers.getField<OfflineDownloadStore>(owner, "offlineStore")
+        val ownerContext = ReflectionHelpers.getField<Context>(owner, "context")
+        println("OFFLINE_FIXTURE_OWNER_MATCH=${ownerContext.filesDir == context.filesDir}")
         val memory = object : ArchiveByteSource {
             override fun discover(token: CancellationToken) = RemoteIdentity(spec.url, spec.length, spec.eTag, null)
             override fun readRange(identity: RemoteIdentity, start: Long, length: Int, token: CancellationToken): ByteArray {
@@ -50,7 +56,10 @@ class OfflineReadingRuntimeTest {
             }
         }
         OfflineDownloadEngine(store, sourceFactory = { memory }).download(spec)
-        val record = CatalogSourceRecord("getcomics", id, "https://getcomics.org/marvel/offline-test/", spec.title,
+        // Fail locally if the fixture and the repository are not using the same
+        // private storage owner; never contact a public site to diagnose a test.
+        assertEquals("The completed fixture must be visible to the repository's storage owner", OfflineDownloadState.COMPLETED, repository.offlineStatus(id)?.state)
+        val record = CatalogSourceRecord("getcomics", id, "http://127.0.0.1:1/unavailable-article", spec.title,
             "Synthetic test content", null, null, null, "2026-10-27T00:00:00Z", emptyList(), null, null, "CBZ", SourceConfidence.VERIFIED)
         val comic = repository.prepareSourceReading(record)
         assertTrue(comic.sourceUrl!!.startsWith("file:"))

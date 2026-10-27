@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -58,19 +59,22 @@ class SearchNavigationTest {
         compose.waitForIdle()
         assertEquals("", compose.onNodeWithTag("catalogue-search").fetchSemanticsNode().config[SemanticsProperties.EditableText].text)
         compose.onNodeWithTag("catalogue-search").assertIsNotFocused()
-        compose.onNodeWithText("大事件专题").assertIsDisplayed()
+        compose.onNodeWithTag("library-tab:recent").assertIsSelected()
+        compose.onNodeWithTag("event-card:civil-war").assertDoesNotExist()
         assertTrue(!compose.activity.isFinishing)
     }
 
     @Test fun visibleSearchBackClearsFocusAndReturnsToCollections() {
         compose.setContent { MaterialTheme { DiscoveryScreen(repository()) {} } }
+        compose.onNodeWithTag("library-tab:events").performClick()
         compose.onNodeWithTag("catalogue-search").performTextInput("Civil")
         compose.onNodeWithTag("search-back").performClick()
         compose.waitForIdle()
         assertEquals("", compose.onNodeWithTag("catalogue-search").fetchSemanticsNode().config[SemanticsProperties.EditableText].text)
         compose.onNodeWithTag("catalogue-search").assertIsNotFocused()
         compose.onNodeWithTag("search-clear").assertDoesNotExist()
-        compose.onNodeWithText("大事件专题").assertIsDisplayed()
+        compose.onNodeWithTag("library-tab:events").assertIsSelected()
+        compose.onNodeWithTag("event-card:civil-war").assertIsDisplayed()
     }
 
     @Test fun returningFromDetailRetainsTheQueryResultsAndScrollWithoutAnotherSearch() {
@@ -85,6 +89,7 @@ class SearchNavigationTest {
                 else DiscoveryScreen(repo, state) { detail = true }
             }
         }
+        compose.onNodeWithTag("library-tab:official").performClick()
         compose.onNodeWithTag("catalogue-search").performTextInput("Civil")
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitUntil(5_000) { searches.get() == 1 && searchState.completedQuery == "Civil" }
@@ -100,6 +105,7 @@ class SearchNavigationTest {
             assertEquals(before, searchState.listState.firstVisibleItemIndex)
             assertEquals(20, searchState.results.size)
             assertEquals(1, searches.get())
+            assertEquals(LibrarySection.Official, searchState.section)
         }
     }
 }
