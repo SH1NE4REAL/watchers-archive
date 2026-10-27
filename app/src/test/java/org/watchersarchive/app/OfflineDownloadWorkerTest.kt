@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.Data
 import androidx.work.ListenableWorker
+import androidx.work.NetworkType
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
@@ -150,5 +151,16 @@ class OfflineDownloadWorkerTest {
         assertEquals(1, before.size)
         OfflineDownloads.pause(context, "fixture-a")
         assertTrue(workManager.getWorkInfosForUniqueWork(one).get().all { it.state.isFinished })
+    }
+
+    @Test fun schedulingConstraintsAllowMobileDataOnlyWhenRequested() = runBlocking {
+        val workManager = WorkManager.getInstance(context)
+        for (wifiOnly in listOf(true, false)) {
+            val comicId = "network-policy-$wifiOnly"
+            OfflineDownloads.schedule(context, comicId, wifiOnly)
+            val work = workManager.getWorkInfosForUniqueWork(OfflineDownloads.uniqueName(comicId)).get().single()
+            assertEquals(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED, work.constraints.requiredNetworkType)
+            OfflineDownloads.pause(context, comicId)
+        }
     }
 }

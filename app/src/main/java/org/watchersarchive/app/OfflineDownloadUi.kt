@@ -77,7 +77,7 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
     val context = LocalContext.current
     val status = downloadStatus(repository, record.externalId)
     var confirm by remember(record.externalId) { mutableStateOf(false) }
-    var wifiOnly by remember { mutableStateOf(true) }
+    var allowMobileData by remember(record.externalId) { mutableStateOf(false) }
     var busy by remember(record.externalId) { mutableStateOf(false) }
     var message by remember(record.externalId) { mutableStateOf<String?>(null) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -114,7 +114,7 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
                 Text(record.title)
                 record.sizeLabel?.let { Text("来源标注大小：$it", style = MaterialTheme.typography.bodySmall) }
                 Text("下载完成后可直接离线阅读。漫画会保存在 App 中，并自动加入书架，占用手机存储。")
-                Row { Checkbox(checked = wifiOnly, onCheckedChange = { wifiOnly = it }); Text("仅使用 Wi-Fi 下载", Modifier.padding(top = 12.dp)) }
+                MobileDataChoice(allowMobileData) { allowMobileData = it }
             }
         },
         confirmButton = { TextButton(modifier = Modifier.testTag("confirm-download"), onClick = {
@@ -125,8 +125,8 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
             scope.launch {
                 busy = true; message = "正在准备下载…"
                 try {
-                    repository.downloadComic(record, wifiOnly)
-                    message = if (wifiOnly) "已加入下载队列，连接 Wi-Fi 后会自动下载。" else "已加入下载队列。"
+                    repository.downloadComic(record, wifiOnly = !allowMobileData)
+                    message = if (allowMobileData) "已加入下载队列，可使用 Wi-Fi 或手机流量下载。" else "已加入下载队列，连接 Wi-Fi 后会自动下载。"
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { message = "暂时无法下载，请确认来源可用和手机空间充足后重试。" }
                 finally { busy = false }
@@ -134,6 +134,18 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
         }) { Text("确认下载") } },
         dismissButton = { TextButton(onClick = { confirm = false }) { Text("取消") } },
     )
+}
+
+@Composable
+private fun MobileDataChoice(allowMobileData: Boolean, onChange: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row {
+            Checkbox(checked = allowMobileData, onCheckedChange = onChange, modifier = Modifier.testTag("allow-mobile-data"))
+            Text("允许使用手机流量", Modifier.padding(top = 12.dp))
+        }
+        Text(if (allowMobileData) "可使用 Wi-Fi 或手机流量，下载整本漫画会消耗流量。" else "默认仅使用 Wi-Fi，勾选后也可使用手机流量。",
+            color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 @Composable
@@ -156,6 +168,8 @@ private fun OfflineDownloadManager(statuses: List<OfflineDownloadStatus>, reposi
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf<String?>(null) }
     var removing by remember { mutableStateOf<OfflineDownloadStatus?>(null) }
+    var resuming by remember { mutableStateOf<OfflineDownloadStatus?>(null) }
+    var allowMobileData by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     Dialog(onDismissRequest = onDismiss) {
         Surface(Modifier.fillMaxWidth().fillMaxHeight(.85f), shape = MaterialTheme.shapes.large) {
@@ -173,15 +187,18 @@ private fun OfflineDownloadManager(statuses: List<OfflineDownloadStatus>, reposi
                             Text(status.title, style = MaterialTheme.typography.titleSmall)
                             Text(offlineProgressLabel(status), color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                             Row {
-                                if (status.state != OfflineDownloadState.COMPLETED) TextButton(enabled = busy == null, onClick = { scope.launch {
-                                    busy = status.comicId; error = null
-                                    try {
-                                        if (status.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) repository.pauseDownload(status.comicId)
-                                        else repository.resumeDownload(status.comicId, wifiOnly = true)
-                                    } catch (cancelled: CancellationException) { throw cancelled }
-                                    catch (_: Exception) { error = "操作未完成，请稍后重试。" }
-                                    finally { busy = null }
-                                } }) { Text(if (status.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) "暂停" else "继续（Wi-Fi）") }
+                                if (status.state != OfflineDownloadState.COMPLETED) TextButton(enabled = busy == null, onClick = {
+                                    if (status.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) scope.launch {
+                                        busy = status.comicId; error = null
+                                        try { repository.pauseDownload(status.comicId) }
+                                        catch (cancelled: CancellationException) { throw cancelled }
+                                        catch (_: Exception) { error = "操作未完成，请稍后重试。" }
+                                        finally { busy = null }
+                                    } else {
+                                        allowMobileData = false
+                                        resuming = status
+                                    }
+                                }) { Text(if (status.state in setOf(OfflineDownloadState.QUEUED, OfflineDownloadState.DOWNLOADING)) "暂停" else "继续") }
                                 TextButton(enabled = busy == null, onClick = { removing = status }) { Text("删除下载") }
                             }
                         }
@@ -190,6 +207,23 @@ private fun OfflineDownloadManager(statuses: List<OfflineDownloadStatus>, reposi
             }
         }
     }
+    resuming?.let { selected -> AlertDialog(onDismissRequest = { resuming = null }, title = { Text("继续下载漫画") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(selected.title)
+            MobileDataChoice(allowMobileData) { allowMobileData = it }
+        } },
+        confirmButton = { TextButton(modifier = Modifier.testTag("confirm-resume-download"), onClick = {
+            val wifiOnly = !allowMobileData
+            resuming = null
+            scope.launch {
+                busy = selected.comicId; error = null
+                try { repository.resumeDownload(selected.comicId, wifiOnly) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { error = "操作未完成，请稍后重试。" }
+                finally { busy = null }
+            }
+        }) { Text("继续下载") } },
+        dismissButton = { TextButton(onClick = { resuming = null }) { Text("取消") } }) }
     removing?.let { selected -> AlertDialog(onDismissRequest = { removing = null }, title = { Text("删除下载？") },
         text = { Text("只删除「${selected.title}」的离线文件，保留书架、阅读进度、书签和笔记。") },
         confirmButton = { TextButton(onClick = {

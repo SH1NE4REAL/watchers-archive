@@ -140,7 +140,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             source = if (offline != null) OfflineArchiveSource(offline, state.limits)
                 else {
                     require(comic.sourceUrl?.startsWith("file:") != true) { "离线文件已不可用，请重新下载漫画。" }
-                    archiveSource(comic.sourceUrl ?: "${baseUrl.trimEnd('/')}/${comic.path}")
+                    val address = comic.sourceUrl?.takeIf { it.isNotBlank() }
+                        ?: if (comic.isTestContent) "${baseUrl.trimEnd('/')}/${comic.path}"
+                        else throw java.io.IOException("漫画来源不可用，请返回详情重新打开。")
+                    archiveSource(address)
                 }
             reader = ComicArchiveReaders.create(source, state.limits, token)
             val index = reader.open(token)
