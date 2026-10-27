@@ -212,4 +212,3 @@ private suspend fun <T> Task<T>.awaitTranslationTask(): T = suspendCancellableCo
     addOnFailureListener { error -> waiting.getAndSet(null)?.let { if (it.isActive) it.resumeWithException(error) } }
     addOnCanceledListener { waiting.getAndSet(null)?.cancel() }
 }
-
