@@ -293,6 +293,10 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
     var newName by remember { mutableStateOf("") }
     var creating by remember { mutableStateOf(false) }
     var actionBook by remember { mutableStateOf<CatalogSourceRecord?>(null) }
+    var renameBook by remember { mutableStateOf<CatalogSourceRecord?>(null) }
+    var personalName by remember { mutableStateOf("") }
+    var renaming by remember { mutableStateOf(false) }
+    var renameError by remember { mutableStateOf<String?>(null) }
     var showMove by remember { mutableStateOf(false) }
     var deleteFolder by remember { mutableStateOf<String?>(null) }
     var updating by remember { mutableStateOf(false) }
@@ -307,7 +311,7 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
     val pickComic = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             importing = true; error = null
-            try { val record = repository.importLocalComic(uri.toString()); reload(); importNotice = "已导入：${record.title}" }
+            try { val record = repository.importLocalComic(uri.toString()); reload(); importNotice = "已导入：${record.displayTitle}" }
             catch (c: CancellationException) { throw c }
             catch (e: Exception) { error = e.message ?: "此文件暂时无法读取，请选择本地 CBZ 或非固实 RAR4。" }
             finally { importing = false }
@@ -416,9 +420,16 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
                 }, confirmButton = { TextButton(enabled = !updating, onClick = { showMove = false; actionBook = null }) { Text("取消") } })
         } else {
             AlertDialog(onDismissRequest = { if (!updating) actionBook = null },
-                title = { Text(book.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                title = { Text(book.displayTitle, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                 text = {
                     Column {
+                        TextButton(enabled = !updating, onClick = {
+                            personalName = book.displayTitle
+                            renameError = null
+                            renameBook = book
+                            actionBook = null
+                            showMove = false
+                        }) { Text("修改书名") }
                         selectedFolder?.let { current ->
                             TextButton(enabled = !updating, onClick = {
                                 performShelfChange { repository.moveToShelf(current, "默认书架", book.externalId) }
@@ -433,6 +444,50 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
                 }, confirmButton = { TextButton(enabled = !updating, onClick = { actionBook = null }) { Text("取消") } })
         }
     }
+    renameBook?.let { book ->
+        fun saveName(title: String?) {
+            scope.launch {
+                renaming = true; renameError = null
+                try {
+                    repository.renameComic(book.externalId, title)
+                    reload()
+                    renameBook = null
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (failure: Exception) {
+                    renameError = if (failure is IllegalArgumentException) failure.message ?: "书名无效，请重新输入。"
+                        else "书名未能保存，请重试。"
+                }
+                finally { renaming = false }
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { if (!renaming) renameBook = null },
+            title = { Text("修改书名") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = personalName, onValueChange = { personalName = it },
+                        modifier = Modifier.fillMaxWidth().testTag("book-custom-title"),
+                        enabled = !renaming, singleLine = true, label = { Text("自己的书名") },
+                        supportingText = { Text("最多 120 个字，仅修改显示名称。") },
+                        isError = personalName.trim().let { it.codePointCount(0, it.length) } > 120,
+                    )
+                    Text("原名：${book.title}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    if (!book.customTitle.isNullOrBlank()) TextButton(
+                        enabled = !renaming, modifier = Modifier.testTag("reset-book-name"),
+                        onClick = { saveName(null) },
+                    ) { Text("恢复原名") }
+                    renameError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = { TextButton(
+                enabled = !renaming && personalName.trim().let { it.codePointCount(0, it.length) } in 1..120,
+                modifier = Modifier.testTag("confirm-book-rename"),
+                onClick = { saveName(personalName.trim()) },
+            ) { Text(if (renaming) "保存中…" else "保存") } },
+            dismissButton = { TextButton(enabled = !renaming, onClick = { renameBook = null }) { Text("取消") } },
+        )
+    }
 }
 
 @Composable
@@ -440,7 +495,7 @@ internal fun ShelfScreen(repository: ReaderRepository, onSource: (CatalogSourceR
 internal fun ShelfBookTile(record: CatalogSourceRecord, repository: ReaderRepository, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
     Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).testTag("shelf-book:${record.externalId}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CoverImage(record.coverUrl, repository, Modifier.fillMaxWidth().aspectRatio(0.68f))
-        Text(record.title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+        Text(record.displayTitle, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -502,7 +557,8 @@ internal fun ArticleDetailScreen(record: CatalogSourceRecord, repository: Reader
         item { Row(verticalAlignment = Alignment.Top) {
             CoverImage(record.coverUrl, repository, Modifier.width(110.dp).height(164.dp))
             Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(record.title, style = MaterialTheme.typography.titleLarge)
+                Text(record.displayTitle, style = MaterialTheme.typography.titleLarge)
+                if (record.displayTitle != record.title) Text("原名：${record.title}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 record.sizeLabel?.let { Text(it, color = Color.Gray) }
                 record.yearLabel?.let { Text(it, color = Color.Gray) }
             }
@@ -546,7 +602,7 @@ internal fun ComicSourceRow(record: CatalogSourceRecord, repository: ReaderRepos
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(record.coverUrl, repository, Modifier.width(66.dp).height(96.dp))
             Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(record.title, style = MaterialTheme.typography.titleMedium, maxLines = 3)
+                Text(record.displayTitle, style = MaterialTheme.typography.titleMedium, maxLines = 3)
                 Text(record.sizeLabel ?: "大小未知", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
             }
         }

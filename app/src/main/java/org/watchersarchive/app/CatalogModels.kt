@@ -32,7 +32,11 @@ data class CatalogSourceRecord(
     val sizeLabel: String?,
     val formatLabel: String?,
     val confidence: SourceConfidence,
-)
+    /** Personal label only; the source title and stable identity remain unchanged. */
+    val customTitle: String? = null,
+) {
+    val displayTitle: String get() = customTitle?.takeIf(String::isNotBlank) ?: title
+}
 
 data class SourceAsset(
     val id: String,

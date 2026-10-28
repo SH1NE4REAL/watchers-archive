@@ -225,6 +225,7 @@ class OfflineDownloadWorker private constructor(
             }
             else {
                 val message = when {
+                    error is ComicSourceException -> error.message ?: "暂未找到可自动下载的来源。"
                     error is ArchiveException && error.code == ArchiveError.OBJECT_CHANGED -> "来源文件已变化，请重新下载。"
                     error is ArchiveException && error.code == ArchiveError.NETWORK -> "网络连接中断，请稍后继续下载。"
                     error is ArchiveException -> "这个来源暂时无法完整下载，请稍后重试。"
@@ -262,11 +263,11 @@ class OfflineDownloadWorker private constructor(
         val notification: Notification = NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle("正在下载漫画")
-            .setContentText("${status.title.take(80)} · $percentage%")
+            .setContentText(if (status.totalBytes > 0) "${status.title.take(80)} · $percentage%" else status.message ?: "正在查找可用下载来源…")
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setProgress(100, percentage, false)
+            .setProgress(100, percentage, status.totalBytes <= 0)
             .addAction(android.R.drawable.ic_media_pause, "暂停", WorkManager.getInstance(applicationContext).createCancelPendingIntent(id))
             .build()
         val notificationId = 0x40000000 or (id.hashCode() and 0x3fffffff)

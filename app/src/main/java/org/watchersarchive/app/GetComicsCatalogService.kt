@@ -122,11 +122,11 @@ class GetComicsCatalogService(
         val recordId = postId?.let { "post:$it" } ?: "article:$article"
         val links = document.select("a[href]").mapNotNull { safeSourceUrl(it.attr("href"), article) }
             .filter { candidate -> isIntermediate(candidate) || knownHost(candidate) || declaredFormat(candidate) != null }
-            .distinct()
+            .distinct().take(32)
         val assets = links.map { candidate ->
             val uri = URI(candidate)
             val format = declaredFormat(candidate)
-            val gated = knownHost(candidate) && format == null && !isPixeldrainShare(candidate)
+            val gated = knownHost(candidate) && format == null && !isResolvablePublicShare(candidate)
             val status = when {
                 gated -> SourceAssetStatus.NEEDS_USER_ACTION
                 else -> SourceAssetStatus.METADATA_ONLY
@@ -219,11 +219,16 @@ class GetComicsCatalogService(
     private fun declaredFormat(url: String): String? = Regex("(?i)\\.(cbz|zip|cbr|rar)$").find(URI(url).path.orEmpty())?.groupValues?.get(1)?.uppercase(Locale.ROOT)
     private fun knownHost(url: String): Boolean {
         val host = URI(url).host.orEmpty().lowercase(Locale.ROOT)
-        return listOf("vikingfile.com", "vik1ngfile.site", "pixeldrain.com", "datanodes.to", "terabox.com").any { host == it || host.endsWith(".$it") }
+        return listOf("vikingfile.com", "vik1ngfile.site", "pixeldrain.com", "datanodes.to", "terabox.com", "1024terabox.com",
+            "mediafire.com", "mega.nz", "mega.co.nz", "we.tl", "wetransfer.com", "drive.google.com", "gofile.io")
+            .any { host == it || host.endsWith(".$it") }
     }
     private fun isIntermediate(url: String): Boolean = URI(url).path.orEmpty().startsWith("/dls/")
-    private fun isPixeldrainShare(url: String): Boolean = URI(url).let { uri ->
-        uri.host?.lowercase(Locale.ROOT) in setOf("pixeldrain.com", "www.pixeldrain.com") && uri.path.orEmpty().startsWith("/u/")
+    private fun isResolvablePublicShare(url: String): Boolean = URI(url).let { uri ->
+        val host = uri.host.orEmpty().lowercase(Locale.ROOT)
+        (host in setOf("pixeldrain.com", "www.pixeldrain.com") && uri.path.orEmpty().startsWith("/u/")) ||
+            (host in setOf("mediafire.com", "www.mediafire.com") &&
+                listOf("/file/", "/file_premium/", "/download/").any { uri.path.orEmpty().startsWith(it) })
     }
     private fun sizeLabel(text: String): String? = Regex("(?i)\\bSize\\s*[:：-]\\s*(\\d+(?:[.,]\\d+)?\\s*(?:[KMGT]i?B|bytes))\\b").find(text)?.groupValues?.get(1)?.replace(Regex("\\s+"), " ")
     private fun yearLabel(text: String): String? = Regex("(?i)\\bYear\\s*[:：-]\\s*(\\d{4}(?:\\s*[–-]\\s*\\d{4})?)\\b").find(text)?.groupValues?.get(1)

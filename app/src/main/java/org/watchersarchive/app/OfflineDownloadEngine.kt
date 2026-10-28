@@ -15,10 +15,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 class OfflineDownloadEngine(
     private val store: OfflineDownloadStore,
     private val limits: ReaderLimits = ReaderLimits(),
-    private val sourceFactory: (OfflineDownloadSpec) -> ArchiveByteSource = { StreamingHttpRangeSource(it.url, limits) },
+    private val sourceFactory: (OfflineDownloadSpec) -> ArchiveByteSource = {
+        if (it.mode == OfflineTransferMode.FULL) WholeFileHttpSource(it, limits) else StreamingHttpRangeSource(it.url, limits)
+    },
     private val freeSpace: (File) -> Long = { it.usableSpace },
     private val reserveBytes: Long = 64L * 1024 * 1024,
     private val chunkBytes: Int = minOf(limits.maxRangeBytes, 4 * 1024 * 1024),
+    private val validateComplete: (OfflineDownloadSpec, File, CancellationToken) -> Unit = { _, _, _ -> },
 ) {
     init { require(chunkBytes in 1..limits.maxRangeBytes && reserveBytes >= 0) }
 
@@ -28,14 +31,17 @@ class OfflineDownloadEngine(
         onProgress: (OfflineDownloadStatus) -> Unit = {},
     ): CompletedOfflineDownload {
         token.throwIfCancelled()
+        require(spec.mode != OfflineTransferMode.DISCOVER) { "来源尚未解析完成" }
         store.completed(spec.comicId)?.takeIf { it.spec.assetKey == spec.assetKey }?.let { return it }
         store.exclusive(spec).use {
             store.enqueue(spec)
             store.completed(spec.comicId)?.takeIf { it.spec.assetKey == spec.assetKey }?.let { return it }
-            var committed = store.downloaded(spec)
+            var committed = if (spec.mode == OfflineTransferMode.FULL) 0L else store.downloaded(spec)
             val partial = store.partial(spec)
             committed = minOf(committed, if (partial.isFile) partial.length() else 0L)
             var source: ArchiveByteSource? = null
+            var validating = false
+            var verifiedForCommit = false
             try {
                 source = sourceFactory(spec)
                 val identity = source.discover(token)
@@ -50,6 +56,26 @@ class OfflineDownloadEngine(
                     output.seek(committed)
                     store.update(spec, OfflineDownloadState.DOWNLOADING, committed)
                     onProgress(checkNotNull(store.status(spec.comicId)))
+                    if (spec.mode == OfflineTransferMode.FULL) {
+                        val whole = source as? OfflineWholeFileTransfer
+                            ?: throw ArchiveException(ArchiveError.UNSUPPORTED_ARCHIVE, "此下载来源没有完整文件传输实现")
+                        var provisional = 0L
+                        var reported = 0L
+                        whole.transferWhole(token) { bytes, offset, length ->
+                            token.throwIfCancelled()
+                            if (length <= 0 || offset < 0 || offset > bytes.size - length || provisional > spec.length - length.toLong()) {
+                                throw ArchiveException(ArchiveError.INVALID_LENGTH, "完整下载片段超出预期大小")
+                            }
+                            ensureSpace(length.toLong())
+                            output.write(bytes, offset, length)
+                            provisional += length
+                            if (provisional - reported >= 1024 * 1024 || provisional == spec.length) {
+                                onProgress(OfflineDownloadStatus(spec.comicId, spec.title, OfflineDownloadState.DOWNLOADING, provisional, spec.length))
+                                reported = provisional
+                            }
+                        }
+                        if (provisional != spec.length) throw ArchiveException(ArchiveError.INVALID_LENGTH, "完整下载被截断")
+                    } else {
                     var streamingFallbackUsed = false
                     while (committed < spec.length) {
                         token.throwIfCancelled()
@@ -105,16 +131,37 @@ class OfflineDownloadEngine(
                         committed = next
                         onProgress(checkNotNull(store.status(spec.comicId)))
                     }
+                    }
                     token.throwIfCancelled()
                     output.fd.sync()
                 }
                 token.throwIfCancelled()
-                return store.finish(spec).also { onProgress(checkNotNull(store.status(spec.comicId))) }
+                validating = true
+                validateComplete(spec, partial, token)
+                token.throwIfCancelled()
+                validating = false
+                verifiedForCommit = true
+                if (spec.mode == OfflineTransferMode.FULL) {
+                    // Only a fully received and locally validated complete file
+                    // may enter the rename/metadata crash-recovery window.
+                    store.update(spec, OfflineDownloadState.DOWNLOADING, spec.length)
+                    committed = spec.length
+                }
+                val complete = store.finish(spec)
+                // A late observer/cancellation cannot downgrade a file already
+                // atomically marked complete.
+                runCatching { onProgress(checkNotNull(store.status(spec.comicId))) }
+                return complete
             } catch (error: Throwable) {
                 // Bytes beyond a persisted checkpoint are never used for resume.
-                runCatching { if (partial.isFile && partial.length() > committed) RandomAccessFile(partial, "rw").use { it.setLength(committed) } }
                 val cancelled = token.isCancelled || error is java.util.concurrent.CancellationException ||
                     error is InterruptedException || (error is ArchiveException && error.code == ArchiveError.CANCELLED)
+                // A full response remains provisional until local validation.
+                // Once the length checkpoint was durably recorded, a rename or
+                // final metadata failure must retain it for safe crash recovery.
+                // If that checkpoint save itself failed, committed is still 0.
+                if ((spec.mode == OfflineTransferMode.FULL && !verifiedForCommit) || (validating && !cancelled)) committed = 0
+                runCatching { if (partial.isFile && partial.length() > committed) RandomAccessFile(partial, "rw").use { it.setLength(committed) } }
                 runCatching {
                     store.update(spec, if (cancelled) OfflineDownloadState.PAUSED else OfflineDownloadState.FAILED, committed,
                         if (cancelled) null else friendlyMessage(error))

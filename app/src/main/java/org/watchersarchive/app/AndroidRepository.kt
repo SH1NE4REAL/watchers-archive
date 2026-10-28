@@ -62,12 +62,13 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         private lateinit var shelfStore: ShelfStore
         private lateinit var catalogSnapshots: CatalogSnapshots
         private lateinit var offlineStore: OfflineDownloadStore
+        private lateinit var personalBookNames: PersonalBookNames
         val downloadJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
         val downloadProgress = java.util.concurrent.ConcurrentHashMap<String, OfflineDownloadStatus>()
         val searchService by lazy {
             CatalogSearchService(
-                localRecords = { metadata.records() },
-                fetch = { query, page, perPage -> GetComicsCatalogService().fetchWordPressPosts(search = query, page = page, perPage = perPage) },
+                localRecords = { metadata.records().map(::displayRecord) },
+                fetch = { query, page, perPage -> GetComicsCatalogService().fetchWordPressPosts(search = query, page = page, perPage = perPage).map(::displayRecord) },
                 persist = { metadata.upsertAll(it) },
                 expandQuery = CatalogSearchAliases::expandedTerms,
             )
@@ -91,6 +92,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                     val createdLibrary = PersistentLibrary(File(root, "persistent-library"))
                     try {
                         val createdOffline = OfflineDownloadStore(File(root, "offline-downloads"))
+                        val createdNames = PersonalBookNames(File(root, "personal-book-names.properties"))
                         demoComics.forEach { comic ->
                             createdLibrary.registerComic(comic.id, comic.title, comic.path, true)
                         }
@@ -100,6 +102,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                         shelfStore = createdShelves
                         catalogSnapshots = createdSnapshots
                         offlineStore = createdOffline
+                        personalBookNames = createdNames
                         initialized = true
                     } catch (error: Throwable) {
                         createdLibrary.close()
@@ -118,6 +121,8 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val shelves: ShelfStore get() = check(initialized) { "Repository state is not initialized" }.let { shelfStore }
         val snapshots: CatalogSnapshots get() = check(initialized) { "Repository state is not initialized" }.let { catalogSnapshots }
         val offline: OfflineDownloadStore get() = check(initialized) { "Repository state is not initialized" }.let { offlineStore }
+        val names: PersonalBookNames get() = check(initialized) { "Repository state is not initialized" }.let { personalBookNames }
+        fun displayRecord(record: CatalogSourceRecord) = record.copy(customTitle = names.title(record.externalId))
     }
 
     private val base: String
@@ -355,11 +360,11 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { service.fetchRss() }
         state.metadata.upsertAll(records)
-        state.metadata.records()
+        state.metadata.records().map(state::displayRecord)
     }
     override suspend fun getComicsRecords(): List<CatalogSourceRecord> = withContext(Dispatchers.IO) {
         state.ensureInitialized()
-        state.metadata.records()
+        state.metadata.records().map(state::displayRecord)
     }
     override suspend fun refreshOfficialGuide(): OfficialGuide = withContext(Dispatchers.IO) {
         state.ensureInitialized()
@@ -378,7 +383,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     override suspend fun searchGetComics(query: String, page: Int): List<CatalogSourceRecord> = searchCatalogue(query, page).records
     override suspend fun searchCatalogue(query: String, page: Int): CatalogSearchPage = withContext(Dispatchers.IO) {
         state.ensureInitialized()
-        state.searchService.search(query, page)
+        state.searchService.search(query, page).let { response -> response.copy(records = response.records.map(state::displayRecord)) }
     }
     override suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection? = withContext(Dispatchers.IO) {
         state.ensureInitialized(); state.snapshots.inspection(record.externalId)
@@ -387,7 +392,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         state.ensureInitialized()
         if (record.source == "local") return@withContext prepareLocalReading(record)
         state.offline.completed(record.externalId)?.let { download ->
-            return@withContext DemoComic(record.externalId, record.title, record.synopsis.orEmpty(), download.spec.fileName.orEmpty(),
+            return@withContext DemoComic(record.externalId, state.displayRecord(record).displayTitle, record.synopsis.orEmpty(), download.spec.fileName.orEmpty(),
                 series = "GetComics", year = record.yearLabel.orEmpty(), isTestContent = false,
                 sourceUrl = download.file.toURI().toString(), sourceAssetStatus = SourceAssetStatus.READY,
                 sourceRecordId = record.externalId, verifiedETag = download.spec.eTag, verifiedLength = download.spec.length)
@@ -421,7 +426,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
             ready ?: throw ComicSourceException(failure?.status ?: SourceAssetStatus.TRANSIENT_ERROR,
                 failure?.reason ?: "该来源暂未提供可直接阅读的文件，可先加入书架或导入本地漫画。")
         }
-        DemoComic(id = record.externalId, title = record.title, description = record.synopsis.orEmpty(),
+        DemoComic(id = record.externalId, title = state.displayRecord(record).displayTitle, description = record.synopsis.orEmpty(),
             path = asset.fileName.orEmpty(), series = "GetComics", year = record.yearLabel.orEmpty(),
             pageCountHint = asset.verifiedPageCount, isTestContent = false, sourceUrl = asset.verifiedUrl,
             sourceAssetStatus = SourceAssetStatus.READY, sourceRecordId = record.externalId,
@@ -429,11 +434,15 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     }
 
     override suspend fun offlineStatus(comicId: String): OfflineDownloadStatus? = withContext(Dispatchers.IO) {
-        state.ensureInitialized(); state.downloadProgress[comicId] ?: state.offline.status(comicId)
+        state.ensureInitialized(); (state.downloadProgress[comicId] ?: state.offline.status(comicId))?.let {
+            it.copy(title = state.names.title(comicId) ?: it.title)
+        }
     }
 
     override suspend fun offlineDownloads(): List<OfflineDownloadStatus> = withContext(Dispatchers.IO) {
-        state.ensureInitialized(); state.offline.statuses().map { state.downloadProgress[it.comicId] ?: it }
+        state.ensureInitialized(); state.offline.statuses().map {
+            (state.downloadProgress[it.comicId] ?: it).let { status -> status.copy(title = state.names.title(status.comicId) ?: status.title) }
+        }
     }
 
     override suspend fun downloadComic(record: CatalogSourceRecord, wifiOnly: Boolean) = withContext(Dispatchers.IO) {
@@ -447,10 +456,10 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         if (previous != null) pauseDownload(record.externalId)
         // Resuming uses the durable version-bound checkpoint; a worker rechecks
         // length/ETag before accepting any new bytes.
-        val spec = previous ?: prepareSourceReading(record).let { comic ->
-            OfflineDownloadSpec(record.externalId, record.title, checkNotNull(comic.sourceUrl),
-                checkNotNull(comic.verifiedETag), checkNotNull(comic.verifiedLength), comic.path)
-        }
+        // Queue discovery itself: choosing a host belongs to the persistent
+        // background task, so leaving this detail screen cannot stop it.
+        val spec = previous ?: OfflineDownloadSpec(record.externalId, record.title, record.canonicalUrl,
+            "", 0, mode = OfflineTransferMode.DISCOVER, verifyRemoteETag = false)
         // Once preparation succeeded, commit this explicit request even if the
         // detail composition is disposed while WorkManager persists its task.
         withContext(NonCancellable) {
@@ -497,12 +506,40 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         val token = CancellationToken()
         val cancellation = job.onCancellation { token.cancel() }
         try {
-            val spec = checkNotNull(state.offline.spec(comicId)) { "下载任务已不存在。" }
-            OfflineDownloadEngine(state.offline, state.limits).download(spec, token) { status ->
-                if (status.state == OfflineDownloadState.DOWNLOADING) state.downloadProgress[comicId] = status
+            val original = checkNotNull(state.offline.spec(comicId)) { "下载任务已不存在。" }
+            val record = state.metadata.records().firstOrNull { it.externalId == comicId }
+                ?: throw ComicSourceException(SourceAssetStatus.EXPIRED, "漫画来源记录已不存在，请重新打开详情。")
+            val namedRecord = state.displayRecord(record)
+            fun report(status: OfflineDownloadStatus) {
+                val display = status.copy(title = state.names.title(comicId) ?: status.title)
+                if (display.state in setOf(OfflineDownloadState.DOWNLOADING, OfflineDownloadState.QUEUED)) state.downloadProgress[comicId] = display
                 else state.downloadProgress.remove(comicId)
-                onProgress(status)
+                onProgress(display)
             }
+            val engine = OfflineDownloadEngine(state.offline, state.limits, validateComplete = { _, file, validationToken ->
+                PrivateArchiveFileSource(file, state.limits).use { source ->
+                    ComicArchiveReaders.create(source, state.limits, validationToken).use { reader ->
+                        val index = reader.open(validationToken)
+                        decodeBounded(reader.readPage(index, 0, validationToken)).recycle()
+                    }
+                }
+            })
+            AutomaticDownloadService(
+                record = namedRecord,
+                inspect = { GetComicsCatalogService().inspectArticle(record.canonicalUrl) },
+                resolve = { SourceResolver().resolve(it) },
+                probe = { DownloadCandidateProbe(state.limits).probe(namedRecord, it) },
+                prepare = { state.offline.enqueue(it); Unit },
+                transfer = { spec, progress ->
+                    if (spec.mode == OfflineTransferMode.RANGE && (state.offline.status(comicId)?.downloadedBytes ?: 0) == 0L) {
+                        val identity = org.watchersarchive.core.RemoteIdentity(spec.url, spec.length, spec.eTag, null)
+                        checkDownloadArchiveHeader(HttpRangeSource(spec.url, state.limits).readRange(identity, 0, minOf(32L, spec.length).toInt(), token))
+                    }
+                    engine.download(spec, token, progress); Unit
+                },
+                onInspection = { state.snapshots.saveInspection(comicId, it) },
+                onProgress = ::report,
+            ).download(original.takeIf { it.mode != OfflineTransferMode.DISCOVER })
             currentCoroutineContext().ensureActive()
             Unit
         } finally {
@@ -523,6 +560,11 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
     internal suspend fun markOfflineDownloadPaused(comicId: String) = withContext(Dispatchers.IO) {
         state.ensureInitialized(); state.offline.markPaused(comicId)
     }
+    override suspend fun renameComic(comicId: String, title: String?) = withContext(Dispatchers.IO) {
+        state.ensureInitialized()
+        require(state.metadata.records().any { it.externalId == comicId }) { "这部漫画已不在书库中，请重新打开书架。" }
+        state.names.set(comicId, title)
+    }
     override suspend fun importLocalComic(uri: String): CatalogSourceRecord = withContext(Dispatchers.IO) {
         state.ensureInitialized()
         val selected = android.net.Uri.parse(uri)
@@ -541,7 +583,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
         state.metadata.upsertAll(listOf(enriched))
         state.library.registerComic(id, record.title, uri, false)
         state.shelves.add("默认书架", id)
-        enriched
+        state.displayRecord(enriched)
     }
 
     private suspend fun prepareLocalReading(record: CatalogSourceRecord): DemoComic {
@@ -554,7 +596,7 @@ class AndroidRepository private constructor(private val state: State) : ReaderRe
                     val bytes = reader.readPage(index, 0, token)
                     decodeBounded(bytes).recycle()
                     state.covers.load(record.canonicalUrl, state.cache) { bytes }
-                    return DemoComic(record.externalId, record.title, record.synopsis.orEmpty(), record.title,
+                    return DemoComic(record.externalId, state.displayRecord(record).displayTitle, record.synopsis.orEmpty(), record.title,
                         series = "本地漫画", year = record.yearLabel.orEmpty(), pageCountHint = index.pages.size,
                         isTestContent = false, sourceUrl = record.canonicalUrl, sourceAssetStatus = SourceAssetStatus.READY,
                         sourceRecordId = record.externalId, verifiedETag = index.identity.eTag, verifiedLength = index.identity.length)

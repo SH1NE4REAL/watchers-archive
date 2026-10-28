@@ -91,6 +91,7 @@ interface ReaderRepository {
     suspend fun savedSourceInspection(record: CatalogSourceRecord): SourceAssetInspection?
     suspend fun prepareSourceReading(record: CatalogSourceRecord): DemoComic
     suspend fun importLocalComic(uri: String): CatalogSourceRecord
+    suspend fun renameComic(comicId: String, title: String?) { }
     suspend fun offlineStatus(comicId: String): OfflineDownloadStatus? = null
     suspend fun offlineDownloads(): List<OfflineDownloadStatus> = emptyList()
     suspend fun downloadComic(record: CatalogSourceRecord, wifiOnly: Boolean = true) { }

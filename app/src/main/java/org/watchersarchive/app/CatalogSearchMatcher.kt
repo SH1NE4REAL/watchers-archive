@@ -63,11 +63,11 @@ internal object CatalogSearchMatcher {
         return records.asSequence().take(MAX_CANDIDATES)
             .distinctBy { it.source to it.externalId }
             .mapIndexedNotNull { position, record ->
-                val title = normalized(record.title)
-                if (!numbers(record.title).containsAll(requiredNumbers) || !issues(record.title).containsAll(requiredIssues)) return@mapIndexedNotNull null
-                val target = Target(title)
-                val score = terms.mapIndexedNotNull { index, term ->
-                    score(target, term, fuzzyBudget)?.plus(if (index == 0) 20 else 0)
+                val score = listOf(record.title, record.displayTitle).distinct().mapNotNull { name ->
+                    if (!numbers(name).containsAll(requiredNumbers) || !issues(name).containsAll(requiredIssues)) null
+                    else terms.mapIndexedNotNull { index, term ->
+                        score(Target(normalized(name)), term, fuzzyBudget)?.plus(if (index == 0) 20 else 0)
+                    }.maxOrNull()
                 }.maxOrNull() ?: return@mapIndexedNotNull null
                 Match(record, score, position)
             }.sortedWith(compareByDescending<Match> { it.score }.thenBy { it.position })

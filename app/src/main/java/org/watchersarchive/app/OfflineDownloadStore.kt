@@ -15,6 +15,8 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 /** Explicit offline content is persistent user storage, separate from disposable page caches. */
+enum class OfflineTransferMode { RANGE, FULL, DISCOVER }
+
 data class OfflineDownloadSpec(
     val comicId: String,
     val title: String,
@@ -22,17 +24,22 @@ data class OfflineDownloadSpec(
     val eTag: String,
     val length: Long,
     val fileName: String? = null,
+    val mode: OfflineTransferMode = OfflineTransferMode.RANGE,
+    /** FULL may use a local version token when the server supplies no strong ETag. */
+    val verifyRemoteETag: Boolean = true,
 ) {
     init {
         require(comicId.isNotBlank() && comicId.length <= 4096) { "漫画标识无效" }
         require(title.length <= 4096 && url.length <= 16_384 && eTag.length <= 4096) { "下载信息过长" }
         val parsed = URI(url)
         require(parsed.scheme in setOf("http", "https") && !parsed.host.isNullOrBlank() && parsed.userInfo == null && parsed.fragment == null) { "下载地址无效" }
-        require(eTag.length >= 2 && eTag.first() == '"' && eTag.last() == '"' &&
-            eTag.substring(1, eTag.lastIndex).all { it.code >= 0x21 && it != '"' && it.code != 0x7f }) { "下载来源缺少可靠的版本标识" }
-        require(length in 22..(64L * 1024 * 1024 * 1024)) { "漫画文件大小无效或超出支持范围" }
+        require(mode == OfflineTransferMode.DISCOVER || (eTag.length >= 2 && eTag.first() == '"' && eTag.last() == '"' &&
+            eTag.substring(1, eTag.lastIndex).all { it.code >= 0x21 && it != '"' && it.code != 0x7f })) { "下载来源缺少可靠的版本标识" }
+        require(if (mode == OfflineTransferMode.DISCOVER) length == 0L && !verifyRemoteETag else length in 22..(64L * 1024 * 1024 * 1024)) { "漫画文件大小无效或超出支持范围" }
+        require(mode != OfflineTransferMode.RANGE || verifyRemoteETag) { "按范围续传需要可靠的来源版本" }
     }
-    internal val assetKey: String get() = offlineDigest("$comicId\u0000$url\u0000$eTag\u0000$length")
+    internal val assetKey: String get() = offlineDigest("$comicId\u0000$url\u0000$eTag\u0000$length" +
+        if (mode == OfflineTransferMode.RANGE) "" else "\u0000${mode.name}\u0000$verifyRemoteETag")
 }
 
 enum class OfflineDownloadState { QUEUED, DOWNLOADING, PAUSED, COMPLETED, FAILED }
@@ -164,6 +171,7 @@ class OfflineDownloadStore(val directory: File) {
         save(Record(spec, state, bytes, message))
     }
     internal fun finish(spec: OfflineDownloadSpec): CompletedOfflineDownload = synchronized(metadataLock) {
+        require(spec.mode != OfflineTransferMode.DISCOVER) { "来源尚未解析完成" }
         val partial = partial(spec)
         require(partial.length() == spec.length) { "离线漫画尚未下载完整" }
         atomicMove(partial, archive(spec))
@@ -207,7 +215,7 @@ class OfflineDownloadStore(val directory: File) {
             val lock = try { exclusive(record.spec) } catch (_: IllegalStateException) { return@forEach }
             lock.use {
                 val ready = archive(record.spec)
-                if (record.bytes == record.spec.length && ready.length() == record.spec.length) {
+                if (record.spec.mode != OfflineTransferMode.DISCOVER && ready.isFile && record.bytes == record.spec.length && ready.length() == record.spec.length) {
                     save(record.copy(state = OfflineDownloadState.COMPLETED, modified = ready.lastModified(), message = null))
                 } else {
                     val part = partial(record.spec)
@@ -223,7 +231,7 @@ class OfflineDownloadStore(val directory: File) {
     }
     private fun validCompleted(record: Record): Boolean {
         val file = archive(record.spec)
-        return file.isFile && file.length() == record.spec.length && file.lastModified() == record.modified
+        return record.spec.mode != OfflineTransferMode.DISCOVER && file.isFile && file.length() == record.spec.length && file.lastModified() == record.modified
     }
     private fun Record.status(): OfflineDownloadStatus {
         if (state == OfflineDownloadState.COMPLETED && !validCompleted(this)) {
@@ -238,7 +246,8 @@ class OfflineDownloadStore(val directory: File) {
         if (!file.isFile || file.length() > 64 * 1024) return null
         val json = JSONObject(file.readText(Charsets.UTF_8))
         val spec = OfflineDownloadSpec(json.getString("id"), json.getString("title"), json.getString("url"), json.getString("etag"),
-            json.getLong("length"), json.optString("fileName").takeIf { it.isNotBlank() })
+            json.getLong("length"), json.optString("fileName").takeIf { it.isNotBlank() },
+            OfflineTransferMode.valueOf(json.optString("mode", "RANGE")), json.optBoolean("verifyRemoteETag", true))
         require(file.name == offlineDigest(spec.comicId) + ".json")
         val bytes = json.getLong("bytes"); require(bytes in 0..spec.length)
         Record(spec, OfflineDownloadState.valueOf(json.getString("state")), bytes,
@@ -248,6 +257,7 @@ class OfflineDownloadStore(val directory: File) {
         val spec = record.spec
         val content = JSONObject().put("id", spec.comicId).put("title", spec.title).put("url", spec.url)
             .put("etag", spec.eTag).put("length", spec.length).put("fileName", spec.fileName.orEmpty())
+            .put("mode", spec.mode.name).put("verifyRemoteETag", spec.verifyRemoteETag)
             .put("state", record.state.name).put("bytes", record.bytes).put("message", record.message.orEmpty())
             .put("modified", record.modified).toString().toByteArray(Charsets.UTF_8)
         require(content.size <= 64 * 1024) { "下载信息过长，暂时无法保存" }

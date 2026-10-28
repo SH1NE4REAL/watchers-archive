@@ -62,7 +62,7 @@ private fun downloadStatus(repository: ReaderRepository, comicId: String): Offli
 internal fun offlineProgressLabel(status: OfflineDownloadStatus): String {
     val percent = if (status.totalBytes > 0) (status.downloadedBytes * 100 / status.totalBytes).coerceIn(0, 100) else 0
     return when (status.state) {
-        OfflineDownloadState.QUEUED -> "等待下载"
+        OfflineDownloadState.QUEUED -> status.message ?: "等待下载"
         OfflineDownloadState.DOWNLOADING -> "正在下载 · $percent%"
         OfflineDownloadState.PAUSED -> "已暂停 · $percent%"
         OfflineDownloadState.COMPLETED -> "已下载，可离线阅读"
@@ -111,7 +111,7 @@ internal fun DownloadComicAction(record: CatalogSourceRecord, repository: Reader
     if (confirm) AlertDialog(onDismissRequest = { confirm = false }, title = { Text("下载整本漫画") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(record.title)
+                Text(record.displayTitle)
                 record.sizeLabel?.let { Text("来源标注大小：$it", style = MaterialTheme.typography.bodySmall) }
                 Text("下载完成后可直接离线阅读。漫画会保存在 App 中，并自动加入书架，占用手机存储。")
                 MobileDataChoice(allowMobileData) { allowMobileData = it }

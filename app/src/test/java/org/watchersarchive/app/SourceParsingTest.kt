@@ -81,6 +81,26 @@ class SourceParsingTest {
         assertEquals(3, inspection.assets.count { it.status == SourceAssetStatus.METADATA_ONLY })
     }
 
+    @Test fun articleKeepsPublicMediaFireAndManualShareCandidatesSeparate() {
+        val article = """<article id="post-12">
+          <a href='https://www.mediafire.com/file_premium/abc/book.cbz/file'>MediaFire</a>
+          <a href='https://mega.nz/file/abcd#public-file-key'>MEGA</a>
+          <a href='https://we.tl/share'>WeTransfer</a>
+          <a href='https://www.mediafire.com/file_premium/abc/book.cbz/file'>duplicate</a>
+          <a href='https://mediafire.com.evil.test/file/abc'>spoof</a>
+        </article>"""
+        val assets = service.inspectArticleHtml("https://getcomics.org/marvel/test/", article).assets
+        assertEquals(3, assets.size)
+        assertEquals(SourceAssetStatus.METADATA_ONLY, assets.first().status)
+        assertEquals(2, assets.count { it.status == SourceAssetStatus.NEEDS_USER_ACTION })
+        assertTrue(assets.none { it.status == SourceAssetStatus.READY })
+    }
+
+    @Test fun candidateDiscoveryHasAFiniteBudget() {
+        val html = (1..50).joinToString("") { "<a href='https://files.example.test/$it.cbz'>File</a>" }
+        assertEquals(32, service.inspectArticleHtml("https://getcomics.org/marvel/test/", html).assets.size)
+    }
+
     @Test fun searchIsSentToRemoteCategoryInsteadOfOnlyFilteringLatestSnapshot() = runBlocking {
         var requested = ""
         val adapter = GetComicsCatalogService(now = { clock }, decodeImage = { true }, fetchText = { requested = it; "[]" })

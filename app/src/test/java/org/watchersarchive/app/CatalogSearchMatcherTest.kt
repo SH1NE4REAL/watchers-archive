@@ -81,6 +81,13 @@ class CatalogSearchMatcherTest {
         assertTrue(result.any { it.title.contains("2015") })
     }
 
+    @Test fun personalNamesAndOriginalTitlesBothRemainSearchable() {
+        val record = book("local-book", "X-Men by Jonathan Hickman Omnibus (2022)", "local").copy(customTitle = "我的X战警收藏")
+        assertEquals(listOf(record), CatalogSearchMatcher.rank(listOf(record), "我的X战警收藏"))
+        assertEquals(listOf(record), CatalogSearchMatcher.rank(listOf(record), "jonathan hickman 2022"))
+        assertEquals("X-Men by Jonathan Hickman Omnibus (2022)", record.title)
+    }
+
     @Test fun ignoresSynopsisAndDoesNotGuessVeryShortOrUnrelatedWords() {
         assertTrue(CatalogSearchMatcher.rank(listOf(book("thor", "Thor")), "spider").isEmpty())
         assertTrue(titles("cat", "Cut", "Cataclysm").contains("Cataclysm"))
