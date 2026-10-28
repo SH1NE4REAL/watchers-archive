@@ -1,15 +1,15 @@
 package org.watchersarchive.app
 
 import java.net.URLEncoder
-import java.text.Normalizer
-import java.util.Locale
 
 internal enum class MarvelNameKind(val label: String) {
     CHARACTER("角色"), TEAM("团队"), ORGANIZATION("组织"), PLACE("地点"),
+    ITEM("物品"), EVENT("事件"), CONCEPT("概念"), UNKNOWN("专名"),
 }
 
 internal enum class MarvelChineseEvidence(val label: String) {
     COMMON("常用中文名"), USER_PREFERRED("用户指定译名"),
+    COMMUNITY("社区中文名"), UNTRANSLATED("中文名待补"),
 }
 
 /** English reference links and Chinese-name evidence deliberately remain separate. */
@@ -23,6 +23,9 @@ internal data class MarvelReadingTerm(
     val chineseEvidence: MarvelChineseEvidence,
     val note: String,
     val checkedAt: String = "2026-10-28",
+    val hasChineseName: Boolean = true,
+    val universe: String? = null,
+    val chineseAliases: List<String> = emptyList(),
 )
 
 /** A candidate in the reading context, never an assertion replacing ordinary meaning. */
@@ -76,20 +79,35 @@ internal object MarvelReadingGlossary {
     )
 
     private data class Alias(val normalized: String, val term: MarvelReadingTerm)
-    private data class Hit(val match: MarvelNameMatch, val words: Int, val characters: Int, val position: Int)
+    private data class Hit(val match: MarvelNameMatch, val words: Int, val characters: Int, val position: Int, val curated: Boolean = false)
+    private data class NameWindow(val original: String, val normalized: String, val words: Int, val position: Int)
     private val aliases = entries.flatMap { term ->
         (listOf(term.englishName) + term.aliases).map { Alias(normalized(it), term) }
     }.distinctBy { it.term.id to it.normalized }.groupBy { it.normalized }
     private val xMenIds = setOf("cyclops", "storm", "beast", "angel", "iceman", "professor-x", "magneto",
         "wolverine", "colossus", "nightcrawler", "x-men")
     private val expansionStopWords = setOf("the", "a", "an", "and", "of", "to", "in", "at")
+    // The historical dataset even has characters called A, It and One. A tap
+    // on a function word should still ask about normal English. Complete names
+    // such as He Who Remains can still be found through a multiword window.
+    private val bulkSingleWordStopWords = expansionStopWords + setOf(
+        "i", "me", "he", "she", "it", "we", "you", "they", "him", "her", "us", "them",
+        "my", "your", "his", "its", "our", "their", "this", "that", "these", "those",
+        "is", "are", "was", "were", "be", "been", "being", "do", "does", "did", "have", "has", "had",
+        "as", "if", "but", "or", "so", "not", "no", "yes", "one",
+    )
 
     /**
      * Only known complete names are matched. A name window must overlap the
      * selected word/span and stay within its OCR line, with at most five words.
      * Case folding does not make a candidate more certain: comics are often caps.
      */
-    fun matches(token: EnglishToken, page: EnglishPageTokens, comicTitleHint: String? = null): List<MarvelNameMatch> {
+    fun matches(
+        token: EnglishToken,
+        page: EnglishPageTokens,
+        comicTitleHint: String? = null,
+        extraFind: ((List<String>) -> List<MarvelReadingTerm>)? = null,
+    ): List<MarvelNameMatch> {
         if (page.tokens.size > 512 || token.text.length > 2_000) return emptyList()
         val selection = selection(page, token) ?: return emptyList()
         val exactWordOnly = selection.first == selection.last && normalized(token.text) in expansionStopWords
@@ -100,6 +118,7 @@ internal object MarvelReadingGlossary {
         val hasXMenTitle = Regex("(?:^| )x men(?: |$)").containsMatchIn(title) ||
             title.contains("xmen") || title.contains("x战警") || title.contains("x戰警")
         val hits = mutableListOf<Hit>()
+        val windows = mutableListOf<NameWindow>()
         for (start in lineIndices.indices) {
             for (end in start until minOf(start + 5, lineIndices.size)) {
                 val indices = lineIndices.subList(start, end + 1)
@@ -110,14 +129,27 @@ internal object MarvelReadingGlossary {
                 val original = indices.joinToString(" ") { page.tokens[it].text }
                 if (original.length > 240) continue
                 val normalized = normalized(original)
+                windows += NameWindow(original, normalized, end - start + 1, indices.first())
                 aliases[normalized].orEmpty().forEach { alias ->
                     val hint = if (hasXMenTitle && alias.term.id in xMenIds)
                         "当前书名含 X-Men 相关词，可优先核对这个候选；仍需结合原句。" else null
-                    hits += Hit(MarvelNameMatch(alias.term, original, hint), end - start + 1, normalized.length, indices.first())
+                    hits += Hit(MarvelNameMatch(alias.term, original, hint), end - start + 1, normalized.length, indices.first(), curated = true)
                 }
             }
         }
+        val orderedWindows = windows.sortedWith(compareByDescending<NameWindow> { it.words }.thenByDescending { it.normalized.length })
+            .filterNot { it.words == 1 && it.normalized in bulkSingleWordStopWords }
+            .distinctBy { it.normalized }.take(64)
+        extraFind?.invoke(orderedWindows.map { it.normalized })?.take(64)?.forEach { term ->
+            val termNames = (listOf(term.englishName) + (if (term.hasChineseName) listOf(term.chineseName) else emptyList()) + term.aliases + term.chineseAliases)
+                .map(::normalized).toSet()
+            val match = orderedWindows.firstOrNull { it.normalized in termNames } ?: return@forEach
+            val hint = term.universe?.let { "资料范围：$it；同名或不同版本仍需结合原句核对。" }
+            hits += Hit(MarvelNameMatch(term, match.original, hint), match.words, match.normalized.length, match.position)
+        }
         return hits.sortedWith(compareByDescending<Hit> { it.words }.thenByDescending { it.characters }
+            .thenByDescending { it.curated }.thenByDescending { it.match.term.hasChineseName }
+            .thenBy { it.match.term.universe == "MCU" }
             .thenByDescending { it.match.contextHint != null }.thenBy { it.position })
             .distinctBy { it.match.term.id }.take(3).map { it.match }
     }
@@ -133,12 +165,5 @@ internal object MarvelReadingGlossary {
         return if (actual == token) first..last else null
     }
 
-    private fun normalized(input: String): String {
-        var value = Normalizer.normalize(input.take(2_000), Normalizer.Form.NFKC).lowercase(Locale.ROOT)
-            .replace('’', '\'').replace('‘', '\'')
-        // Registered initialisms are one name; do not join arbitrary adjacent words.
-        value = Regex("(?<![a-z])(?:[a-z]\\.){2,}[a-z]?\\.?").replace(value) { it.value.replace(".", "") }
-        value = Regex("([a-z][a-z-]{1,80})'s\\b").replace(value, "$1")
-        return value.replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim().replace(Regex("\\s+"), " ")
-    }
+    private fun normalized(input: String): String = MarvelGlossaryNameNormalizer.normalize(input)
 }

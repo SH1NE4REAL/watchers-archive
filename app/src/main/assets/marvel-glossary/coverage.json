@@ -1,0 +1,33 @@
+{
+  "aliasCollisionKeyCount": 1563,
+  "aliasIdsTruncatedKeyCount": 0,
+  "aliasKeyCount": 25812,
+  "aliasMappingCount": 28301,
+  "aliasMappingCountBeforeCap": 28301,
+  "chineseEvidenceCounts": {
+    "COMMUNITY": 947,
+    "UNTRANSLATED": 18613
+  },
+  "compressedShardBytes": 1298748,
+  "discardedAliasMappings": 0,
+  "discardedEntityAliases": 0,
+  "discardedNormalizedNames": 0,
+  "entitiesWithChineseName": 947,
+  "entitiesWithHanName": 947,
+  "entityCount": 19560,
+  "identicalDuplicateRows": 0,
+  "inputRows": 19560,
+  "kindCounts": {
+    "CHARACTER": 17202,
+    "ITEM": 229,
+    "ORGANIZATION": 168,
+    "PLACE": 400,
+    "TEAM": 6,
+    "UNKNOWN": 1555
+  },
+  "maximumCompressedShardBytes": 4516,
+  "maximumUncompressedShardBytes": 57136,
+  "shardCount": 512,
+  "truncatedRecordCount": 0,
+  "untranslatedEntityCount": 18613
+}

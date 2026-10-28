@@ -1,0 +1,850 @@
+{
+  "source": "Wikidata",
+  "license": "CC0",
+  "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+  "mirrorEndpoint": "https://qlever.dev/api/wikidata",
+  "mirrorProject": "https://github.com/ad-freiburg/qlever-ui",
+  "mirrorIndex": "Complete Wikidata, TTL from https://dumps.wikimedia.org/wikidatawiki/entities (latest-all.ttl.bz2 from 10.08.2026 munged, latest-lexemes.ttl.bz2 from 07.08.2026), updated LIVE",
+  "fetchedAtUtc": "2026-10-28T08:06:43.603988+00:00",
+  "exportedAtUtc": "2026-10-28T08:11:59.769368+00:00",
+  "checkedAt": "2026-10-28",
+  "sourceScopes": {
+    "Q931597": "shared fictional Marvel Comics universe",
+    "Q642878": "MCU; retained separately",
+    "P6262": "explicit marvel: Fandom article identifier"
+  },
+  "entities": 4213,
+  "withChineseLabel": 947,
+  "withChineseAliases": 469,
+  "nonHanChineseLanguageLabels": 28,
+  "entitiesWithNonHanChineseLanguageLabels": 15,
+  "chineseSelectionRule": "First Han-containing source label in zh-hans,zh-cn,zh,zh-hant,zh-tw order; non-Han labels retained as metadata/aliases only",
+  "withExactMarvelPageCrosswalk": 3388,
+  "byKind": {
+    "UNKNOWN": 1555,
+    "ITEM": 229,
+    "CHARACTER": 1855,
+    "ORGANIZATION": 168,
+    "TEAM": 6,
+    "PLACE": 400
+  },
+  "realHumanRecords": 320,
+  "scopeEntityCounts": {
+    "MARVEL_FANDOM_ID": 3388,
+    "MARVEL_UNIVERSE": 7,
+    "MCU": 1192
+  },
+  "skipped": [
+    {
+      "id": "Q26747",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q28047",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q1476318",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q2846587",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q3547976",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q4754453",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q5586258",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q5607225",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q6154218",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q6261958",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q6395642",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q6778174",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q7376638",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q7538336",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q7807226",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q15141701",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q15267094",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q16897867",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q20920197",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q21188872",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q24702422",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q25401766",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q44479768",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q48879220",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q56759775",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q57623692",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q59223344",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q60723918",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q63196993",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q64138554",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q64138621",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q64577898",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q70775683",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q72456377",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q72979455",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q106020183",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q106592913",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q109379640",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111320012",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111732427",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111827135",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111827166",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111962258",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q111973065",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q112539918",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q112556380",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q112561277",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q112563396",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q112753075",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q113010692",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q114443933",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q115441246",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q116671834",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q132393876",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q132853477",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q132853531",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q132918160",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133348361",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133606258",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133861014",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133966233",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133966556",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133966863",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q133967251",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q135551829",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q135642162",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q135646471",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q136333516",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q137000565",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q137000890",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q137001136",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q137141414",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q137149937",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138011582",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138042630",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138113821",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138296844",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138296896",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138314646",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138314662",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138314710",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138314731",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138314969",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315014",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315325",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315363",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315445",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315552",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315750",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315780",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138315799",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316022",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316236",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316307",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316363",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316452",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138316924",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317126",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317162",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317183",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317406",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317480",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317513",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317519",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317555",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317605",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138317730",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138318161",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138318199",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138318212",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138318243",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138318348",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138319986",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138320006",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138320050",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138320155",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138320244",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138329454",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138329760",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138329977",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330481",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330491",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330506",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330530",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330568",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330578",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330634",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138330761",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138331012",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138331132",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138331516",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138331987",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138333353",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138333447",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138337635",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138337713",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138339186",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138339213",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138339246",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138339339",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138340662",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138341173",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138786460",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q138819977",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139441908",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139446174",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139447406",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139453552",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139457500",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139464361",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q139465812",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141145033",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141147215",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141147219",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141147300",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141148186",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141148196",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141148206",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141148210",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141148216",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141149457",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141156579",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190807",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190817",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190826",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190871",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190898",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141190964",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141201749",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141303572",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141690095",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141690204",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141690324",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141690661",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141695959",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141700801",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141710914",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141711020",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141863463",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141863519",
+      "reason": "No English label"
+    },
+    {
+      "id": "Q141867036",
+      "reason": "No English label"
+    }
+  ],
+  "sha256": "2bafe16eccf362e3854ab87ced8dad0baee84e2e7a127a482e1a2ac9da0898a2",
+  "requests": 9,
+  "metadataBytes": 4263366,
+  "networkRequestsThisExport": 0,
+  "responseEvidence": [
+    {
+      "name": "mirror-stats",
+      "bytes": 760,
+      "sha256": "742273ef628e7017b1d561a30c8de5730aca9094301304b6b3c4f2dca4291c79",
+      "requestStartedUtc": "2026-10-28T08:00:07.952705+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": null
+    },
+    {
+      "name": "scope-identities",
+      "bytes": 1228,
+      "sha256": "5db95bfb3b250a3a1979209cff4c262c17382d3e3e604da64abff43874474818",
+      "requestStartedUtc": "2026-10-28T08:00:11.871566+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "9cb2c1e936a925171e762ad4ae3327ea617963aa9bc731a39d3016497d2319df"
+    },
+    {
+      "name": "entity-scopes",
+      "bytes": 600598,
+      "sha256": "b99233601dc8c90d3114ce1201a9a216de09c1740eafc0e4d9b57913f7a14384",
+      "requestStartedUtc": "2026-10-28T08:00:12.787613+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "aac1f7a8915280c12fab4428fc5404e9011b5e99a6c90ba7a975417cfdb98ced"
+    },
+    {
+      "name": "entity-labels",
+      "bytes": 813964,
+      "sha256": "644550063f92c9145e87f2baa2250a59c22a728b3e5d62c2a6ec9d16448e8ecf",
+      "requestStartedUtc": "2026-10-28T08:00:27.822707+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "ca1b24797375478bf948af9f4d8a70ef23e847604cdc810a6b99987e1d0b04b8"
+    },
+    {
+      "name": "entity-aliases",
+      "bytes": 918579,
+      "sha256": "4bb24243d8a25ba38b93e3336403617119667fc975cd3696ea8252023b24f3a7",
+      "requestStartedUtc": "2026-10-28T08:00:38.504976+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "04e65c29feb08873124ab373cc923d446a1b78d26810176bbe2841c15cdd287d"
+    },
+    {
+      "name": "entity-P6262",
+      "bytes": 511141,
+      "sha256": "beb3b58a168c40881951cc4e1f7f0d9cb0882c39b883154f67813586eccf10bc",
+      "requestStartedUtc": "2026-10-28T08:05:46.668169+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "b361334c65bcd1715387ced7d1a4065e029f94f3685c5a0cda66c3f1880d9ad1"
+    },
+    {
+      "name": "entity-P31",
+      "bytes": 953583,
+      "sha256": "f7d907eaf78ef799902648b3822893b479892d039c8aab618259e1c22c512932",
+      "requestStartedUtc": "2026-10-28T08:06:10.207098+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "82fb7c6fcd001cf5bceef5b73b95efc34b919fc1498f9999c9f16a964e31d594"
+    },
+    {
+      "name": "entity-P1080",
+      "bytes": 418816,
+      "sha256": "cfd4cb639a602bcf6b57373d5e73f39569fbacc24fbc3fc4f45ac254d0283886",
+      "requestStartedUtc": "2026-10-28T08:06:16.109227+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "30c2b19836a3d4f6320d9e58189b332488e4e38202bb8f99266167b11f2431a2"
+    },
+    {
+      "name": "type-category-roots",
+      "bytes": 44697,
+      "sha256": "270747fe58d72c559a4d429ad2362638037939b48a87177614e8d821d8fb6180",
+      "requestStartedUtc": "2026-10-28T08:06:43.603988+00:00",
+      "status": 200,
+      "reusedSnapshot": true,
+      "querySha256": "3b71722c090e7335992004f82f9535b76e7f859cd2194d132b5d17452fa9be15"
+    }
+  ]
+}

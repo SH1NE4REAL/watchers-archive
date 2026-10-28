@@ -73,6 +73,7 @@ internal class PublicEnglishDictionaryProvider(
     private val translation: EnglishDefinitionTranslator = MlKitEnglishDefinitionTranslator(),
     private val dictionary: BundleEnglishDictionary = BundleEnglishDictionary(context.applicationContext.assets),
     private val comicTitleHint: String? = null,
+    private val marvelIndex: MarvelGlossaryIndex = MarvelGlossaryIndex(context.applicationContext.assets),
 ) : EnglishDictionaryProvider, Closeable {
     private val definitions = LinkedHashMap<String, BundledEnglishLexeme?>(128, .75f, true)
     private val modelDownload = Mutex()
@@ -99,7 +100,16 @@ internal class PublicEnglishDictionaryProvider(
         check(!closed)
         val word = BundleEnglishDictionary.normalize(token.text)
         if (word.length !in 1..120 || word.split(' ').size > 12 || word.any(Char::isISOControl) || !word.any(Char::isLetter)) return@withContext null
-        val marvelNames = MarvelReadingGlossary.matches(token, page, comicTitleHint)
+        var marvelNotice: String? = null
+        val lookupContext = currentCoroutineContext()
+        val marvelNames = try {
+            MarvelReadingGlossary.matches(token, page, comicTitleHint) { names ->
+                marvelIndex.find(names, limit = 64) { lookupContext.ensureActive() }
+            }
+        } catch (_: MarvelGlossaryResourceException) {
+            marvelNotice = "漫威扩展词库暂不可用，当前保留基础词表和普通释义。"
+            MarvelReadingGlossary.matches(token, page, comicTitleHint)
+        }
         val local = try { definition(word) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) {
@@ -128,12 +138,12 @@ internal class PublicEnglishDictionaryProvider(
             sourceLabel = if (local != null) BundleEnglishDictionary.LABEL else null,
             sourceUrl = if (local != null) BundleEnglishDictionary.SOURCE else null,
             requiresModel = !ready && (originalContext != null || localChinese.isNullOrBlank()),
-            notice = when {
+            notice = listOfNotNull(when {
                 local != null && contextMeaning != null -> "常用词义来自词典；原句译文由设备模型生成，未自动判定义项。"
                 local != null -> "常用词义来自词典，请结合原句判断。"
                 translatedWord != null -> "未取得词典条目，当前仅提供设备端机器参考译义。"
                 else -> "人名、拟声词、俚语或识别错误可能查不到释义。"
-            },
+            }, marvelNotice).joinToString(" "),
             marvelNames = marvelNames,
         )
     }
@@ -170,6 +180,7 @@ internal class PublicEnglishDictionaryProvider(
         closed = true
         translation.close()
         dictionary.clear()
+        marvelIndex.close()
         synchronized(definitions) { definitions.clear() }
     }
 }

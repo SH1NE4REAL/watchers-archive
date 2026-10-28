@@ -461,6 +461,7 @@ internal fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -
     var showDeveloper by remember { mutableStateOf(false) }
     var showStorage by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showDictionarySources by remember { mutableStateOf(false) }
     var preload by remember { mutableStateOf(repository.prefetchEnabled) }
     var keepAwake by remember { mutableStateOf(repository.keepScreenOn) }
     var allowMobile by remember { mutableStateOf(repository.allowMobileDownloads) }
@@ -532,8 +533,10 @@ internal fun CacheScreen(repository: ReaderRepository, onOpenTest: (DemoComic) -
             Text("版本 ${BuildConfig.VERSION_NAME}")
             Text("个人漫画书库与阅读器。")
             Text("书架、阅读进度与书签保存在本机。", style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { showDictionarySources = true }) { Text("词库与资料来源") }
         } },
         confirmButton = { TextButton(onClick = { showAbout = false }) { Text("关闭") } })
+    if (showDictionarySources) DictionarySourcesDialog { showDictionarySources = false }
 }
 
 @Composable

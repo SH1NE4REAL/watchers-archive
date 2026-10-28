@@ -1,0 +1,3 @@
+# Checksummed generated resources and source notices must retain exact bytes
+# on every checkout, including Windows CRLF environments.
+app/src/main/assets/marvel-glossary/** -text -whitespace

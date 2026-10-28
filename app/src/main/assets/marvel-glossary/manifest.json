@@ -1,0 +1,3674 @@
+{
+  "coverage": {
+    "aliasCollisionKeyCount": 1563,
+    "aliasIdsTruncatedKeyCount": 0,
+    "aliasKeyCount": 25812,
+    "aliasMappingCount": 28301,
+    "aliasMappingCountBeforeCap": 28301,
+    "chineseEvidenceCounts": {
+      "COMMUNITY": 947,
+      "UNTRANSLATED": 18613
+    },
+    "compressedShardBytes": 1298748,
+    "discardedAliasMappings": 0,
+    "discardedEntityAliases": 0,
+    "discardedNormalizedNames": 0,
+    "entitiesWithChineseName": 947,
+    "entitiesWithHanName": 947,
+    "entityCount": 19560,
+    "identicalDuplicateRows": 0,
+    "inputRows": 19560,
+    "kindCounts": {
+      "CHARACTER": 17202,
+      "ITEM": 229,
+      "ORGANIZATION": 168,
+      "PLACE": 400,
+      "TEAM": 6,
+      "UNKNOWN": 1555
+    },
+    "maximumCompressedShardBytes": 4516,
+    "maximumUncompressedShardBytes": 57136,
+    "shardCount": 512,
+    "truncatedRecordCount": 0,
+    "untranslatedEntityCount": 18613
+  },
+  "formatVersion": 1,
+  "inputs": [
+    {
+      "bytes": 17402712,
+      "name": "merged-entities.jsonl",
+      "rows": 19560,
+      "sha256": "6bdc5b8ee953294e331ce4fbc8a1f419c510047054f37760399472f44057b589"
+    }
+  ],
+  "normalizationVersion": 1,
+  "shards": [
+    {
+      "compressedBytes": 1657,
+      "count": 103,
+      "path": "aliases/00.dict",
+      "sha256": "89149d286438ba340f05ce120f8fe674f53c4d985e698480da09baefea066467",
+      "uncompressedBytes": 4370
+    },
+    {
+      "compressedBytes": 1740,
+      "count": 108,
+      "path": "aliases/01.dict",
+      "sha256": "02b8043691fa264b8df1cb530f59908afe5796bce71be1fd2a0ea5fd8b50f732",
+      "uncompressedBytes": 4547
+    },
+    {
+      "compressedBytes": 1789,
+      "count": 107,
+      "path": "aliases/02.dict",
+      "sha256": "da6b22ca90d8c89fd03ab5138394ef45b5da60e7f4bebe75ed671519d3752ddb",
+      "uncompressedBytes": 4713
+    },
+    {
+      "compressedBytes": 1508,
+      "count": 82,
+      "path": "aliases/03.dict",
+      "sha256": "3a80c4025e55b9e1a3d92f38c43d983be2cd8af4dc2f73b2216634eb23537b75",
+      "uncompressedBytes": 3705
+    },
+    {
+      "compressedBytes": 1735,
+      "count": 107,
+      "path": "aliases/04.dict",
+      "sha256": "f3d03352d44b6bc67e057d7d68a13e102135beb860db086eb4432e47b1db8624",
+      "uncompressedBytes": 4747
+    },
+    {
+      "compressedBytes": 1355,
+      "count": 81,
+      "path": "aliases/05.dict",
+      "sha256": "c76f94094607567c60e64a6f00f31420da7ccdd5f8cd6165263a91a656391c30",
+      "uncompressedBytes": 3482
+    },
+    {
+      "compressedBytes": 1824,
+      "count": 112,
+      "path": "aliases/06.dict",
+      "sha256": "e41a4204ac51229597965779c2b13f97bfe37028ea30814297630581bfc6f843",
+      "uncompressedBytes": 4859
+    },
+    {
+      "compressedBytes": 1715,
+      "count": 103,
+      "path": "aliases/07.dict",
+      "sha256": "6ec6ee0bc65e4caae9844f9648df52602c95a74ff02abe8fd18d472f23f339d9",
+      "uncompressedBytes": 4396
+    },
+    {
+      "compressedBytes": 1703,
+      "count": 105,
+      "path": "aliases/08.dict",
+      "sha256": "153cbf07d06c4e255ed5622543257c7f8e44461d7815a2ac8cf93e2b66ef0e5f",
+      "uncompressedBytes": 4506
+    },
+    {
+      "compressedBytes": 1332,
+      "count": 83,
+      "path": "aliases/09.dict",
+      "sha256": "a3e48a9d6802aec6a849f815740ccb8d4e2ef996bf75baf228c91d66021d7d3e",
+      "uncompressedBytes": 3489
+    },
+    {
+      "compressedBytes": 1789,
+      "count": 106,
+      "path": "aliases/0a.dict",
+      "sha256": "92ca4267da5bed3f729c1479d48086cc26c24c6b6ccd745a0c449ab5a4c53e70",
+      "uncompressedBytes": 4824
+    },
+    {
+      "compressedBytes": 1786,
+      "count": 106,
+      "path": "aliases/0b.dict",
+      "sha256": "4af9ef8d1343b7bbca6fbfc051aa02c49b529c28c64ba8e8074fa17c16b5ad90",
+      "uncompressedBytes": 4476
+    },
+    {
+      "compressedBytes": 1794,
+      "count": 101,
+      "path": "aliases/0c.dict",
+      "sha256": "a42b1c1c538cb1d1de9a4d090d3f5eea220b7018a4fae514ccae20acd3823231",
+      "uncompressedBytes": 4512
+    },
+    {
+      "compressedBytes": 1712,
+      "count": 104,
+      "path": "aliases/0d.dict",
+      "sha256": "f7cb99653d2db9fc5abe6e2dde73cd7219ff1469ad6fd0c2dd7fa7059986962f",
+      "uncompressedBytes": 4419
+    },
+    {
+      "compressedBytes": 1744,
+      "count": 107,
+      "path": "aliases/0e.dict",
+      "sha256": "59dbf419a0a0fd210adaf246381c91433d48c6f9b0ad860b9f046956e7133448",
+      "uncompressedBytes": 4505
+    },
+    {
+      "compressedBytes": 1581,
+      "count": 94,
+      "path": "aliases/0f.dict",
+      "sha256": "2544d8a518f81da102370f5695d5ae3cbdcc1966cbb7679adedd2dd4120de95e",
+      "uncompressedBytes": 4040
+    },
+    {
+      "compressedBytes": 1527,
+      "count": 91,
+      "path": "aliases/10.dict",
+      "sha256": "271335e2bd29bb0d75c2e7c7744376869b2a30747d732e889dbf02e848fc5050",
+      "uncompressedBytes": 3914
+    },
+    {
+      "compressedBytes": 1676,
+      "count": 105,
+      "path": "aliases/11.dict",
+      "sha256": "db8a9211ea56ee631e322ef83f747bd6c8a2481027bfa3fa60fd5d969cdb9a4c",
+      "uncompressedBytes": 4444
+    },
+    {
+      "compressedBytes": 1686,
+      "count": 101,
+      "path": "aliases/12.dict",
+      "sha256": "136f996386a9d5e8d0671c6a8f6aedc7b649df8af3f9fef592681dfbb314de41",
+      "uncompressedBytes": 4405
+    },
+    {
+      "compressedBytes": 1559,
+      "count": 92,
+      "path": "aliases/13.dict",
+      "sha256": "a21bf0512a980ad3a1f9694e8ee0ab6ddb69fbaa26eefe692e46241ab3f0e45e",
+      "uncompressedBytes": 3992
+    },
+    {
+      "compressedBytes": 1952,
+      "count": 119,
+      "path": "aliases/14.dict",
+      "sha256": "4c474e07d2f6bb1063a6a2d1093696837569f840e2554a0e218262048b702094",
+      "uncompressedBytes": 5067
+    },
+    {
+      "compressedBytes": 1601,
+      "count": 98,
+      "path": "aliases/15.dict",
+      "sha256": "43c9ee8738b086787df2c164785f46c88ee751d9a2edfb04f7c47a72058b97b4",
+      "uncompressedBytes": 4228
+    },
+    {
+      "compressedBytes": 1743,
+      "count": 110,
+      "path": "aliases/16.dict",
+      "sha256": "ecf8960f4739b1f28cbd3b106f9c0bcc1c522f58c6ec409ec891c0ab93b57180",
+      "uncompressedBytes": 4786
+    },
+    {
+      "compressedBytes": 1728,
+      "count": 100,
+      "path": "aliases/17.dict",
+      "sha256": "6f7d1810ea97f8d73e2e1fe3431065aacbe6e4138ca3f9345af00345ad811f8e",
+      "uncompressedBytes": 4361
+    },
+    {
+      "compressedBytes": 1873,
+      "count": 111,
+      "path": "aliases/18.dict",
+      "sha256": "c9f449429c57db8604e75773914122b14cba07ff487f278a136144c6e2abea0b",
+      "uncompressedBytes": 4934
+    },
+    {
+      "compressedBytes": 1997,
+      "count": 119,
+      "path": "aliases/19.dict",
+      "sha256": "af71a4fcee642c8171b807bd662affd037d6dd11d747215f9d7443301ec2203c",
+      "uncompressedBytes": 5235
+    },
+    {
+      "compressedBytes": 1779,
+      "count": 105,
+      "path": "aliases/1a.dict",
+      "sha256": "12664a6f6a50bf912413336f0524c7e90692e9e7f59551e4e4160e6c6447a20e",
+      "uncompressedBytes": 4789
+    },
+    {
+      "compressedBytes": 1624,
+      "count": 95,
+      "path": "aliases/1b.dict",
+      "sha256": "87ff7bb429b5e3c6cf3256a08fb297d01a85dd73014d91589b1410a81f846d13",
+      "uncompressedBytes": 4168
+    },
+    {
+      "compressedBytes": 1869,
+      "count": 114,
+      "path": "aliases/1c.dict",
+      "sha256": "400b8892bf50529a60b87fb11be3972e03d343719b1860660bbccfdab83da99d",
+      "uncompressedBytes": 4819
+    },
+    {
+      "compressedBytes": 1994,
+      "count": 114,
+      "path": "aliases/1d.dict",
+      "sha256": "27c3d6adb6ca8b5437657b19c987fd1922a4968f3e73e5e3b3368d36c5f0f173",
+      "uncompressedBytes": 5105
+    },
+    {
+      "compressedBytes": 1853,
+      "count": 102,
+      "path": "aliases/1e.dict",
+      "sha256": "2b32038acc04bb6bafdd015eac201239713938f1ad18b37fa578090ef20306c4",
+      "uncompressedBytes": 4558
+    },
+    {
+      "compressedBytes": 1942,
+      "count": 121,
+      "path": "aliases/1f.dict",
+      "sha256": "6cb23b92c3a1e3aa83cb4fadfb4793131a3ebde63573e1a61cc2a95af92f1a32",
+      "uncompressedBytes": 5043
+    },
+    {
+      "compressedBytes": 1529,
+      "count": 92,
+      "path": "aliases/20.dict",
+      "sha256": "d5e579d69bb2bb30be507903166d849c695f88f334c2bb2e6f53f7c4c2882bd7",
+      "uncompressedBytes": 3955
+    },
+    {
+      "compressedBytes": 1894,
+      "count": 109,
+      "path": "aliases/21.dict",
+      "sha256": "022ebd119fb0a3cdb3a0e2e18355df4a6d3fdb8f56fccd80cde3310de10ee423",
+      "uncompressedBytes": 5041
+    },
+    {
+      "compressedBytes": 1901,
+      "count": 112,
+      "path": "aliases/22.dict",
+      "sha256": "23fe4ca7d88b240a7686806ea25b8905948589b3dea08ea8a9e652a8b7004d0f",
+      "uncompressedBytes": 4931
+    },
+    {
+      "compressedBytes": 1608,
+      "count": 96,
+      "path": "aliases/23.dict",
+      "sha256": "38143ab14748f1adbcc2dfb7200da73a98c3c895e73ff8956b4b3bbfea23cd90",
+      "uncompressedBytes": 4197
+    },
+    {
+      "compressedBytes": 1539,
+      "count": 97,
+      "path": "aliases/24.dict",
+      "sha256": "b015d2817227d28ff178b0cd62b9c73344cb3bec1f887ccb3ea6455156e6ecbe",
+      "uncompressedBytes": 4186
+    },
+    {
+      "compressedBytes": 1464,
+      "count": 87,
+      "path": "aliases/25.dict",
+      "sha256": "97d1c947a17b0326f4f1b4be7e06f29a7196c883d3233656dda19d79b0ca8e24",
+      "uncompressedBytes": 3626
+    },
+    {
+      "compressedBytes": 1574,
+      "count": 96,
+      "path": "aliases/26.dict",
+      "sha256": "d4ba5e8db0c44266cde5ad45e3fb7dd5c4026f035de87eadea66a354897748f2",
+      "uncompressedBytes": 4059
+    },
+    {
+      "compressedBytes": 1517,
+      "count": 97,
+      "path": "aliases/27.dict",
+      "sha256": "9c55bdd03a6a6a04afcc4ce3213cd0c4d2913ab26ce7c4b59e167fe242f0ad47",
+      "uncompressedBytes": 3994
+    },
+    {
+      "compressedBytes": 1923,
+      "count": 120,
+      "path": "aliases/28.dict",
+      "sha256": "ef08b8482dc43e7e20e8042429625eee913e8acc86350abe5e18e2e32c55bc3e",
+      "uncompressedBytes": 5215
+    },
+    {
+      "compressedBytes": 1639,
+      "count": 102,
+      "path": "aliases/29.dict",
+      "sha256": "ee7f71e4133cc14bdd5da6b350fcb0c75962c9205bdece971e1a5bffe436595c",
+      "uncompressedBytes": 4325
+    },
+    {
+      "compressedBytes": 1719,
+      "count": 104,
+      "path": "aliases/2a.dict",
+      "sha256": "7820aedf96383995f3e4f28c10c9b4c2bb847dec03f32a7af1d8d59232638520",
+      "uncompressedBytes": 4528
+    },
+    {
+      "compressedBytes": 1631,
+      "count": 96,
+      "path": "aliases/2b.dict",
+      "sha256": "d069c95aac7b27c2200754a7303c399a60dfbc1d18e28a4acf60753510cfa327",
+      "uncompressedBytes": 4179
+    },
+    {
+      "compressedBytes": 1561,
+      "count": 89,
+      "path": "aliases/2c.dict",
+      "sha256": "b5518a554eec96620435d7ab1c57a75aad5c4822e8c69671e88edf30f9e8e97e",
+      "uncompressedBytes": 3969
+    },
+    {
+      "compressedBytes": 1603,
+      "count": 99,
+      "path": "aliases/2d.dict",
+      "sha256": "33bf4261bad22e48033557f3508f9ce5957270596808303effb818a375eb42a9",
+      "uncompressedBytes": 4321
+    },
+    {
+      "compressedBytes": 1370,
+      "count": 84,
+      "path": "aliases/2e.dict",
+      "sha256": "1fec7611d2ff2d59237cd47faf693df373db989c872ce718876cde6f765972ec",
+      "uncompressedBytes": 3442
+    },
+    {
+      "compressedBytes": 1569,
+      "count": 87,
+      "path": "aliases/2f.dict",
+      "sha256": "c8f53f831f7eb1b0f43a0d90c1c5f1a00b7055e2bdedd17090f37e1dd0fdec99",
+      "uncompressedBytes": 3892
+    },
+    {
+      "compressedBytes": 1881,
+      "count": 116,
+      "path": "aliases/30.dict",
+      "sha256": "4c521d351d2ab2f0765f8fbebcf71c65e50d70ab5f12b16880b3f00b26955cc7",
+      "uncompressedBytes": 4971
+    },
+    {
+      "compressedBytes": 1603,
+      "count": 88,
+      "path": "aliases/31.dict",
+      "sha256": "66ec083eb171775353edf42443dcbddbeda4ee5fd27f48346f8a0cbf45ea48af",
+      "uncompressedBytes": 4269
+    },
+    {
+      "compressedBytes": 1745,
+      "count": 104,
+      "path": "aliases/32.dict",
+      "sha256": "a53d6f77503b79364ad98acb09800768df14cc2e9fd857f905d1242c7bb7ff70",
+      "uncompressedBytes": 4490
+    },
+    {
+      "compressedBytes": 1694,
+      "count": 104,
+      "path": "aliases/33.dict",
+      "sha256": "b54646e444b6449ddcaaeb639ea9e08e4a71b2a4aa4933c251cc3f17e1909ad3",
+      "uncompressedBytes": 4480
+    },
+    {
+      "compressedBytes": 1572,
+      "count": 100,
+      "path": "aliases/34.dict",
+      "sha256": "5f6e27c83707b24d830e7c96212b8867ff23a00f6d4408b056df9858419c2dc2",
+      "uncompressedBytes": 4255
+    },
+    {
+      "compressedBytes": 1791,
+      "count": 101,
+      "path": "aliases/35.dict",
+      "sha256": "8323b78b2ff9b8d289c90abcfded626fef22fd9d0b8bebd2add7df1ff4f1123f",
+      "uncompressedBytes": 4401
+    },
+    {
+      "compressedBytes": 1730,
+      "count": 96,
+      "path": "aliases/36.dict",
+      "sha256": "7ad9e3854c59ef32b98ce1bcc853a550e0adec0f7a6192c8c159c9a21ac6a011",
+      "uncompressedBytes": 4309
+    },
+    {
+      "compressedBytes": 1906,
+      "count": 114,
+      "path": "aliases/37.dict",
+      "sha256": "c71217381724202f367a3fafa23a74f751ce4f55954082a4c296b43fdaa77330",
+      "uncompressedBytes": 4801
+    },
+    {
+      "compressedBytes": 1520,
+      "count": 85,
+      "path": "aliases/38.dict",
+      "sha256": "684b6a8d3a4bdfd331c5a84d29d369eb393253f289cbdf694925a7b2a71c174b",
+      "uncompressedBytes": 3768
+    },
+    {
+      "compressedBytes": 1495,
+      "count": 93,
+      "path": "aliases/39.dict",
+      "sha256": "d8832ead55cf2d3774edd7c1180bdb90cda8ba06cacbf59a06af396f9a047927",
+      "uncompressedBytes": 3933
+    },
+    {
+      "compressedBytes": 1779,
+      "count": 113,
+      "path": "aliases/3a.dict",
+      "sha256": "7e9dffb09e963ae2d5e59e9a228c7c6cc0a703f3966562d64f1769a05a1764dd",
+      "uncompressedBytes": 4750
+    },
+    {
+      "compressedBytes": 1680,
+      "count": 101,
+      "path": "aliases/3b.dict",
+      "sha256": "1a170b9adcb6f2b442a715a8f9ff123abe0e5d409ea3aa34e3eddae044ad0c88",
+      "uncompressedBytes": 4343
+    },
+    {
+      "compressedBytes": 1457,
+      "count": 88,
+      "path": "aliases/3c.dict",
+      "sha256": "865035620180569a3022b36a3a6eff69d6ef37ce3fa67f5af668fc835d203f9c",
+      "uncompressedBytes": 3699
+    },
+    {
+      "compressedBytes": 1778,
+      "count": 106,
+      "path": "aliases/3d.dict",
+      "sha256": "ead62a84a20dbbca2b49afe07ea03b0484d79247c22461233cf0f7dc4257903a",
+      "uncompressedBytes": 4618
+    },
+    {
+      "compressedBytes": 1695,
+      "count": 102,
+      "path": "aliases/3e.dict",
+      "sha256": "7258914e499361fc06fe3b49ff2164f7dc4871727862895528cd672220e81098",
+      "uncompressedBytes": 4535
+    },
+    {
+      "compressedBytes": 1598,
+      "count": 92,
+      "path": "aliases/3f.dict",
+      "sha256": "1585cb934ad5afa1c736c1d1e73bdc64fa2c7e459469099ac9e56a0f68ae7841",
+      "uncompressedBytes": 3998
+    },
+    {
+      "compressedBytes": 1474,
+      "count": 91,
+      "path": "aliases/40.dict",
+      "sha256": "245b666a551e5e954c3fe1820bbdbc4b008bd7cc0f31d8912d1fd7241736876b",
+      "uncompressedBytes": 4039
+    },
+    {
+      "compressedBytes": 1659,
+      "count": 92,
+      "path": "aliases/41.dict",
+      "sha256": "6c299d8ba61ff1323495031e3183b163ae4f390ceddb3c5bbe749672d64d6841",
+      "uncompressedBytes": 4141
+    },
+    {
+      "compressedBytes": 1543,
+      "count": 93,
+      "path": "aliases/42.dict",
+      "sha256": "6d91ac2b0206271e95ea0931abdabb7591473a31a65b8dfc9923bb6b0084bbb8",
+      "uncompressedBytes": 3970
+    },
+    {
+      "compressedBytes": 1601,
+      "count": 95,
+      "path": "aliases/43.dict",
+      "sha256": "b09c6976c2e688758a10e03be8a2c63bd47aae9f243120fa976ddb8622463394",
+      "uncompressedBytes": 4186
+    },
+    {
+      "compressedBytes": 1840,
+      "count": 115,
+      "path": "aliases/44.dict",
+      "sha256": "5b3e021143f1ca07c48259e56ffa6c21a501ecf659a6e4545d9528d55a57db34",
+      "uncompressedBytes": 4899
+    },
+    {
+      "compressedBytes": 1688,
+      "count": 96,
+      "path": "aliases/45.dict",
+      "sha256": "c32a646ed41972aa7a91fc614fa10afe5dbde14a3d711d37b47aa4be326387da",
+      "uncompressedBytes": 4312
+    },
+    {
+      "compressedBytes": 1578,
+      "count": 102,
+      "path": "aliases/46.dict",
+      "sha256": "0a25a41bf30b8c488f87e01a75b02a1210e7906596d67d1e7c47e14e96bc0bea",
+      "uncompressedBytes": 4240
+    },
+    {
+      "compressedBytes": 1756,
+      "count": 100,
+      "path": "aliases/47.dict",
+      "sha256": "f2ce0ee9e1618c8c066aee85f7c8c901f564b9064a7562ff6619382b52d38e4a",
+      "uncompressedBytes": 4490
+    },
+    {
+      "compressedBytes": 1702,
+      "count": 101,
+      "path": "aliases/48.dict",
+      "sha256": "8db7280d8207db923fa747f0a487853e1eb91caec5bd8cb86667b4b458e5302f",
+      "uncompressedBytes": 4522
+    },
+    {
+      "compressedBytes": 1685,
+      "count": 99,
+      "path": "aliases/49.dict",
+      "sha256": "2c0b5491239e844ac13f5785bfda09d3455f01ef4d0034b7c28f88a0b8e434f0",
+      "uncompressedBytes": 4418
+    },
+    {
+      "compressedBytes": 1468,
+      "count": 88,
+      "path": "aliases/4a.dict",
+      "sha256": "43e5ec75c8a298b1c3c2856e1ed5d4a16b1f0f999d37c6f8a16451f38b10124e",
+      "uncompressedBytes": 3870
+    },
+    {
+      "compressedBytes": 1668,
+      "count": 96,
+      "path": "aliases/4b.dict",
+      "sha256": "9c49f38346ea9ade2f2a25a95c791f43c7b632cefb3cbe4784fa7553fe80e984",
+      "uncompressedBytes": 4225
+    },
+    {
+      "compressedBytes": 2020,
+      "count": 127,
+      "path": "aliases/4c.dict",
+      "sha256": "905fd736b801d47e1eb3d579ce7b720305f7da6e1ac230d889b29db618bf6b10",
+      "uncompressedBytes": 5355
+    },
+    {
+      "compressedBytes": 1750,
+      "count": 107,
+      "path": "aliases/4d.dict",
+      "sha256": "a2b15bcb4e29ea2b388ea4bcfd88e1a073e55c5913f566391217be2b5eeafb47",
+      "uncompressedBytes": 4584
+    },
+    {
+      "compressedBytes": 1405,
+      "count": 88,
+      "path": "aliases/4e.dict",
+      "sha256": "d3a9b9589ed786aaab8cd32afcb3bf9ad0b96e626202b86f47bba7ad0424e2d7",
+      "uncompressedBytes": 3830
+    },
+    {
+      "compressedBytes": 1799,
+      "count": 102,
+      "path": "aliases/4f.dict",
+      "sha256": "3ad13a9fdd367ebbcbb1e0e1daba54e28b63423908affe71acb853793854fb4a",
+      "uncompressedBytes": 4445
+    },
+    {
+      "compressedBytes": 1604,
+      "count": 97,
+      "path": "aliases/50.dict",
+      "sha256": "8fd475a4a8debac5c64af4640eafbed93e068f859c61000d962091fd20b7c17d",
+      "uncompressedBytes": 4100
+    },
+    {
+      "compressedBytes": 1506,
+      "count": 86,
+      "path": "aliases/51.dict",
+      "sha256": "098cc06d34a5f4de74c042a3a5fd5f4e99b389b374e030b048ede12cdd795e7c",
+      "uncompressedBytes": 3981
+    },
+    {
+      "compressedBytes": 1637,
+      "count": 99,
+      "path": "aliases/52.dict",
+      "sha256": "351c3d3bb188deaf41828e70f81f82740a9a562cf301df580c11aa9a11f6bf9d",
+      "uncompressedBytes": 4306
+    },
+    {
+      "compressedBytes": 1608,
+      "count": 92,
+      "path": "aliases/53.dict",
+      "sha256": "957831ca04d3c1158e8bb6041164e82c965f0d841a8b7a9d1ef4ddeb90d19ba6",
+      "uncompressedBytes": 4263
+    },
+    {
+      "compressedBytes": 1495,
+      "count": 94,
+      "path": "aliases/54.dict",
+      "sha256": "463ba2923f704a856b31dc63a64a6199d48cd04490b596635eaf276ee5e80ad0",
+      "uncompressedBytes": 3976
+    },
+    {
+      "compressedBytes": 1813,
+      "count": 107,
+      "path": "aliases/55.dict",
+      "sha256": "b23da46a923b658e9f8ff6ec062a346181831f598c25e8ed04dc3f16701016b3",
+      "uncompressedBytes": 4797
+    },
+    {
+      "compressedBytes": 1943,
+      "count": 111,
+      "path": "aliases/56.dict",
+      "sha256": "4542f3c9e2f50704f92e20ae9b82c2595d6be57073b9ea3f9b83d8128770ebb1",
+      "uncompressedBytes": 5109
+    },
+    {
+      "compressedBytes": 1769,
+      "count": 109,
+      "path": "aliases/57.dict",
+      "sha256": "b12654dee0eeaa056f13fffb82133eb856929c8fdf88e2d1cffa49f36d144a2d",
+      "uncompressedBytes": 4592
+    },
+    {
+      "compressedBytes": 1750,
+      "count": 109,
+      "path": "aliases/58.dict",
+      "sha256": "592a29b9c5d6ce451ee7297f5447137e0a462f1838fd06c01370cee866db6979",
+      "uncompressedBytes": 4678
+    },
+    {
+      "compressedBytes": 1449,
+      "count": 90,
+      "path": "aliases/59.dict",
+      "sha256": "5e866d2f42bb32fd86dcb09ae41d28a49ca5c3b3a3e5c939ba2ed6207164cc59",
+      "uncompressedBytes": 3856
+    },
+    {
+      "compressedBytes": 1628,
+      "count": 98,
+      "path": "aliases/5a.dict",
+      "sha256": "2355f8a03f2f0b7d04ea116606b8be0124a8fbb4ea3a78620fc6b333ae8eae21",
+      "uncompressedBytes": 4078
+    },
+    {
+      "compressedBytes": 1708,
+      "count": 96,
+      "path": "aliases/5b.dict",
+      "sha256": "d36ed2b7dbdab8e608aba1ee98759ec90963b982c7fc63616f6a90bb6cb8fd2e",
+      "uncompressedBytes": 4285
+    },
+    {
+      "compressedBytes": 1458,
+      "count": 89,
+      "path": "aliases/5c.dict",
+      "sha256": "38116fa3c0e3ec0ae3c1311896f03d79855896a692e45c855972213e8684a0c9",
+      "uncompressedBytes": 3688
+    },
+    {
+      "compressedBytes": 1693,
+      "count": 100,
+      "path": "aliases/5d.dict",
+      "sha256": "82a2222f5f5ffd537aed67dd7925c726540abe046d8f6fc2a7728142b9e4afe4",
+      "uncompressedBytes": 4386
+    },
+    {
+      "compressedBytes": 1774,
+      "count": 111,
+      "path": "aliases/5e.dict",
+      "sha256": "2ce9f68c9943f0e64430b8db5ecdb2eb88076bc4981058e9cb81ba65d5d7910f",
+      "uncompressedBytes": 4667
+    },
+    {
+      "compressedBytes": 1331,
+      "count": 82,
+      "path": "aliases/5f.dict",
+      "sha256": "689fb6787d7380bd2f512580fbea95ce40e50f90008024798a19afaca1e2695d",
+      "uncompressedBytes": 3447
+    },
+    {
+      "compressedBytes": 1683,
+      "count": 105,
+      "path": "aliases/60.dict",
+      "sha256": "8deb33a28e5fccf53e928fe331f01658bc9245d3ac702caf186d72eb51dd9165",
+      "uncompressedBytes": 4564
+    },
+    {
+      "compressedBytes": 1925,
+      "count": 113,
+      "path": "aliases/61.dict",
+      "sha256": "5e470149c16e465aa33a8a0014fb49a5d9c883b645ed59f4e43833aa94dde947",
+      "uncompressedBytes": 5024
+    },
+    {
+      "compressedBytes": 1920,
+      "count": 112,
+      "path": "aliases/62.dict",
+      "sha256": "e99deb27b68d2c79b0fe3d1ff2b78b6c48b3983e8f7abe5fdbbce74858a9b6a0",
+      "uncompressedBytes": 5079
+    },
+    {
+      "compressedBytes": 1933,
+      "count": 112,
+      "path": "aliases/63.dict",
+      "sha256": "cebf074c3b8d20bccd6aea7e3ecaf003420a16103cb6d458676fd2963d604676",
+      "uncompressedBytes": 4889
+    },
+    {
+      "compressedBytes": 1615,
+      "count": 98,
+      "path": "aliases/64.dict",
+      "sha256": "091e596bc7d5f3e50688789020be4baf03d14be925105804d456661c36c25728",
+      "uncompressedBytes": 4153
+    },
+    {
+      "compressedBytes": 1629,
+      "count": 91,
+      "path": "aliases/65.dict",
+      "sha256": "47086f3ded0d8be909d3562614ddf6e712c7614b52782d3543e282ebce281e17",
+      "uncompressedBytes": 4115
+    },
+    {
+      "compressedBytes": 1656,
+      "count": 98,
+      "path": "aliases/66.dict",
+      "sha256": "9061f3dca3793e79c01875cb574392b85e34884931f7f993f269d899066e60e1",
+      "uncompressedBytes": 4251
+    },
+    {
+      "compressedBytes": 1686,
+      "count": 106,
+      "path": "aliases/67.dict",
+      "sha256": "5fffcd012be3979eabd5947a94e8f684b821988169e6ca9f319a975b9a9fab34",
+      "uncompressedBytes": 4478
+    },
+    {
+      "compressedBytes": 2054,
+      "count": 128,
+      "path": "aliases/68.dict",
+      "sha256": "cc662d2f30e1c412124f466ee6b6f66714e359fc8fd6e5dbb5fd53c3310bc544",
+      "uncompressedBytes": 5541
+    },
+    {
+      "compressedBytes": 1531,
+      "count": 94,
+      "path": "aliases/69.dict",
+      "sha256": "ad76632f3b30b77947fe731749dc1e975043ed7e4c9c8f9cac99254c76937a63",
+      "uncompressedBytes": 3990
+    },
+    {
+      "compressedBytes": 1385,
+      "count": 83,
+      "path": "aliases/6a.dict",
+      "sha256": "82fa23232162044c089696bd8667bf796c1c681ba05e9480b451ea0a18237945",
+      "uncompressedBytes": 3623
+    },
+    {
+      "compressedBytes": 1411,
+      "count": 84,
+      "path": "aliases/6b.dict",
+      "sha256": "145fb5feef6d4ada5a2044a8c552bbffe1164719ee5dfd538e5bd9bd14e801d2",
+      "uncompressedBytes": 3652
+    },
+    {
+      "compressedBytes": 1779,
+      "count": 107,
+      "path": "aliases/6c.dict",
+      "sha256": "72c9a02958eed775b72ca3b10174746867612c7afd50c9573aafdd70c9d2dbc7",
+      "uncompressedBytes": 4608
+    },
+    {
+      "compressedBytes": 1550,
+      "count": 96,
+      "path": "aliases/6d.dict",
+      "sha256": "28065db476ed48605f620538b6b2d5dc8b74853a4728b090dd0bd4333a6bc3b3",
+      "uncompressedBytes": 4062
+    },
+    {
+      "compressedBytes": 1692,
+      "count": 102,
+      "path": "aliases/6e.dict",
+      "sha256": "13bc35b4f81e53e7c298e4b4a005f9d8faa4ada8042471c7a571b7d759347ee5",
+      "uncompressedBytes": 4711
+    },
+    {
+      "compressedBytes": 1551,
+      "count": 93,
+      "path": "aliases/6f.dict",
+      "sha256": "f816197afd52336c4ad52be1d6e409a1eb3303891a2c72d6bd71bc5436768e0d",
+      "uncompressedBytes": 4059
+    },
+    {
+      "compressedBytes": 1630,
+      "count": 98,
+      "path": "aliases/70.dict",
+      "sha256": "749c346fe1dbd54d6dd7b684b480f2aac98c9d27ce3ddee1dc3c989d76385364",
+      "uncompressedBytes": 4156
+    },
+    {
+      "compressedBytes": 1940,
+      "count": 120,
+      "path": "aliases/71.dict",
+      "sha256": "e6a5777281a4863d0080576019424ab29f690d2ac3864a92d8d1282eadd97fe3",
+      "uncompressedBytes": 5226
+    },
+    {
+      "compressedBytes": 1425,
+      "count": 89,
+      "path": "aliases/72.dict",
+      "sha256": "aea7a4eb998cd085095187e80fa636ec857221fd7bba55c1e441ce71eb109355",
+      "uncompressedBytes": 3681
+    },
+    {
+      "compressedBytes": 1648,
+      "count": 96,
+      "path": "aliases/73.dict",
+      "sha256": "bf063759bafba4fdfcabe0492f65bf2d8c993207baf207fde861e2cf16d946af",
+      "uncompressedBytes": 4069
+    },
+    {
+      "compressedBytes": 1695,
+      "count": 103,
+      "path": "aliases/74.dict",
+      "sha256": "8b1b2037ba6529fa0cb55ba12a1857457045c5d91d873a198688bc93fb9ae58f",
+      "uncompressedBytes": 4354
+    },
+    {
+      "compressedBytes": 1528,
+      "count": 98,
+      "path": "aliases/75.dict",
+      "sha256": "f53da0febc2966b3d4c8b9a612d912031173246108794617a42a34a659a40bd7",
+      "uncompressedBytes": 4033
+    },
+    {
+      "compressedBytes": 1589,
+      "count": 92,
+      "path": "aliases/76.dict",
+      "sha256": "ea77f555c09ea81efbb7fcb49a38217a7d7368d6db36ab0ae909dd1ee2ff3003",
+      "uncompressedBytes": 4187
+    },
+    {
+      "compressedBytes": 1494,
+      "count": 91,
+      "path": "aliases/77.dict",
+      "sha256": "7fbaac8674982c92aedbc0963e486f1035cc0d355c74b23d90869cd34152a118",
+      "uncompressedBytes": 3883
+    },
+    {
+      "compressedBytes": 1527,
+      "count": 87,
+      "path": "aliases/78.dict",
+      "sha256": "c00f11a9fd0d06b2691a80a0940049783f390215a12ef796744eeee7e42f8215",
+      "uncompressedBytes": 3856
+    },
+    {
+      "compressedBytes": 1827,
+      "count": 107,
+      "path": "aliases/79.dict",
+      "sha256": "e5e9013c2485370bfd9ff850eaaac64093a65227c98ca20fbe438431b5398fe5",
+      "uncompressedBytes": 4859
+    },
+    {
+      "compressedBytes": 1700,
+      "count": 98,
+      "path": "aliases/7a.dict",
+      "sha256": "53ca6f3e9a552491f29ad31725d16c72f31508b1523e31bef93929539543175d",
+      "uncompressedBytes": 4298
+    },
+    {
+      "compressedBytes": 1639,
+      "count": 93,
+      "path": "aliases/7b.dict",
+      "sha256": "bdb826e18a2e7ce0027d0da19b7c38a79e05bf1658ef98b7f4112fce4de8fd5f",
+      "uncompressedBytes": 4070
+    },
+    {
+      "compressedBytes": 1720,
+      "count": 97,
+      "path": "aliases/7c.dict",
+      "sha256": "95775458c62da352ff6be64bdec541e5cc6cbe031976e5e9a7a24758872951d8",
+      "uncompressedBytes": 4469
+    },
+    {
+      "compressedBytes": 1647,
+      "count": 100,
+      "path": "aliases/7d.dict",
+      "sha256": "7faec33de16bce944400b648456d7273252ca86ab21d54f861129e9e79379361",
+      "uncompressedBytes": 4435
+    },
+    {
+      "compressedBytes": 1445,
+      "count": 87,
+      "path": "aliases/7e.dict",
+      "sha256": "66d879ac327504467b327099b352d391df46561af58b39f08b92aff4bbef7f58",
+      "uncompressedBytes": 3688
+    },
+    {
+      "compressedBytes": 1422,
+      "count": 90,
+      "path": "aliases/7f.dict",
+      "sha256": "f199ecd0d3c6005d280c453f3c408e55cf8fcde538f281b49caa27b6a3bddc1e",
+      "uncompressedBytes": 3816
+    },
+    {
+      "compressedBytes": 1833,
+      "count": 114,
+      "path": "aliases/80.dict",
+      "sha256": "d53a89dbd7f13126a26ea78e43b54efa149ca3f7eff15cd3f74ac435666654b3",
+      "uncompressedBytes": 5100
+    },
+    {
+      "compressedBytes": 1793,
+      "count": 108,
+      "path": "aliases/81.dict",
+      "sha256": "8b5586f4a27d21115fc84ed83d4842726eef147461795180d12b5bf7def10f76",
+      "uncompressedBytes": 4672
+    },
+    {
+      "compressedBytes": 1744,
+      "count": 105,
+      "path": "aliases/82.dict",
+      "sha256": "1174939849527855695bacd66da3702728dcdc75285a2c3485719eb07cc48479",
+      "uncompressedBytes": 4448
+    },
+    {
+      "compressedBytes": 1534,
+      "count": 96,
+      "path": "aliases/83.dict",
+      "sha256": "d87a296f206e329814b1527bfebce16d94e877d8e9fd0fbb35889307179699c9",
+      "uncompressedBytes": 3963
+    },
+    {
+      "compressedBytes": 1497,
+      "count": 91,
+      "path": "aliases/84.dict",
+      "sha256": "f88248429485faeea629cc0cc40f0cf7a43f91e058779e51ad27a946bab839b5",
+      "uncompressedBytes": 3861
+    },
+    {
+      "compressedBytes": 1832,
+      "count": 114,
+      "path": "aliases/85.dict",
+      "sha256": "fb408fecdf1a3edd86dbaf185770b267cb855a1958eaa8daa9da1f5f75bc70a4",
+      "uncompressedBytes": 4938
+    },
+    {
+      "compressedBytes": 1471,
+      "count": 92,
+      "path": "aliases/86.dict",
+      "sha256": "58ae2a46b07275e6d1aaf9056dd952bed8eab2793241e1406fdd8b281247ceaa",
+      "uncompressedBytes": 3747
+    },
+    {
+      "compressedBytes": 1606,
+      "count": 94,
+      "path": "aliases/87.dict",
+      "sha256": "8c9b07a738fea523d059c11e3e2bc02fc3ba8d945ad85e7571af92aa37520787",
+      "uncompressedBytes": 4136
+    },
+    {
+      "compressedBytes": 1654,
+      "count": 104,
+      "path": "aliases/88.dict",
+      "sha256": "16de016a1e8856e6d0907c9d850bae90948fcaad9086a014304b561d6a7124d7",
+      "uncompressedBytes": 4393
+    },
+    {
+      "compressedBytes": 1720,
+      "count": 108,
+      "path": "aliases/89.dict",
+      "sha256": "374bf9ee1982ef4d2ab2a614e00cba93138e6f5dd10c17103aba96abd4752d9c",
+      "uncompressedBytes": 4613
+    },
+    {
+      "compressedBytes": 1859,
+      "count": 109,
+      "path": "aliases/8a.dict",
+      "sha256": "6d74ff96a69fe3a7149349653439f995ed802ba830f7e4729bd888c26629fa9b",
+      "uncompressedBytes": 4791
+    },
+    {
+      "compressedBytes": 1538,
+      "count": 95,
+      "path": "aliases/8b.dict",
+      "sha256": "48b5ff2215c4e95874f154d6f9de3dec3a54760f74c88ac1cdb27a47d2798f4a",
+      "uncompressedBytes": 4095
+    },
+    {
+      "compressedBytes": 1604,
+      "count": 92,
+      "path": "aliases/8c.dict",
+      "sha256": "95be7eb7a827ac5b209f0a484d7ee5b2421d19572a47a8a0721c6b1fc8c6ff72",
+      "uncompressedBytes": 3973
+    },
+    {
+      "compressedBytes": 1865,
+      "count": 112,
+      "path": "aliases/8d.dict",
+      "sha256": "93c84cbe8608d92e27a2b1e69de567eff6b2ef581519806ca51efb993bbf5fa9",
+      "uncompressedBytes": 4768
+    },
+    {
+      "compressedBytes": 1674,
+      "count": 96,
+      "path": "aliases/8e.dict",
+      "sha256": "c13bc97ea9d7bb9739e6629edbbbc059e600e4ea09f5e7dbf6d46d5584d8e37b",
+      "uncompressedBytes": 4228
+    },
+    {
+      "compressedBytes": 1959,
+      "count": 115,
+      "path": "aliases/8f.dict",
+      "sha256": "634c2afbcb9f471294db2255bb6a5afc5ee88db84f3c896ff28b087fb7c9e82b",
+      "uncompressedBytes": 4982
+    },
+    {
+      "compressedBytes": 1747,
+      "count": 107,
+      "path": "aliases/90.dict",
+      "sha256": "ee1259d8e2fd2e0aa9a96a7e7b29998557ed0c3cfcd597a5cefb4e0caa2a413e",
+      "uncompressedBytes": 4524
+    },
+    {
+      "compressedBytes": 1804,
+      "count": 113,
+      "path": "aliases/91.dict",
+      "sha256": "c3bb03a873194866512a7c55b5b3659fd5dc95a10c0dd6cc347e42fe714b6974",
+      "uncompressedBytes": 4723
+    },
+    {
+      "compressedBytes": 1544,
+      "count": 96,
+      "path": "aliases/92.dict",
+      "sha256": "fb8f5b97c529334e992b8b104b9d81b40189165c2414da3f45be869f7ad9d0a1",
+      "uncompressedBytes": 4145
+    },
+    {
+      "compressedBytes": 1866,
+      "count": 116,
+      "path": "aliases/93.dict",
+      "sha256": "e8d98eebef139406a1e90990764bd8ad7c0620634110d1f699703a45e640c167",
+      "uncompressedBytes": 4949
+    },
+    {
+      "compressedBytes": 1355,
+      "count": 77,
+      "path": "aliases/94.dict",
+      "sha256": "4dc39e343ca8e609193302a250e921d0827a0db7a26dcb72132423048e377290",
+      "uncompressedBytes": 3253
+    },
+    {
+      "compressedBytes": 1728,
+      "count": 98,
+      "path": "aliases/95.dict",
+      "sha256": "90820c72085210d4b0f0b90a1b0c06b5e896b0eac2f952043c60b169dac3f3a3",
+      "uncompressedBytes": 4332
+    },
+    {
+      "compressedBytes": 1441,
+      "count": 87,
+      "path": "aliases/96.dict",
+      "sha256": "cc4eb6805bbb90cd392f86afac1b30e81a680c884c7edfb19ac0536dcc227260",
+      "uncompressedBytes": 3621
+    },
+    {
+      "compressedBytes": 1879,
+      "count": 108,
+      "path": "aliases/97.dict",
+      "sha256": "4c102a1d5933862dc6e90f0ed81cb581324f8e51cd429b8b5355eab76af3a483",
+      "uncompressedBytes": 4984
+    },
+    {
+      "compressedBytes": 1733,
+      "count": 106,
+      "path": "aliases/98.dict",
+      "sha256": "470901fe399698a7060257eb943b17664cc6379e85511cd9738f3d8cba064ebc",
+      "uncompressedBytes": 4683
+    },
+    {
+      "compressedBytes": 1603,
+      "count": 99,
+      "path": "aliases/99.dict",
+      "sha256": "65201ac5fe92e3d17171a8d078df0a62662c6fc3b85bb2337b7dd20d63d33fe1",
+      "uncompressedBytes": 4223
+    },
+    {
+      "compressedBytes": 1766,
+      "count": 104,
+      "path": "aliases/9a.dict",
+      "sha256": "66880baea2489f1be548473c5f58e493716c18a5064821e1b6ee60441c7ab64e",
+      "uncompressedBytes": 4690
+    },
+    {
+      "compressedBytes": 1846,
+      "count": 111,
+      "path": "aliases/9b.dict",
+      "sha256": "2054b04e77ce759b96d753b9d121315de2c4ccd693d67f76ea33c3faa6ea2192",
+      "uncompressedBytes": 5374
+    },
+    {
+      "compressedBytes": 1869,
+      "count": 116,
+      "path": "aliases/9c.dict",
+      "sha256": "04fdb8b840fd7da71e90d14fbd7fa1298e746afbf0b15b35e4d85ba7932f5adf",
+      "uncompressedBytes": 4885
+    },
+    {
+      "compressedBytes": 1902,
+      "count": 112,
+      "path": "aliases/9d.dict",
+      "sha256": "eb8eb6d5266c922b8a0cb933f0c9ebeb4f8a8b4b43aabe27cb5da9dff5cb8873",
+      "uncompressedBytes": 4919
+    },
+    {
+      "compressedBytes": 1499,
+      "count": 87,
+      "path": "aliases/9e.dict",
+      "sha256": "89c46fd5f1d46683f344a07ab46e819ab608e4fe31aa4d0cc5e2cef1ec8f8850",
+      "uncompressedBytes": 3765
+    },
+    {
+      "compressedBytes": 1459,
+      "count": 88,
+      "path": "aliases/9f.dict",
+      "sha256": "e31b514c2e4c0c277c4482f7561e546b0b6332d6f3cb66c7c9bcdfb0f8b6e772",
+      "uncompressedBytes": 3816
+    },
+    {
+      "compressedBytes": 1843,
+      "count": 108,
+      "path": "aliases/a0.dict",
+      "sha256": "cd121eb033fc254181ff7f24a932dd4b8b6d3723b9097cd0fe340c9c045e56ab",
+      "uncompressedBytes": 4896
+    },
+    {
+      "compressedBytes": 1891,
+      "count": 110,
+      "path": "aliases/a1.dict",
+      "sha256": "14a0713fac2f961d815d982b86c6ba513e0678db4716aeb2468f117142bcc753",
+      "uncompressedBytes": 5021
+    },
+    {
+      "compressedBytes": 1636,
+      "count": 102,
+      "path": "aliases/a2.dict",
+      "sha256": "c7d26f105bbaf0b4116eb25cc6daaca29fe058d58961252fd6c805f853066711",
+      "uncompressedBytes": 4385
+    },
+    {
+      "compressedBytes": 1702,
+      "count": 105,
+      "path": "aliases/a3.dict",
+      "sha256": "08f2902d460d51565870bf82c75f0a8c80c714efdcf585f1e93203005469adb5",
+      "uncompressedBytes": 4362
+    },
+    {
+      "compressedBytes": 1748,
+      "count": 99,
+      "path": "aliases/a4.dict",
+      "sha256": "85e64982a9ac25fe3328701bea1bcfbe4a133db8c65ca865cdbaf523f3d2aeae",
+      "uncompressedBytes": 4455
+    },
+    {
+      "compressedBytes": 1621,
+      "count": 105,
+      "path": "aliases/a5.dict",
+      "sha256": "9a7ffa03557be609603cbd059e98b1828cdaab7cf45731c74af677e5183c7a86",
+      "uncompressedBytes": 4640
+    },
+    {
+      "compressedBytes": 1404,
+      "count": 88,
+      "path": "aliases/a6.dict",
+      "sha256": "063aed6c36b550c518f88074d8a30b867f7691c4b28bc7d0ed5d37b15c2cd236",
+      "uncompressedBytes": 3706
+    },
+    {
+      "compressedBytes": 1533,
+      "count": 95,
+      "path": "aliases/a7.dict",
+      "sha256": "2f69d39d7fc9a29bf0786dd9b17202b3fca9aae17b4330ac0f07acb213ffdc9c",
+      "uncompressedBytes": 4004
+    },
+    {
+      "compressedBytes": 1850,
+      "count": 115,
+      "path": "aliases/a8.dict",
+      "sha256": "edea6ca11114db14f632e5d6cde48b3817aad55fb9c116902b2443a7c37b584f",
+      "uncompressedBytes": 4999
+    },
+    {
+      "compressedBytes": 1765,
+      "count": 109,
+      "path": "aliases/a9.dict",
+      "sha256": "738b96d485ded0632d9491fcba297830cad0f0093456e7c2cabd2189eeb41225",
+      "uncompressedBytes": 4748
+    },
+    {
+      "compressedBytes": 1810,
+      "count": 109,
+      "path": "aliases/aa.dict",
+      "sha256": "3dd8ef486b773581d1ca74ba85af214a38fe9fd5be90993c11259e025bc4ad77",
+      "uncompressedBytes": 4824
+    },
+    {
+      "compressedBytes": 1873,
+      "count": 112,
+      "path": "aliases/ab.dict",
+      "sha256": "1d3079a797b15687a1913b994cdcffcebff587c2b24626ad2da669a843ac3deb",
+      "uncompressedBytes": 4843
+    },
+    {
+      "compressedBytes": 1486,
+      "count": 90,
+      "path": "aliases/ac.dict",
+      "sha256": "499381fb400f05454c0a56abb72792bd0e1bab024c4b52c3390de1aa3fdcc0ae",
+      "uncompressedBytes": 3765
+    },
+    {
+      "compressedBytes": 1789,
+      "count": 107,
+      "path": "aliases/ad.dict",
+      "sha256": "568a0cfa4e2ba548c45a39af1e0e61d4bf51230485d26b7d5a0531be6ff6e27b",
+      "uncompressedBytes": 4496
+    },
+    {
+      "compressedBytes": 1862,
+      "count": 110,
+      "path": "aliases/ae.dict",
+      "sha256": "94df554774a05a660f070b76e8e12e176563d4497258ef91d6cd1842caac211f",
+      "uncompressedBytes": 4723
+    },
+    {
+      "compressedBytes": 1775,
+      "count": 108,
+      "path": "aliases/af.dict",
+      "sha256": "09859b6ea19a028da5b904b01ed5152b8ffcc244154fb974cd3d13f924b0645a",
+      "uncompressedBytes": 4585
+    },
+    {
+      "compressedBytes": 1683,
+      "count": 96,
+      "path": "aliases/b0.dict",
+      "sha256": "27e43a1ed73ba30804fb2beb4a44e7c1a1088aede7a29f5468af8a548a183433",
+      "uncompressedBytes": 4518
+    },
+    {
+      "compressedBytes": 1681,
+      "count": 101,
+      "path": "aliases/b1.dict",
+      "sha256": "f51013f58e7ce3297eecd4ba9be1f3710c7f07e12d7a9000ca563908ff5c2349",
+      "uncompressedBytes": 4427
+    },
+    {
+      "compressedBytes": 1777,
+      "count": 102,
+      "path": "aliases/b2.dict",
+      "sha256": "53c9b01c00e7d05f97356c11da3147898ccde01b6825f184afd2238bb6d3ff63",
+      "uncompressedBytes": 4480
+    },
+    {
+      "compressedBytes": 1927,
+      "count": 115,
+      "path": "aliases/b3.dict",
+      "sha256": "5d384ee4b23b78e58f711cf21e673ae0bd3dc92ab820d4413d229e31016706cd",
+      "uncompressedBytes": 5035
+    },
+    {
+      "compressedBytes": 1613,
+      "count": 93,
+      "path": "aliases/b4.dict",
+      "sha256": "c17a71fbd16aba8dce0f1027d36017cb011e6f2a7ed5b7f88f5a35cfe3a14280",
+      "uncompressedBytes": 4264
+    },
+    {
+      "compressedBytes": 1506,
+      "count": 93,
+      "path": "aliases/b5.dict",
+      "sha256": "030e9bcd6e52c33c36e0e6b8387b3878e15bb65e7898afe61e7b1381b5b95751",
+      "uncompressedBytes": 3871
+    },
+    {
+      "compressedBytes": 1719,
+      "count": 105,
+      "path": "aliases/b6.dict",
+      "sha256": "eba2ce468a505a07e2d451030125331e0524c31576df0307149cbef6e3a300c0",
+      "uncompressedBytes": 4500
+    },
+    {
+      "compressedBytes": 1693,
+      "count": 104,
+      "path": "aliases/b7.dict",
+      "sha256": "66a37a53c4b7c3780901acadc555f1b8d6fdb3f8f34727e0dde601fa58ac9a51",
+      "uncompressedBytes": 4433
+    },
+    {
+      "compressedBytes": 1630,
+      "count": 97,
+      "path": "aliases/b8.dict",
+      "sha256": "65de44cba59338d7ebc30e5bc959a3750dfb6b2aac48677ef1b8ae6f9f974644",
+      "uncompressedBytes": 4107
+    },
+    {
+      "compressedBytes": 1970,
+      "count": 115,
+      "path": "aliases/b9.dict",
+      "sha256": "37fae664656a22ff9fb9de0862f8c6408fb3a5ea330b45e2b3b017aa9b10a104",
+      "uncompressedBytes": 5216
+    },
+    {
+      "compressedBytes": 1698,
+      "count": 103,
+      "path": "aliases/ba.dict",
+      "sha256": "51b09e6e937e02e29a001719986540e900cbf59702a96c84a294aab0ad872bde",
+      "uncompressedBytes": 4336
+    },
+    {
+      "compressedBytes": 1832,
+      "count": 114,
+      "path": "aliases/bb.dict",
+      "sha256": "00d2968f36345d4d0eaf9ae1fc7a64bbb38115b57578e58d3ca077e81ad7f4b6",
+      "uncompressedBytes": 4708
+    },
+    {
+      "compressedBytes": 1728,
+      "count": 109,
+      "path": "aliases/bc.dict",
+      "sha256": "17ff752843682395b888879392c519cec60387e82e9920e5d64159d729a51e36",
+      "uncompressedBytes": 4667
+    },
+    {
+      "compressedBytes": 1746,
+      "count": 108,
+      "path": "aliases/bd.dict",
+      "sha256": "aaf8f63d1fac756e9abef150bd11be59d30f04c332c151af500da813c6c0bbec",
+      "uncompressedBytes": 4765
+    },
+    {
+      "compressedBytes": 1783,
+      "count": 110,
+      "path": "aliases/be.dict",
+      "sha256": "015b1903a64338f111875787f1d2d8aca44ff03340c7cf8fad952988fd1eb7df",
+      "uncompressedBytes": 4602
+    },
+    {
+      "compressedBytes": 1761,
+      "count": 101,
+      "path": "aliases/bf.dict",
+      "sha256": "f36f22de785e1141d16b995efbdea257e792fac709e07e95c6547aa44528d3d2",
+      "uncompressedBytes": 4491
+    },
+    {
+      "compressedBytes": 1627,
+      "count": 98,
+      "path": "aliases/c0.dict",
+      "sha256": "b290836830e5d5a9a997d838ac8a0e799a9e82e52a24a6668cad1b875aa9845f",
+      "uncompressedBytes": 4329
+    },
+    {
+      "compressedBytes": 1800,
+      "count": 108,
+      "path": "aliases/c1.dict",
+      "sha256": "87d489ea58081d67d24cd1d9481425f1b8f10fe634aa53709d2cea538d488827",
+      "uncompressedBytes": 4775
+    },
+    {
+      "compressedBytes": 1585,
+      "count": 96,
+      "path": "aliases/c2.dict",
+      "sha256": "53a8616bdfdd5924984863d1d3ef18ae9d4c5ce9cf6d9e5d6af28779c11b3b95",
+      "uncompressedBytes": 4114
+    },
+    {
+      "compressedBytes": 1544,
+      "count": 92,
+      "path": "aliases/c3.dict",
+      "sha256": "b23b17cd02ac5f1fd3a77893a5e7783c52654f010beb97f9ea2fb41f8415b11a",
+      "uncompressedBytes": 4005
+    },
+    {
+      "compressedBytes": 1526,
+      "count": 95,
+      "path": "aliases/c4.dict",
+      "sha256": "935d13996596c3c3d3770ccadf82c65cac8fc71d72741a1931760029a8d4b068",
+      "uncompressedBytes": 3959
+    },
+    {
+      "compressedBytes": 1973,
+      "count": 121,
+      "path": "aliases/c5.dict",
+      "sha256": "8c54d5cec18782f7b8345840211fc1584a4eb1b8227b1618989245b2b5c5a23c",
+      "uncompressedBytes": 5321
+    },
+    {
+      "compressedBytes": 1755,
+      "count": 101,
+      "path": "aliases/c6.dict",
+      "sha256": "7aca8aca7c6b3e93df0150931cab827143b8f7f051ea3f07566e3115a7bddde4",
+      "uncompressedBytes": 4523
+    },
+    {
+      "compressedBytes": 1629,
+      "count": 99,
+      "path": "aliases/c7.dict",
+      "sha256": "b1194e49238bbb9742424580aee05c7bc702cd41a71295f5c6eeaf113ec11a26",
+      "uncompressedBytes": 4148
+    },
+    {
+      "compressedBytes": 1758,
+      "count": 107,
+      "path": "aliases/c8.dict",
+      "sha256": "e023554730501bfbc0e4bf34bd6f60f2ac59c64bf741b27875c8bd670608a69b",
+      "uncompressedBytes": 4579
+    },
+    {
+      "compressedBytes": 1579,
+      "count": 91,
+      "path": "aliases/c9.dict",
+      "sha256": "d8ea13daf88674e1a86ed99af69917579a85111d26d26dfd6d8818a452392d19",
+      "uncompressedBytes": 3996
+    },
+    {
+      "compressedBytes": 1570,
+      "count": 92,
+      "path": "aliases/ca.dict",
+      "sha256": "54d8db82c28cdf3fc4645be5ba3c662f457e10430dfb8649798a15f3060c80d6",
+      "uncompressedBytes": 3914
+    },
+    {
+      "compressedBytes": 1515,
+      "count": 93,
+      "path": "aliases/cb.dict",
+      "sha256": "2fcb4495e462a14cf35cae7b4dc86914ef210ae44c78c1ed83cadd20e69e0e7f",
+      "uncompressedBytes": 4034
+    },
+    {
+      "compressedBytes": 1752,
+      "count": 103,
+      "path": "aliases/cc.dict",
+      "sha256": "fba7f6b7fc73b3dd131e2bcf2a832ad01461a1ffdbd27c30c8fd351ad77236b1",
+      "uncompressedBytes": 4480
+    },
+    {
+      "compressedBytes": 1616,
+      "count": 88,
+      "path": "aliases/cd.dict",
+      "sha256": "54a51d1d983a161b0fe642f269b647268e0d2b5727a0573adca23776e9ec94a0",
+      "uncompressedBytes": 3954
+    },
+    {
+      "compressedBytes": 1610,
+      "count": 98,
+      "path": "aliases/ce.dict",
+      "sha256": "5eec950218e4235ac2932d5fc25c6d29fa4a1e947782eb335e7239344df593d1",
+      "uncompressedBytes": 4225
+    },
+    {
+      "compressedBytes": 1778,
+      "count": 101,
+      "path": "aliases/cf.dict",
+      "sha256": "2e2f73b92abcfbbf546b20934d34334e899800cfe67a0a52a2853f1e925248ce",
+      "uncompressedBytes": 4594
+    },
+    {
+      "compressedBytes": 1525,
+      "count": 95,
+      "path": "aliases/d0.dict",
+      "sha256": "0e58e05bc468ba801365295e7556f832b2e9f540bdbd40a82a04690dd797b223",
+      "uncompressedBytes": 4049
+    },
+    {
+      "compressedBytes": 1416,
+      "count": 83,
+      "path": "aliases/d1.dict",
+      "sha256": "b74b9b697f398ac2774d430ef44abfe6be60b830f8aa62538740cb8a2698f33c",
+      "uncompressedBytes": 3711
+    },
+    {
+      "compressedBytes": 1474,
+      "count": 89,
+      "path": "aliases/d2.dict",
+      "sha256": "6712db53bf3673eef1e87f7166777043044c6f8d5292dcc115f9ab765d6523b9",
+      "uncompressedBytes": 3846
+    },
+    {
+      "compressedBytes": 1542,
+      "count": 90,
+      "path": "aliases/d3.dict",
+      "sha256": "0881ca43906b0f63d36ff0192a9e9509359f5f1ee8d0f1ea5bfe2203083b5397",
+      "uncompressedBytes": 3906
+    },
+    {
+      "compressedBytes": 2079,
+      "count": 125,
+      "path": "aliases/d4.dict",
+      "sha256": "7ceb5a297261b360ad53251a40e0a0e68fb91797806224c295a7cf518de5ae7f",
+      "uncompressedBytes": 5439
+    },
+    {
+      "compressedBytes": 1715,
+      "count": 101,
+      "path": "aliases/d5.dict",
+      "sha256": "e3daf6c02e419f434c4b5315e4fc329a911793f0fa59fa47d34935cf7421eb4a",
+      "uncompressedBytes": 4531
+    },
+    {
+      "compressedBytes": 1670,
+      "count": 99,
+      "path": "aliases/d6.dict",
+      "sha256": "bb151b0bc0210f62e43598a884a70285e24b4178d854f209be9662e7ae50c6ce",
+      "uncompressedBytes": 4508
+    },
+    {
+      "compressedBytes": 1519,
+      "count": 90,
+      "path": "aliases/d7.dict",
+      "sha256": "cea7652212d689c78fd923edc140b2ddcaf4cd715c6135746a76c5b8f66b1842",
+      "uncompressedBytes": 3796
+    },
+    {
+      "compressedBytes": 1660,
+      "count": 100,
+      "path": "aliases/d8.dict",
+      "sha256": "aa0271eee195df7d239ec01075797cee7311352f2562886fc8a07557d00f1dce",
+      "uncompressedBytes": 4223
+    },
+    {
+      "compressedBytes": 1736,
+      "count": 101,
+      "path": "aliases/d9.dict",
+      "sha256": "dfe83970850345af589801720064594e1e1b1f5c4d3b1e54b7ac429c2d0f6022",
+      "uncompressedBytes": 4501
+    },
+    {
+      "compressedBytes": 1444,
+      "count": 87,
+      "path": "aliases/da.dict",
+      "sha256": "c05118c3a42b149d0cbc2ff373b2c83603fc34e0af95fb672e8b44fb37c49a66",
+      "uncompressedBytes": 3612
+    },
+    {
+      "compressedBytes": 1691,
+      "count": 99,
+      "path": "aliases/db.dict",
+      "sha256": "492c00e0a1a93493d3769ae22b0bf2b7428179f6af2bf7b8e0799aa2426bea16",
+      "uncompressedBytes": 4217
+    },
+    {
+      "compressedBytes": 1588,
+      "count": 101,
+      "path": "aliases/dc.dict",
+      "sha256": "432d17befcf38623e23d8802659121871d31dc30179cc1a02128ec494ffcdb9b",
+      "uncompressedBytes": 4319
+    },
+    {
+      "compressedBytes": 1402,
+      "count": 77,
+      "path": "aliases/dd.dict",
+      "sha256": "a715c0906fa18de6010db414979ba766ec47fa05577e21a90bcfd655424defe0",
+      "uncompressedBytes": 3449
+    },
+    {
+      "compressedBytes": 1733,
+      "count": 102,
+      "path": "aliases/de.dict",
+      "sha256": "9584c4a37fcc3c1d2f798853783e619ac617eb3b9705a2bbe521429595b58fdd",
+      "uncompressedBytes": 4432
+    },
+    {
+      "compressedBytes": 1542,
+      "count": 96,
+      "path": "aliases/df.dict",
+      "sha256": "2ff44d80e1cb01363d38ab81c0dcc561f52a5c6bfa40c41b0ad6b710b3a49f8e",
+      "uncompressedBytes": 3937
+    },
+    {
+      "compressedBytes": 1986,
+      "count": 124,
+      "path": "aliases/e0.dict",
+      "sha256": "68af079195bc7edee17c2f977d9172a154ff0e0e6fd1cde006e05e76cb30ae1a",
+      "uncompressedBytes": 5331
+    },
+    {
+      "compressedBytes": 1711,
+      "count": 107,
+      "path": "aliases/e1.dict",
+      "sha256": "96bd0cf23e3c4c0bb50b6d2dcaa569948f55dfdd0da5c6ba4826903ac57d05fd",
+      "uncompressedBytes": 4503
+    },
+    {
+      "compressedBytes": 1506,
+      "count": 92,
+      "path": "aliases/e2.dict",
+      "sha256": "026c21bd7da6858002537152ba098e5dccd6f4d9db808d4c598b837790648c73",
+      "uncompressedBytes": 3881
+    },
+    {
+      "compressedBytes": 1385,
+      "count": 84,
+      "path": "aliases/e3.dict",
+      "sha256": "57f7044d83c93741ebf8ef9a3d3daa668ac27b55eeb813dfe3f3fd578b933165",
+      "uncompressedBytes": 3642
+    },
+    {
+      "compressedBytes": 1490,
+      "count": 91,
+      "path": "aliases/e4.dict",
+      "sha256": "7a4009d49f61a5ee2f9dc57fa33f56415992c5f2623063021eee5d47b1c89e5b",
+      "uncompressedBytes": 3943
+    },
+    {
+      "compressedBytes": 1714,
+      "count": 108,
+      "path": "aliases/e5.dict",
+      "sha256": "d1d49d48de7e7efdb43a4182b5f117664012e91b4373faa2b64daf77ae5b40c1",
+      "uncompressedBytes": 4439
+    },
+    {
+      "compressedBytes": 1603,
+      "count": 95,
+      "path": "aliases/e6.dict",
+      "sha256": "99c567f92522b3db3b2bf910735410e3608ed6c55d5e365fb1be9d755af1d04b",
+      "uncompressedBytes": 4143
+    },
+    {
+      "compressedBytes": 1823,
+      "count": 109,
+      "path": "aliases/e7.dict",
+      "sha256": "31896639ba0a2ea21370e9034881c066d8ac4593d2d2d6a02a73b92325b7c18f",
+      "uncompressedBytes": 4852
+    },
+    {
+      "compressedBytes": 1669,
+      "count": 102,
+      "path": "aliases/e8.dict",
+      "sha256": "dd9f4c16a108443e3fdf2f886bbe65b797d4fabdb856f8af897b18d9c63dcda6",
+      "uncompressedBytes": 4384
+    },
+    {
+      "compressedBytes": 1609,
+      "count": 94,
+      "path": "aliases/e9.dict",
+      "sha256": "076821631083e2f145d12c9625a75cfc3e696327f81132bb1900c6fb3d2b4419",
+      "uncompressedBytes": 4267
+    },
+    {
+      "compressedBytes": 1551,
+      "count": 92,
+      "path": "aliases/ea.dict",
+      "sha256": "75b263926529c0e999096b80d40c112c354030ff76afa65d472f22bb51aaabcc",
+      "uncompressedBytes": 3931
+    },
+    {
+      "compressedBytes": 1728,
+      "count": 104,
+      "path": "aliases/eb.dict",
+      "sha256": "2de9a707246d373d203199331d2cd1f3ecb937d785139531fc1f8ed82bca1cd9",
+      "uncompressedBytes": 4455
+    },
+    {
+      "compressedBytes": 2077,
+      "count": 128,
+      "path": "aliases/ec.dict",
+      "sha256": "4a8bcc95e2519b08e3df0005b411fda26531abd894b32def9a539943e932c456",
+      "uncompressedBytes": 5427
+    },
+    {
+      "compressedBytes": 1496,
+      "count": 90,
+      "path": "aliases/ed.dict",
+      "sha256": "9e55ca566a1f948576fe66f93b5738ba66730c0caca695dc12a337724e7b2fa6",
+      "uncompressedBytes": 3766
+    },
+    {
+      "compressedBytes": 1881,
+      "count": 117,
+      "path": "aliases/ee.dict",
+      "sha256": "6ef58837159c2297c9ee25d5728564ab4fdfc1b47bf9ef0809beec7e82ef3f8c",
+      "uncompressedBytes": 4897
+    },
+    {
+      "compressedBytes": 1520,
+      "count": 90,
+      "path": "aliases/ef.dict",
+      "sha256": "ca21d68d3419ea4ae26a85326a814e64377902a274d460cfd7b22bd2b2c0ae41",
+      "uncompressedBytes": 3884
+    },
+    {
+      "compressedBytes": 1900,
+      "count": 115,
+      "path": "aliases/f0.dict",
+      "sha256": "f0a3a0a8401bd9c7977401519471219215a5075be5de93db0ef4bdad27e30ae4",
+      "uncompressedBytes": 4879
+    },
+    {
+      "compressedBytes": 1539,
+      "count": 91,
+      "path": "aliases/f1.dict",
+      "sha256": "7fe768719c332a36034d27c85b1180f82d547c58a645de9c52578b2b0317cef2",
+      "uncompressedBytes": 3854
+    },
+    {
+      "compressedBytes": 1791,
+      "count": 112,
+      "path": "aliases/f2.dict",
+      "sha256": "9ee8bee58f09f9249e00b25de2e59fe0d4538df6dc29f4f4bd0bd3508d091ada",
+      "uncompressedBytes": 4896
+    },
+    {
+      "compressedBytes": 1991,
+      "count": 123,
+      "path": "aliases/f3.dict",
+      "sha256": "e7096451651a05f2c44de83e0ce4e908113e4eb1014f43ea1c26e8e517498168",
+      "uncompressedBytes": 5324
+    },
+    {
+      "compressedBytes": 1769,
+      "count": 105,
+      "path": "aliases/f4.dict",
+      "sha256": "fecee94d3731d6bac9aa72b38420cdbdd50a984f0736ba48afa32b02c55ef01b",
+      "uncompressedBytes": 4712
+    },
+    {
+      "compressedBytes": 1384,
+      "count": 82,
+      "path": "aliases/f5.dict",
+      "sha256": "8fc8b3d7c44a57a54c50fa9dc3cd7bc5cd51dd7101e69ba11b9924c3c377595c",
+      "uncompressedBytes": 3531
+    },
+    {
+      "compressedBytes": 1721,
+      "count": 96,
+      "path": "aliases/f6.dict",
+      "sha256": "2d947e7dbf207bb476e09900c2d407d34c9886e495880fceb3c7e38c1fec312f",
+      "uncompressedBytes": 4327
+    },
+    {
+      "compressedBytes": 1782,
+      "count": 109,
+      "path": "aliases/f7.dict",
+      "sha256": "c2db2f2bd78fea08596eb9ce78e9aa7c00d28c739472c78ed3b6e3c233b617d1",
+      "uncompressedBytes": 4912
+    },
+    {
+      "compressedBytes": 1636,
+      "count": 98,
+      "path": "aliases/f8.dict",
+      "sha256": "c42721b668cfa86ccf44a2f70e77237f2792c43159cf13e313314a4907cb1f6b",
+      "uncompressedBytes": 4363
+    },
+    {
+      "compressedBytes": 1558,
+      "count": 94,
+      "path": "aliases/f9.dict",
+      "sha256": "08e36801507d983f48171164309994a84ad47642f4a38720e5249cf046b2656c",
+      "uncompressedBytes": 4071
+    },
+    {
+      "compressedBytes": 1640,
+      "count": 98,
+      "path": "aliases/fa.dict",
+      "sha256": "79e52b9b2a21d068b920bfcc85277fead927e6c9ff5d702cf98d429a71a849b2",
+      "uncompressedBytes": 4176
+    },
+    {
+      "compressedBytes": 1596,
+      "count": 96,
+      "path": "aliases/fb.dict",
+      "sha256": "69197b4ed0ed1b783cc5ad8c1ba6ef3e92cad1f808b1d4e8c2c109bac56aee6a",
+      "uncompressedBytes": 4325
+    },
+    {
+      "compressedBytes": 1762,
+      "count": 105,
+      "path": "aliases/fc.dict",
+      "sha256": "b3608bd29c422138696b0a93acc03f6b1e385aaf848987e8392d23c81f269b67",
+      "uncompressedBytes": 4569
+    },
+    {
+      "compressedBytes": 2056,
+      "count": 123,
+      "path": "aliases/fd.dict",
+      "sha256": "326f0a90a503dd922bf06feeb3b8a9b2bf3f5ff4af7e18bdfb43a24cfd4faf92",
+      "uncompressedBytes": 5450
+    },
+    {
+      "compressedBytes": 1611,
+      "count": 98,
+      "path": "aliases/fe.dict",
+      "sha256": "7edb612ce18fc96ee02a7db3ec64a67688723f8e75e6adecac7097e94a15aa77",
+      "uncompressedBytes": 4156
+    },
+    {
+      "compressedBytes": 1898,
+      "count": 108,
+      "path": "aliases/ff.dict",
+      "sha256": "fcd0220ffa3a56ffa4b459c95c508c8ae8f1c2ee4c3b488e4c61c723d8b72d4d",
+      "uncompressedBytes": 4787
+    },
+    {
+      "compressedBytes": 3845,
+      "count": 86,
+      "path": "entities/00.dict",
+      "sha256": "d8e7e2e4eab28d1d75c29ad2bf3600fd2ec5025f91749dafa23e4936ffd13c15",
+      "uncompressedBytes": 46716
+    },
+    {
+      "compressedBytes": 3779,
+      "count": 83,
+      "path": "entities/01.dict",
+      "sha256": "e04ac2370ed0aee94eae8bdb2e0138d269d91e01a4be2d36af7a0a6c9ab1f59b",
+      "uncompressedBytes": 46459
+    },
+    {
+      "compressedBytes": 3313,
+      "count": 68,
+      "path": "entities/02.dict",
+      "sha256": "1efeca9cce41d31fb3246d44ee9d4302fce698e6a2b685ab678779aff632feee",
+      "uncompressedBytes": 37150
+    },
+    {
+      "compressedBytes": 3809,
+      "count": 77,
+      "path": "entities/03.dict",
+      "sha256": "d2d094f3d35ef22cf155c5b60adb67f57445b7d760ed4b3675015e9e773d79eb",
+      "uncompressedBytes": 42659
+    },
+    {
+      "compressedBytes": 3036,
+      "count": 58,
+      "path": "entities/04.dict",
+      "sha256": "ee286bd7170bdab79efb8fa7a1643a9106d8ba18fb19c537da1eea7fe64e66d4",
+      "uncompressedBytes": 33152
+    },
+    {
+      "compressedBytes": 3770,
+      "count": 84,
+      "path": "entities/05.dict",
+      "sha256": "8018fe219135e80d83ff8241697f7e0db9bb3ded402f32f99201940f208bc4da",
+      "uncompressedBytes": 45505
+    },
+    {
+      "compressedBytes": 3374,
+      "count": 77,
+      "path": "entities/06.dict",
+      "sha256": "8707639f74176b1eea2eadd5ace61d769d2a1cbc58634fd1a38e82768128357f",
+      "uncompressedBytes": 41022
+    },
+    {
+      "compressedBytes": 3935,
+      "count": 86,
+      "path": "entities/07.dict",
+      "sha256": "7f3149ed09d2d079b1137b770bfc92cc23f9dc51fb6d403b8cd932c2cc3d732c",
+      "uncompressedBytes": 46859
+    },
+    {
+      "compressedBytes": 3290,
+      "count": 68,
+      "path": "entities/08.dict",
+      "sha256": "48ac18178704f55457318583cfc3070a3cb0526a446a89c7647de07e3c060e4e",
+      "uncompressedBytes": 38432
+    },
+    {
+      "compressedBytes": 3083,
+      "count": 69,
+      "path": "entities/09.dict",
+      "sha256": "3653b8a69a8412f84f0b127c072968cedc1eeafcd9a07fe0ab162853e5aaf1a2",
+      "uncompressedBytes": 37303
+    },
+    {
+      "compressedBytes": 3086,
+      "count": 72,
+      "path": "entities/0a.dict",
+      "sha256": "76634c03d8f548e1d7968203ff431270268d03cdf9b7acfaa7d5b9930427d4cb",
+      "uncompressedBytes": 39192
+    },
+    {
+      "compressedBytes": 3622,
+      "count": 86,
+      "path": "entities/0b.dict",
+      "sha256": "95a555225ca93953e6dbfb8be3f62eba9f9ea60fad77e2a2386e6721432335ee",
+      "uncompressedBytes": 46628
+    },
+    {
+      "compressedBytes": 3487,
+      "count": 70,
+      "path": "entities/0c.dict",
+      "sha256": "b6f3e5e54f12eb1d112f3ef28c4ddabd37f4f43a8c5b8fc590827257f115a953",
+      "uncompressedBytes": 39483
+    },
+    {
+      "compressedBytes": 3090,
+      "count": 78,
+      "path": "entities/0d.dict",
+      "sha256": "71544e568b6469ee1cfbfa0ba1cdbe332384280f89d087af76fc96340f7a08f8",
+      "uncompressedBytes": 41800
+    },
+    {
+      "compressedBytes": 3335,
+      "count": 75,
+      "path": "entities/0e.dict",
+      "sha256": "011c037bfea2c3c8e9104c93d128fb85b946a8d08c31f562c16cf0a1620b545a",
+      "uncompressedBytes": 40453
+    },
+    {
+      "compressedBytes": 3263,
+      "count": 73,
+      "path": "entities/0f.dict",
+      "sha256": "6c690c2938d0d56f1e7a1345221a90c2bc7dc8e27e7abb9163474c9534e0ed90",
+      "uncompressedBytes": 39007
+    },
+    {
+      "compressedBytes": 3633,
+      "count": 94,
+      "path": "entities/10.dict",
+      "sha256": "0200aa930a3a54e198aaf2079c8d9a18ebdd41ed75100edebdb44981c195fdea",
+      "uncompressedBytes": 50372
+    },
+    {
+      "compressedBytes": 3108,
+      "count": 65,
+      "path": "entities/11.dict",
+      "sha256": "13fb5d8059117040de53c7f7fd896399b19ba0ab8aede35395444205c52b0c0e",
+      "uncompressedBytes": 35646
+    },
+    {
+      "compressedBytes": 3569,
+      "count": 76,
+      "path": "entities/12.dict",
+      "sha256": "fbcd9a6258b9da95e6a0d2768a983d424024d46220df70fc450574d06d4539ea",
+      "uncompressedBytes": 40941
+    },
+    {
+      "compressedBytes": 3409,
+      "count": 79,
+      "path": "entities/13.dict",
+      "sha256": "ad8756e5d39b286c56bd183a909cc2af69933584c36fb63c19d8ff2320ad643a",
+      "uncompressedBytes": 41612
+    },
+    {
+      "compressedBytes": 2864,
+      "count": 63,
+      "path": "entities/14.dict",
+      "sha256": "afbe9cc7e6ebe3f7b5cbbe1f755b24f396d343fd98f6f5ec0faae987466561c8",
+      "uncompressedBytes": 34879
+    },
+    {
+      "compressedBytes": 3510,
+      "count": 77,
+      "path": "entities/15.dict",
+      "sha256": "3ed51782e7358973cde5559ad2860e0a77aebaea6528099f6a1033bcc904362f",
+      "uncompressedBytes": 41776
+    },
+    {
+      "compressedBytes": 3391,
+      "count": 69,
+      "path": "entities/16.dict",
+      "sha256": "00d36466312b9bca4b24d5476467aa367314bb67a3ac4fe0c7ef805541414682",
+      "uncompressedBytes": 38388
+    },
+    {
+      "compressedBytes": 3247,
+      "count": 81,
+      "path": "entities/17.dict",
+      "sha256": "3db8a7d38d661a35774f163e2525ea2aec3eb3ed9071659b4568fe80dbef7b42",
+      "uncompressedBytes": 43603
+    },
+    {
+      "compressedBytes": 3710,
+      "count": 83,
+      "path": "entities/18.dict",
+      "sha256": "aa64ea9a1b7dd7f5e3032c75656b26c47947b40cb2691e165f264a4a99425b47",
+      "uncompressedBytes": 45431
+    },
+    {
+      "compressedBytes": 3748,
+      "count": 79,
+      "path": "entities/19.dict",
+      "sha256": "99bcf62eb9319b30499fc19263a1d975a8fb75fe395aed38d5e7739c771b0b3e",
+      "uncompressedBytes": 43688
+    },
+    {
+      "compressedBytes": 3526,
+      "count": 80,
+      "path": "entities/1a.dict",
+      "sha256": "578d920a99c10f752da3d56e15f9059f844859456cdf16455eb9eb342f6a5498",
+      "uncompressedBytes": 44065
+    },
+    {
+      "compressedBytes": 3693,
+      "count": 79,
+      "path": "entities/1b.dict",
+      "sha256": "4875c0ccc0192c82600a0e1419d11f128d4082e559c5aea3a2d273652ccad890",
+      "uncompressedBytes": 43945
+    },
+    {
+      "compressedBytes": 2948,
+      "count": 65,
+      "path": "entities/1c.dict",
+      "sha256": "3e70d07f0d79ffe6bfd16df74501bade97a904f16bdfb9929a5c568d32e0c4c3",
+      "uncompressedBytes": 35214
+    },
+    {
+      "compressedBytes": 3252,
+      "count": 79,
+      "path": "entities/1d.dict",
+      "sha256": "60813671cc0bec753162af0b6df8429c1392fd2fd7ada56eefa4215d4b98c3ae",
+      "uncompressedBytes": 42840
+    },
+    {
+      "compressedBytes": 3091,
+      "count": 64,
+      "path": "entities/1e.dict",
+      "sha256": "976dd269ac1e524887bc23ea8a8e76b45c06979351fd3223891b284ea676a113",
+      "uncompressedBytes": 34748
+    },
+    {
+      "compressedBytes": 3815,
+      "count": 83,
+      "path": "entities/1f.dict",
+      "sha256": "77910a54586f8b3fd2464c1452faf029ffa142bab2327c11aa16240ad3e7f68f",
+      "uncompressedBytes": 47039
+    },
+    {
+      "compressedBytes": 3409,
+      "count": 71,
+      "path": "entities/20.dict",
+      "sha256": "aef78f3e2b0fe9640db75756af45c9360c128e0af31899d4424eb141bb9a3e5f",
+      "uncompressedBytes": 39345
+    },
+    {
+      "compressedBytes": 3175,
+      "count": 68,
+      "path": "entities/21.dict",
+      "sha256": "9660ab6d5b359ec315076b9003591407949aa7849adb9fdcd180708c98cda17b",
+      "uncompressedBytes": 36841
+    },
+    {
+      "compressedBytes": 3291,
+      "count": 76,
+      "path": "entities/22.dict",
+      "sha256": "a27a9c02a8867e2322ef93c514502f693da2c2129939e40bbad46283b1a42159",
+      "uncompressedBytes": 41102
+    },
+    {
+      "compressedBytes": 3651,
+      "count": 89,
+      "path": "entities/23.dict",
+      "sha256": "fa99552b0652cb9f8c8113c244f2bbf26f4b37fc0febf57823a69b7891a38115",
+      "uncompressedBytes": 47494
+    },
+    {
+      "compressedBytes": 3117,
+      "count": 76,
+      "path": "entities/24.dict",
+      "sha256": "c76f55e53063ba48dc18c8b89d4f6a3a4d04e4673edcc695776a15a883257ab3",
+      "uncompressedBytes": 40716
+    },
+    {
+      "compressedBytes": 3355,
+      "count": 73,
+      "path": "entities/25.dict",
+      "sha256": "a1224f8020ef64cef7c922c2672a1aa4689ba7aa9065e8e6c55cff04189d6b93",
+      "uncompressedBytes": 40204
+    },
+    {
+      "compressedBytes": 3797,
+      "count": 86,
+      "path": "entities/26.dict",
+      "sha256": "cee4a26191ab909e735f5a75befa72f5a8917e00a4ab3aa807cbcb29738baf5c",
+      "uncompressedBytes": 46507
+    },
+    {
+      "compressedBytes": 3054,
+      "count": 70,
+      "path": "entities/27.dict",
+      "sha256": "4f8999638296826dbd879006248a04fe2bd086a0424424f9ddd137ef15f2c3c2",
+      "uncompressedBytes": 37005
+    },
+    {
+      "compressedBytes": 3385,
+      "count": 75,
+      "path": "entities/28.dict",
+      "sha256": "a9e350dee0a7d9d2bb8bc5ac58da8734eb066c68ecf505bffae38d64477dd218",
+      "uncompressedBytes": 40893
+    },
+    {
+      "compressedBytes": 3623,
+      "count": 83,
+      "path": "entities/29.dict",
+      "sha256": "bea86cb1d3d43aa62d911712c7aaaa8dd26d717d7b01005b13ab95dc7c484cb1",
+      "uncompressedBytes": 44345
+    },
+    {
+      "compressedBytes": 3830,
+      "count": 84,
+      "path": "entities/2a.dict",
+      "sha256": "a274868c51c6758c68261f2a0dbf0a5e5e5944faa2b63ba57628ee9084445e90",
+      "uncompressedBytes": 45469
+    },
+    {
+      "compressedBytes": 3326,
+      "count": 73,
+      "path": "entities/2b.dict",
+      "sha256": "0a9de9f80d40334fb51d6eca11b65736cbe952673e216eef634ba0729d567c2b",
+      "uncompressedBytes": 40578
+    },
+    {
+      "compressedBytes": 3540,
+      "count": 78,
+      "path": "entities/2c.dict",
+      "sha256": "b019c4f12999175efebc84caa598522dd16c8714384e80b298e299f8ccc880e5",
+      "uncompressedBytes": 41759
+    },
+    {
+      "compressedBytes": 3039,
+      "count": 72,
+      "path": "entities/2d.dict",
+      "sha256": "a9dbb6a44f714700ad27c3a5a08f6a16fb8581bab24063aafb905f63f0f26b72",
+      "uncompressedBytes": 38170
+    },
+    {
+      "compressedBytes": 3244,
+      "count": 78,
+      "path": "entities/2e.dict",
+      "sha256": "0075b684e5f15a30183eeea4922839e96c13423f4a7b66c66f4758852365292a",
+      "uncompressedBytes": 42939
+    },
+    {
+      "compressedBytes": 3419,
+      "count": 80,
+      "path": "entities/2f.dict",
+      "sha256": "b2ec17ee5855e0ecdb6c9fb45061daa0845cecb0608fdcb3ac681665c674f58f",
+      "uncompressedBytes": 42270
+    },
+    {
+      "compressedBytes": 3412,
+      "count": 78,
+      "path": "entities/30.dict",
+      "sha256": "3e65cecf710327aa8b61596bdb9e976527730b9f1e28892d6eeb3745472172f6",
+      "uncompressedBytes": 43072
+    },
+    {
+      "compressedBytes": 3740,
+      "count": 84,
+      "path": "entities/31.dict",
+      "sha256": "69cef63027677bf61bded89cee5df27b9a34f40a7321b4156ff754e1aa6ce606",
+      "uncompressedBytes": 46290
+    },
+    {
+      "compressedBytes": 2956,
+      "count": 62,
+      "path": "entities/32.dict",
+      "sha256": "22bed528f3a7eb50d32f5aefba62290e7a799e797dc07e6ebd982bf5da336d42",
+      "uncompressedBytes": 32521
+    },
+    {
+      "compressedBytes": 2869,
+      "count": 62,
+      "path": "entities/33.dict",
+      "sha256": "253693631275557f79dc096ef13a4a6ef6a4c2f60a1497fc828d24bbf492d0a1",
+      "uncompressedBytes": 33192
+    },
+    {
+      "compressedBytes": 3390,
+      "count": 76,
+      "path": "entities/34.dict",
+      "sha256": "aa3fdca799c9f36922901cc6dc0f880d30a76fe5e521bc609f23e52b4a22fda2",
+      "uncompressedBytes": 41912
+    },
+    {
+      "compressedBytes": 3582,
+      "count": 79,
+      "path": "entities/35.dict",
+      "sha256": "687c2ab14b2bf515c768ca28ebc05e103e142e395ea1789243fdf85424d7b6a4",
+      "uncompressedBytes": 42826
+    },
+    {
+      "compressedBytes": 3874,
+      "count": 79,
+      "path": "entities/36.dict",
+      "sha256": "ad1c31596cebc511c0f33067d9b3697b1bf70baf40796ea6e38ec1a61ad9117a",
+      "uncompressedBytes": 43706
+    },
+    {
+      "compressedBytes": 3483,
+      "count": 76,
+      "path": "entities/37.dict",
+      "sha256": "5170f713822d16f9e13ae791b224db47c24a3aaa885b083b850dd61ce3d16174",
+      "uncompressedBytes": 40434
+    },
+    {
+      "compressedBytes": 3810,
+      "count": 89,
+      "path": "entities/38.dict",
+      "sha256": "a6902002642be4190c140fcf538d3df5f0ec1ce85fdfd271d0f7ed6506bd5606",
+      "uncompressedBytes": 48169
+    },
+    {
+      "compressedBytes": 2738,
+      "count": 65,
+      "path": "entities/39.dict",
+      "sha256": "cacb4d976f44de242464aa7703362dbe36af8c4bf7067c2dee3028745bac17e3",
+      "uncompressedBytes": 34691
+    },
+    {
+      "compressedBytes": 3465,
+      "count": 82,
+      "path": "entities/3a.dict",
+      "sha256": "95f8e28423f4a01f1ccc11ab7d39ea9a47517e9328e2771d8a661d80ce1fb617",
+      "uncompressedBytes": 44177
+    },
+    {
+      "compressedBytes": 2905,
+      "count": 69,
+      "path": "entities/3b.dict",
+      "sha256": "dff554f18e9406af2fb0f265a48adbe3d16ace554f96a71466d17f1d20c78da0",
+      "uncompressedBytes": 36468
+    },
+    {
+      "compressedBytes": 3511,
+      "count": 76,
+      "path": "entities/3c.dict",
+      "sha256": "7939cf96a5412222465ca1913b2a6d362b1afd269a85a0e2988e9423453be21d",
+      "uncompressedBytes": 42142
+    },
+    {
+      "compressedBytes": 2962,
+      "count": 70,
+      "path": "entities/3d.dict",
+      "sha256": "48803f9c88f577e91a3880cfd97022c43b850c7c6d7be07337ccf24fa6a2d537",
+      "uncompressedBytes": 38220
+    },
+    {
+      "compressedBytes": 3482,
+      "count": 88,
+      "path": "entities/3e.dict",
+      "sha256": "6b651f879f4e9702f9b7d2c7b15ec9d897f3a3af14ad15d67cab19dc7f7bdfed",
+      "uncompressedBytes": 46319
+    },
+    {
+      "compressedBytes": 4045,
+      "count": 91,
+      "path": "entities/3f.dict",
+      "sha256": "b75453e90e1b962773611dbefb54a164c0929a2858888b5893f3ea4baa1c219d",
+      "uncompressedBytes": 51796
+    },
+    {
+      "compressedBytes": 3009,
+      "count": 63,
+      "path": "entities/40.dict",
+      "sha256": "5173deaf9ac99af115447bccbef48ca7c327e0cbcb49492eb50e8b100e1c35ce",
+      "uncompressedBytes": 34493
+    },
+    {
+      "compressedBytes": 3160,
+      "count": 69,
+      "path": "entities/41.dict",
+      "sha256": "87f5d30d66b30e0f67fd9a4d528b3561af19fd4e6149c45a3d49561f1db2eaf1",
+      "uncompressedBytes": 38347
+    },
+    {
+      "compressedBytes": 3064,
+      "count": 68,
+      "path": "entities/42.dict",
+      "sha256": "02bf501b837dc90d24940c93f90ad80d5e9c62ecf3997e0a605347716e2e3ade",
+      "uncompressedBytes": 36969
+    },
+    {
+      "compressedBytes": 3683,
+      "count": 80,
+      "path": "entities/43.dict",
+      "sha256": "def3bd88df2075df74a9a87f94e07a0141e0b4fb4949d011437b2e5224789603",
+      "uncompressedBytes": 43943
+    },
+    {
+      "compressedBytes": 3598,
+      "count": 82,
+      "path": "entities/44.dict",
+      "sha256": "116902606a3be594bcc94565f19d76886f537f21250c4a8b66558d4c2b3c1f52",
+      "uncompressedBytes": 44552
+    },
+    {
+      "compressedBytes": 3101,
+      "count": 72,
+      "path": "entities/45.dict",
+      "sha256": "c395834d7ce74598e603d01349922c4118000e35d80a112464931214ca217f4d",
+      "uncompressedBytes": 37471
+    },
+    {
+      "compressedBytes": 2842,
+      "count": 64,
+      "path": "entities/46.dict",
+      "sha256": "cab4b031c542f0766b65515bba78fbd65c887ce687bf915fba0c0090da9c0292",
+      "uncompressedBytes": 34411
+    },
+    {
+      "compressedBytes": 2859,
+      "count": 65,
+      "path": "entities/47.dict",
+      "sha256": "768f236033cc72a6725a23f3493af9ed7cf6b46be0d99f698a8ed00955b04f2f",
+      "uncompressedBytes": 35804
+    },
+    {
+      "compressedBytes": 2693,
+      "count": 63,
+      "path": "entities/48.dict",
+      "sha256": "03346602ba8b8c46374f11cdbfdff625e5ca38ff392b34166d1bb9d5fe857041",
+      "uncompressedBytes": 33612
+    },
+    {
+      "compressedBytes": 2723,
+      "count": 69,
+      "path": "entities/49.dict",
+      "sha256": "59bdac3f309c016b41852d1cc5c3d186a3c36f073a9784a95b83f29470b46e2a",
+      "uncompressedBytes": 36653
+    },
+    {
+      "compressedBytes": 3189,
+      "count": 70,
+      "path": "entities/4a.dict",
+      "sha256": "3e9c2380b2d9821886c034e8acc6a2e72a5948e4914b5fa3409da75601c7c672",
+      "uncompressedBytes": 37696
+    },
+    {
+      "compressedBytes": 3789,
+      "count": 80,
+      "path": "entities/4b.dict",
+      "sha256": "f7f865c9edc2207f82ce8db58280a5b5abdfe4e88c1513c4490c69cbe4bf9f58",
+      "uncompressedBytes": 44862
+    },
+    {
+      "compressedBytes": 3118,
+      "count": 68,
+      "path": "entities/4c.dict",
+      "sha256": "527dcfbf5b6ca6f930bb5c7891b08d8d4b2a95f759ce093d9141e2062102edfb",
+      "uncompressedBytes": 37649
+    },
+    {
+      "compressedBytes": 3150,
+      "count": 72,
+      "path": "entities/4d.dict",
+      "sha256": "2461902ff01a67dfc07d51310e28d626e070d136ecdf3023f27985efc3d8017e",
+      "uncompressedBytes": 38865
+    },
+    {
+      "compressedBytes": 3010,
+      "count": 69,
+      "path": "entities/4e.dict",
+      "sha256": "50b0ff05fec42dc981e3d5bdb0e9ceb0decc82d2a41be3fea85a600e459f8984",
+      "uncompressedBytes": 38072
+    },
+    {
+      "compressedBytes": 3635,
+      "count": 84,
+      "path": "entities/4f.dict",
+      "sha256": "3045966f3e30246eeaad05468580d247b4dcea968cf757f6f82df29aac1eb6c3",
+      "uncompressedBytes": 44029
+    },
+    {
+      "compressedBytes": 3390,
+      "count": 77,
+      "path": "entities/50.dict",
+      "sha256": "52c27d64cf00409acb96f2723b5d4203177bcc00f464e9c7605a91038c297ed6",
+      "uncompressedBytes": 41895
+    },
+    {
+      "compressedBytes": 3445,
+      "count": 83,
+      "path": "entities/51.dict",
+      "sha256": "5d8514f4fbf2a4ce16277df4c530aebb83dd8a25cc953fd924e0056bf53d05d8",
+      "uncompressedBytes": 44489
+    },
+    {
+      "compressedBytes": 3968,
+      "count": 87,
+      "path": "entities/52.dict",
+      "sha256": "ff7c25aa35974693fe66d83f74254a33502c554ef4d2395fd3cd35892f56aee1",
+      "uncompressedBytes": 48561
+    },
+    {
+      "compressedBytes": 3766,
+      "count": 87,
+      "path": "entities/53.dict",
+      "sha256": "e350cc7871dce34a97670d48092c64d087550d16c6417e707ac4bfe18be4938c",
+      "uncompressedBytes": 47977
+    },
+    {
+      "compressedBytes": 3596,
+      "count": 77,
+      "path": "entities/54.dict",
+      "sha256": "6f567dcf9efe51de4e585bbd29cb4b0e5cbf4f430fe103757cf4b8c39e179564",
+      "uncompressedBytes": 40538
+    },
+    {
+      "compressedBytes": 3201,
+      "count": 75,
+      "path": "entities/55.dict",
+      "sha256": "cea80fdf4ccac15be08e7a353b33756d58d75ea998423ede77633a272d231edc",
+      "uncompressedBytes": 38925
+    },
+    {
+      "compressedBytes": 3288,
+      "count": 80,
+      "path": "entities/56.dict",
+      "sha256": "77ac44eadef27e0fed38fc3cefb0bfd8ca4ffb8796737cfb8e0e35c8e30031f2",
+      "uncompressedBytes": 41921
+    },
+    {
+      "compressedBytes": 3925,
+      "count": 84,
+      "path": "entities/57.dict",
+      "sha256": "cc4fb3c9b67ac6848a03f6b1e07c775b344f45240f46d715a90694108650ae6e",
+      "uncompressedBytes": 46445
+    },
+    {
+      "compressedBytes": 3435,
+      "count": 80,
+      "path": "entities/58.dict",
+      "sha256": "b1be3e0eb522a4d860ca36811d479a0bbbb1f13e0082887abe0d8c6df2bf427c",
+      "uncompressedBytes": 42687
+    },
+    {
+      "compressedBytes": 3317,
+      "count": 75,
+      "path": "entities/59.dict",
+      "sha256": "9aba6c078b3523a3359cd9eb8ed90b4703f0877bba5da77ab810069618ae9cd2",
+      "uncompressedBytes": 40808
+    },
+    {
+      "compressedBytes": 3065,
+      "count": 63,
+      "path": "entities/5a.dict",
+      "sha256": "d5d9d5645fb03346cf6fc33b8fe0da325c1486414bf0896874c9d2ffe7e1889d",
+      "uncompressedBytes": 33972
+    },
+    {
+      "compressedBytes": 3101,
+      "count": 67,
+      "path": "entities/5b.dict",
+      "sha256": "218e7ea1a41aa9576e2fb5e19fab95843c6a3865126a39cbe49931700f005a4e",
+      "uncompressedBytes": 35861
+    },
+    {
+      "compressedBytes": 4047,
+      "count": 98,
+      "path": "entities/5c.dict",
+      "sha256": "1f28d901a5ec21dc6a7ad7cdff8afbdc238ecd0c6e89ae1dda7beced4095a4e8",
+      "uncompressedBytes": 53089
+    },
+    {
+      "compressedBytes": 3229,
+      "count": 82,
+      "path": "entities/5d.dict",
+      "sha256": "96b366eeaceafe9de1079308399f2f6447de581b8677ed76ee4f7b67cb9660ec",
+      "uncompressedBytes": 42976
+    },
+    {
+      "compressedBytes": 4413,
+      "count": 98,
+      "path": "entities/5e.dict",
+      "sha256": "f305d7cc93bba88c0026c3304c0f3db46b017aa70e1539c3b3e2e13cd8f22a76",
+      "uncompressedBytes": 53395
+    },
+    {
+      "compressedBytes": 3482,
+      "count": 74,
+      "path": "entities/5f.dict",
+      "sha256": "8fcbc6815deb8ac20ee2e91bc573505013baaf40f2e8891fad57cd291cd04979",
+      "uncompressedBytes": 40431
+    },
+    {
+      "compressedBytes": 3094,
+      "count": 67,
+      "path": "entities/60.dict",
+      "sha256": "96c703e238c8780afce9145d48ccb28886e4dd48d08b0b38a405f792cbabd448",
+      "uncompressedBytes": 35929
+    },
+    {
+      "compressedBytes": 3420,
+      "count": 69,
+      "path": "entities/61.dict",
+      "sha256": "de22c1a6fa89358cfe7168178f9ee7c27ce410dc14070d0116d0a28224702738",
+      "uncompressedBytes": 38162
+    },
+    {
+      "compressedBytes": 3416,
+      "count": 82,
+      "path": "entities/62.dict",
+      "sha256": "dfbb027430129a4ef0f6578ac2e5738b1417dd7b2dd8220f9e03129104b76d93",
+      "uncompressedBytes": 44197
+    },
+    {
+      "compressedBytes": 3242,
+      "count": 73,
+      "path": "entities/63.dict",
+      "sha256": "36f4923a83bdb398e5fd899b87d6c6a827fd98faadbdfac700cdee1623062490",
+      "uncompressedBytes": 39342
+    },
+    {
+      "compressedBytes": 3859,
+      "count": 88,
+      "path": "entities/64.dict",
+      "sha256": "8c927d0fcc4d72a9b981cd9c6f0cdbf79992d3caf90edd2379bd6725812995dd",
+      "uncompressedBytes": 47754
+    },
+    {
+      "compressedBytes": 3362,
+      "count": 80,
+      "path": "entities/65.dict",
+      "sha256": "90a9b33dc74d39f023b9598dea2b2f1149d9bbf8b5216a22bb06d810ab2fe33b",
+      "uncompressedBytes": 42725
+    },
+    {
+      "compressedBytes": 3441,
+      "count": 75,
+      "path": "entities/66.dict",
+      "sha256": "e6e945bfdecba12014a0eb6763a18905890235dd509282545d2793739a7947f9",
+      "uncompressedBytes": 40014
+    },
+    {
+      "compressedBytes": 3302,
+      "count": 69,
+      "path": "entities/67.dict",
+      "sha256": "e23bf92d0593b5c7becfce8684b3f9a3b551a594b8bc2ea34d3fa477e72782d1",
+      "uncompressedBytes": 37280
+    },
+    {
+      "compressedBytes": 4141,
+      "count": 94,
+      "path": "entities/68.dict",
+      "sha256": "e5b553ff0a751963b7b238dfc3098c89355880d82f4277e3e02cc16c9a9ac014",
+      "uncompressedBytes": 50592
+    },
+    {
+      "compressedBytes": 3522,
+      "count": 77,
+      "path": "entities/69.dict",
+      "sha256": "c9a0e26e49884d75c6b49fe03a9c69520208aae4d90e78b11ca19ad4ec86d0b6",
+      "uncompressedBytes": 41101
+    },
+    {
+      "compressedBytes": 3312,
+      "count": 78,
+      "path": "entities/6a.dict",
+      "sha256": "f04803d1368bf256f44ad15d7b65277b607c68b50faba24ce395656fa820298a",
+      "uncompressedBytes": 41784
+    },
+    {
+      "compressedBytes": 3084,
+      "count": 65,
+      "path": "entities/6b.dict",
+      "sha256": "9c1703078f93ca449151886e67404f74cd15c04cef3ab0218e250862fcbe1ad3",
+      "uncompressedBytes": 34687
+    },
+    {
+      "compressedBytes": 3411,
+      "count": 84,
+      "path": "entities/6c.dict",
+      "sha256": "93b7407dfedd211ce56975467f356fc6a5d37b0718f1c2ab0fece4987ac4b8de",
+      "uncompressedBytes": 44376
+    },
+    {
+      "compressedBytes": 3248,
+      "count": 80,
+      "path": "entities/6d.dict",
+      "sha256": "b201e95df955c5531471f1ce4e4d55aec2e4e54d10e455d03cbe621d73100dcf",
+      "uncompressedBytes": 42945
+    },
+    {
+      "compressedBytes": 3170,
+      "count": 75,
+      "path": "entities/6e.dict",
+      "sha256": "2fbaad6c10846933856cf843ff429ea71fa8d201ee86fbbf66cdbd9fbea9c04e",
+      "uncompressedBytes": 39886
+    },
+    {
+      "compressedBytes": 3298,
+      "count": 77,
+      "path": "entities/6f.dict",
+      "sha256": "7635167eced0c696334da5c246a4199cc62ec11bb611ecb21244a43cff1089ae",
+      "uncompressedBytes": 40917
+    },
+    {
+      "compressedBytes": 4455,
+      "count": 97,
+      "path": "entities/70.dict",
+      "sha256": "0aa63ac5550596f23e692b068dba5f287f16560425877c78dcc490e51dbf9f63",
+      "uncompressedBytes": 55027
+    },
+    {
+      "compressedBytes": 3101,
+      "count": 76,
+      "path": "entities/71.dict",
+      "sha256": "9ba28620958d931a49318700357a9aaa34ceff46e584ed57dc5217fdffb36063",
+      "uncompressedBytes": 39859
+    },
+    {
+      "compressedBytes": 3653,
+      "count": 91,
+      "path": "entities/72.dict",
+      "sha256": "ec7c74d7d164d329ddcf8f2916ec45c6f6b1fbfd8c718510d7544ad404067b82",
+      "uncompressedBytes": 49088
+    },
+    {
+      "compressedBytes": 3552,
+      "count": 78,
+      "path": "entities/73.dict",
+      "sha256": "1d9d3f32063f7ad135f873e9f1fb8888b2731410220738e896fcc6083574dd56",
+      "uncompressedBytes": 42551
+    },
+    {
+      "compressedBytes": 3302,
+      "count": 72,
+      "path": "entities/74.dict",
+      "sha256": "630bedb51ca3a86ff7a8d23b0ece6f431b8c368b13719ad0fc4250a2185226c3",
+      "uncompressedBytes": 39190
+    },
+    {
+      "compressedBytes": 4247,
+      "count": 100,
+      "path": "entities/75.dict",
+      "sha256": "44700c81c665ac8f5ba56efb14ed1cfb2fd9e381643a982dc720941e48430a39",
+      "uncompressedBytes": 54723
+    },
+    {
+      "compressedBytes": 3397,
+      "count": 74,
+      "path": "entities/76.dict",
+      "sha256": "fc1bfd5004ebd8ec1e33ba267c8cdc26afa7aeb3b2fae5b45d3acd730c685083",
+      "uncompressedBytes": 37992
+    },
+    {
+      "compressedBytes": 3413,
+      "count": 77,
+      "path": "entities/77.dict",
+      "sha256": "8a91e511504d267d04f847565acd19aee9cbe2ec6155183b7774a0b37afb1cd7",
+      "uncompressedBytes": 41268
+    },
+    {
+      "compressedBytes": 3582,
+      "count": 82,
+      "path": "entities/78.dict",
+      "sha256": "550d20ca54b00512806feb6c8775b198379c76632a8d339049f5372590388339",
+      "uncompressedBytes": 44034
+    },
+    {
+      "compressedBytes": 3333,
+      "count": 83,
+      "path": "entities/79.dict",
+      "sha256": "0f0e7968f36a0ac9563fd6b8861208f762ba51661cd2ec55cfb3f6a8f3396643",
+      "uncompressedBytes": 43981
+    },
+    {
+      "compressedBytes": 3518,
+      "count": 79,
+      "path": "entities/7a.dict",
+      "sha256": "9ac351e4532f598b2beca82407f119da4d6d5d2cfe5d740a9d56697dc9d7a954",
+      "uncompressedBytes": 41248
+    },
+    {
+      "compressedBytes": 3684,
+      "count": 86,
+      "path": "entities/7b.dict",
+      "sha256": "6446a97551a27d50c9ffa710e3df6d373476acaa5b2f712bee303317509edae5",
+      "uncompressedBytes": 44988
+    },
+    {
+      "compressedBytes": 3787,
+      "count": 79,
+      "path": "entities/7c.dict",
+      "sha256": "16bb2db43f4c9e7c74d1333813393d51d17637ed35a2a4b43c52533589a3067b",
+      "uncompressedBytes": 43861
+    },
+    {
+      "compressedBytes": 3524,
+      "count": 83,
+      "path": "entities/7d.dict",
+      "sha256": "d79ceffe83e2368ea21d9011403d460a2cc9fcf1da7d98c73121d8663ac4f6d5",
+      "uncompressedBytes": 43555
+    },
+    {
+      "compressedBytes": 3862,
+      "count": 89,
+      "path": "entities/7e.dict",
+      "sha256": "a7fef033b85169497609887e66d8323203877d17306251c864cd9137bb90fa17",
+      "uncompressedBytes": 46695
+    },
+    {
+      "compressedBytes": 3352,
+      "count": 79,
+      "path": "entities/7f.dict",
+      "sha256": "422f3d6e3454b0449c502ede3ccd34a10760e8402af39826babc7be69eb97573",
+      "uncompressedBytes": 43111
+    },
+    {
+      "compressedBytes": 3360,
+      "count": 76,
+      "path": "entities/80.dict",
+      "sha256": "b599f64d20a1e14ae56c686279baaf2be58a213c445b5d518ec30d820bab26f2",
+      "uncompressedBytes": 41218
+    },
+    {
+      "compressedBytes": 2534,
+      "count": 55,
+      "path": "entities/81.dict",
+      "sha256": "a1f2ae457f5d456c30652c4e1f2761d31859211a723bbc44646e87d0e9e4aa74",
+      "uncompressedBytes": 29709
+    },
+    {
+      "compressedBytes": 3697,
+      "count": 86,
+      "path": "entities/82.dict",
+      "sha256": "17b6765622341bed678fbf366f41ab810ac7ae00dd45623daace3fff8ee28def",
+      "uncompressedBytes": 45355
+    },
+    {
+      "compressedBytes": 3002,
+      "count": 67,
+      "path": "entities/83.dict",
+      "sha256": "8acd3ed3d79158ca292a3d473261ec5349cebd6b7b21778856fe790ee8c4b73b",
+      "uncompressedBytes": 36829
+    },
+    {
+      "compressedBytes": 2768,
+      "count": 60,
+      "path": "entities/84.dict",
+      "sha256": "37a7370661e9e38ac6f8d1773bfb77b0f64d47251c9d270002cb869136d9efde",
+      "uncompressedBytes": 32873
+    },
+    {
+      "compressedBytes": 3070,
+      "count": 70,
+      "path": "entities/85.dict",
+      "sha256": "d1b0bd88488a73047b2d8322657a76fa4dae85d6783f93f4efdf6ebba283e8ff",
+      "uncompressedBytes": 37384
+    },
+    {
+      "compressedBytes": 2848,
+      "count": 63,
+      "path": "entities/86.dict",
+      "sha256": "a448292d5cc9eae0c55e98c3e89c14b66cc692d15f31a274e21d4b5f8b461de4",
+      "uncompressedBytes": 34192
+    },
+    {
+      "compressedBytes": 3658,
+      "count": 81,
+      "path": "entities/87.dict",
+      "sha256": "2d2a9e3e55b9adda1d6ec2c9208acf1c74fefe06c17f77d2c73f188da652c24c",
+      "uncompressedBytes": 43616
+    },
+    {
+      "compressedBytes": 3455,
+      "count": 80,
+      "path": "entities/88.dict",
+      "sha256": "3c16787908283fc57e2863503c4ddc0ea9f31f85fc7b9934a852141bf61fb110",
+      "uncompressedBytes": 41670
+    },
+    {
+      "compressedBytes": 3840,
+      "count": 85,
+      "path": "entities/89.dict",
+      "sha256": "46cce913dd467ff7142ee1b078ad44b799ed017a3199c4a59739c8305434445b",
+      "uncompressedBytes": 46367
+    },
+    {
+      "compressedBytes": 3818,
+      "count": 87,
+      "path": "entities/8a.dict",
+      "sha256": "edbb9dafd564b8e5de9a6201295fdfc14b20e4f665bb0966df15e980a2f1ebc9",
+      "uncompressedBytes": 46749
+    },
+    {
+      "compressedBytes": 3550,
+      "count": 82,
+      "path": "entities/8b.dict",
+      "sha256": "8886b06ce8f961944e9e8932caba6ec3b89709b94426952e748cb1791d582081",
+      "uncompressedBytes": 44866
+    },
+    {
+      "compressedBytes": 3457,
+      "count": 77,
+      "path": "entities/8c.dict",
+      "sha256": "04e97f1d3d84697a8bc8783f5b70902f3a56a72aa4bbcc24440b6faa93e69465",
+      "uncompressedBytes": 42542
+    },
+    {
+      "compressedBytes": 3691,
+      "count": 78,
+      "path": "entities/8d.dict",
+      "sha256": "99d2b9e7def000fcec9330219faf0be0514e6a4db48dc83ccdcb4371af33d3d2",
+      "uncompressedBytes": 43174
+    },
+    {
+      "compressedBytes": 3342,
+      "count": 76,
+      "path": "entities/8e.dict",
+      "sha256": "5f2ac994a6c478fc6d6fe42f036ef35aa916735e3ec1c883147f392757f73684",
+      "uncompressedBytes": 41131
+    },
+    {
+      "compressedBytes": 3046,
+      "count": 66,
+      "path": "entities/8f.dict",
+      "sha256": "1c34bb1fcb09d7246857d8c7365f8c1524a1f3713665f49b2def0520fb061321",
+      "uncompressedBytes": 34711
+    },
+    {
+      "compressedBytes": 3681,
+      "count": 90,
+      "path": "entities/90.dict",
+      "sha256": "5356c6afaab81953a35cab5f7a868752a5ae6648e751db712119af5e247a4f8a",
+      "uncompressedBytes": 49111
+    },
+    {
+      "compressedBytes": 3659,
+      "count": 73,
+      "path": "entities/91.dict",
+      "sha256": "7c13c403ca06bc3fd281750e9424b7e22dddeff33f5bb07e03f358ea4e798b6f",
+      "uncompressedBytes": 41056
+    },
+    {
+      "compressedBytes": 3713,
+      "count": 85,
+      "path": "entities/92.dict",
+      "sha256": "4188475ef491eb3ed013ee3ab6ff4fce1d12c691b93cea509c15ddac4ec8f3da",
+      "uncompressedBytes": 45641
+    },
+    {
+      "compressedBytes": 3441,
+      "count": 75,
+      "path": "entities/93.dict",
+      "sha256": "6ee4893d079910269d687d94f5ecb8aa6ae4c264d288c290c7b12d7e3599e847",
+      "uncompressedBytes": 40601
+    },
+    {
+      "compressedBytes": 3855,
+      "count": 79,
+      "path": "entities/94.dict",
+      "sha256": "08ba67f7b8a4555d8ddbbe6d0accda7aca243ff4492677fd1140345b02c74716",
+      "uncompressedBytes": 43443
+    },
+    {
+      "compressedBytes": 3314,
+      "count": 76,
+      "path": "entities/95.dict",
+      "sha256": "a2567b705bb39571b8b4b30d91617295d01bae43b457b8d7b924f49b4c0c20bc",
+      "uncompressedBytes": 41521
+    },
+    {
+      "compressedBytes": 2910,
+      "count": 67,
+      "path": "entities/96.dict",
+      "sha256": "f6b93862131f417d8e64854e2388f2598628747691eaf6468cc5ca5bc235e5ba",
+      "uncompressedBytes": 35807
+    },
+    {
+      "compressedBytes": 3872,
+      "count": 89,
+      "path": "entities/97.dict",
+      "sha256": "5e9de410255788575c5c875dea6ec1db32c88a8eccda0c2c4268162d5c567ec6",
+      "uncompressedBytes": 48264
+    },
+    {
+      "compressedBytes": 3484,
+      "count": 83,
+      "path": "entities/98.dict",
+      "sha256": "6ba29c1cb6221c5a0f23c36919130bd7a50d9c587b19606847254ac6f5e2ab61",
+      "uncompressedBytes": 44202
+    },
+    {
+      "compressedBytes": 3334,
+      "count": 77,
+      "path": "entities/99.dict",
+      "sha256": "40eedee8ac3cc8ad9ea5499a211711df0dd14443f10c492a77ecd077af0929d2",
+      "uncompressedBytes": 40489
+    },
+    {
+      "compressedBytes": 3882,
+      "count": 84,
+      "path": "entities/9a.dict",
+      "sha256": "74f34096aa292b2cc631f556b7bf8fca19559c2ca5349c30a59a440458726f2f",
+      "uncompressedBytes": 46752
+    },
+    {
+      "compressedBytes": 3251,
+      "count": 69,
+      "path": "entities/9b.dict",
+      "sha256": "a89a0d01aa6c3a75fec8fbd08f63772e3440c3c71fa06c1127f95d75e741efaf",
+      "uncompressedBytes": 38510
+    },
+    {
+      "compressedBytes": 3791,
+      "count": 85,
+      "path": "entities/9c.dict",
+      "sha256": "7a625c8ada36f3a6758f9dd6438cca7b9553805ea5ec95f00059b511e9e168ba",
+      "uncompressedBytes": 45193
+    },
+    {
+      "compressedBytes": 3612,
+      "count": 85,
+      "path": "entities/9d.dict",
+      "sha256": "b47ec00607d68248686c7ddb79741790275ebb89f84fb260376b59ba56f4d5ab",
+      "uncompressedBytes": 46314
+    },
+    {
+      "compressedBytes": 3133,
+      "count": 74,
+      "path": "entities/9e.dict",
+      "sha256": "b9ce0b39c4929939ce57d3f990a585eab46892c607f815df5c7983a2655cfe96",
+      "uncompressedBytes": 38560
+    },
+    {
+      "compressedBytes": 3349,
+      "count": 76,
+      "path": "entities/9f.dict",
+      "sha256": "a7e5875bc648feb2a3916868ce36760a861d70589df77561d04ae5a63b13be38",
+      "uncompressedBytes": 40800
+    },
+    {
+      "compressedBytes": 3936,
+      "count": 92,
+      "path": "entities/a0.dict",
+      "sha256": "a376d95ea4794cee95bf47a735c8ce02041f645baaa05cb9d15f8dfe71fa72be",
+      "uncompressedBytes": 49919
+    },
+    {
+      "compressedBytes": 3460,
+      "count": 74,
+      "path": "entities/a1.dict",
+      "sha256": "990ee94ca08ab8edcab8273ed043477feadd3eeb2add549a9623a015b40d41ac",
+      "uncompressedBytes": 39054
+    },
+    {
+      "compressedBytes": 3786,
+      "count": 85,
+      "path": "entities/a2.dict",
+      "sha256": "8112fb89432335bbd86897407892318cee295b90fd16dd8805c412ba16c2388f",
+      "uncompressedBytes": 45323
+    },
+    {
+      "compressedBytes": 3715,
+      "count": 85,
+      "path": "entities/a3.dict",
+      "sha256": "2384c45a9dc553979956fb9ca01e6e200db3ff0b040ef0998ee3a4bd1122fc14",
+      "uncompressedBytes": 46188
+    },
+    {
+      "compressedBytes": 3018,
+      "count": 69,
+      "path": "entities/a4.dict",
+      "sha256": "2fb4f0807b31ababadfda8f4e47502d75cda55af21fe77aa4de0d3b523494c8e",
+      "uncompressedBytes": 37213
+    },
+    {
+      "compressedBytes": 3947,
+      "count": 89,
+      "path": "entities/a5.dict",
+      "sha256": "e3467edd7c4ea1643d3520679b8bc15fc35fbf9d32c9c000825d5446d4d09e87",
+      "uncompressedBytes": 48386
+    },
+    {
+      "compressedBytes": 3118,
+      "count": 63,
+      "path": "entities/a6.dict",
+      "sha256": "c83de2cc0ffa6a26efdc98ceb457bb43e78f25efb6b76d0a7a9579326e0151f7",
+      "uncompressedBytes": 35313
+    },
+    {
+      "compressedBytes": 2696,
+      "count": 51,
+      "path": "entities/a7.dict",
+      "sha256": "32e12703947980c84f4be95d857ea44621ce7924791b21fe9cf92186615e7156",
+      "uncompressedBytes": 28461
+    },
+    {
+      "compressedBytes": 3176,
+      "count": 74,
+      "path": "entities/a8.dict",
+      "sha256": "3fdc0601a7fd47b1d81c5e5b1faa87e27e4cf7c0c8a0f55bb6a041fc08d683bb",
+      "uncompressedBytes": 39548
+    },
+    {
+      "compressedBytes": 3637,
+      "count": 81,
+      "path": "entities/a9.dict",
+      "sha256": "e712048cc19aca4b600449a2984d2b5a03dc13ad9fe92b30bd5a964cfe1fd32d",
+      "uncompressedBytes": 43171
+    },
+    {
+      "compressedBytes": 3305,
+      "count": 74,
+      "path": "entities/aa.dict",
+      "sha256": "cb0e5f57cacd824e8f3b5de1d907272396a037a49b01bda05f52d49bcaebdd15",
+      "uncompressedBytes": 40430
+    },
+    {
+      "compressedBytes": 3450,
+      "count": 78,
+      "path": "entities/ab.dict",
+      "sha256": "eee5650e35face939343db4ef68a68523d595b80221c66987773a0ae244b5b41",
+      "uncompressedBytes": 42900
+    },
+    {
+      "compressedBytes": 4161,
+      "count": 93,
+      "path": "entities/ac.dict",
+      "sha256": "e65e9e8fa1cd97207a8d816f13fa901a4f5e89f4b29d12da370a06332438abbd",
+      "uncompressedBytes": 51592
+    },
+    {
+      "compressedBytes": 3544,
+      "count": 76,
+      "path": "entities/ad.dict",
+      "sha256": "f75a18a71e39affd40a32dbcae74919c5a373ef341a2f303b6c66030163d8203",
+      "uncompressedBytes": 41481
+    },
+    {
+      "compressedBytes": 3669,
+      "count": 76,
+      "path": "entities/ae.dict",
+      "sha256": "3a9a3aa7eccfda432027949290b8d518e2df0e63810aaec97a8747b1420776fa",
+      "uncompressedBytes": 41955
+    },
+    {
+      "compressedBytes": 4006,
+      "count": 90,
+      "path": "entities/af.dict",
+      "sha256": "0861d186dd1da3093191470ff1cca990b1aca228ed9414ca37827cd989cf6a7a",
+      "uncompressedBytes": 48961
+    },
+    {
+      "compressedBytes": 3089,
+      "count": 69,
+      "path": "entities/b0.dict",
+      "sha256": "aee74384171624cf38bcf1c3d7c762093584baf0d7a79ed22442aee91773d99b",
+      "uncompressedBytes": 36456
+    },
+    {
+      "compressedBytes": 3892,
+      "count": 82,
+      "path": "entities/b1.dict",
+      "sha256": "d674b17aaed3517499c5ff01156898d96289b7733c132d74cd10839393dec8e4",
+      "uncompressedBytes": 45396
+    },
+    {
+      "compressedBytes": 3368,
+      "count": 81,
+      "path": "entities/b2.dict",
+      "sha256": "efbfaea90e7826a7877ce9b08ede98af58a6f1501f3cb4519b6023621ea92e8a",
+      "uncompressedBytes": 44599
+    },
+    {
+      "compressedBytes": 3543,
+      "count": 77,
+      "path": "entities/b3.dict",
+      "sha256": "a0019b49cbd14a89bfb8ae875ce1d3632a6cc585180074854e58db79cc00be5e",
+      "uncompressedBytes": 41252
+    },
+    {
+      "compressedBytes": 3243,
+      "count": 70,
+      "path": "entities/b4.dict",
+      "sha256": "9a73bab39051a1d4b0f7f1a2931bb124545f458abc140ac4bfa3d2fedd3282e8",
+      "uncompressedBytes": 37682
+    },
+    {
+      "compressedBytes": 3189,
+      "count": 68,
+      "path": "entities/b5.dict",
+      "sha256": "b699bc3c32c71cb74b02652af9497d2817212870ea2040fccfad628f4a6b3150",
+      "uncompressedBytes": 36302
+    },
+    {
+      "compressedBytes": 3145,
+      "count": 77,
+      "path": "entities/b6.dict",
+      "sha256": "2fb053d387c1f5745969132b28a3f3bf56550eb775f402b348a1d8c6992b584c",
+      "uncompressedBytes": 41775
+    },
+    {
+      "compressedBytes": 3839,
+      "count": 85,
+      "path": "entities/b7.dict",
+      "sha256": "20605ac8d44f102dce633356b8ba455e7ef52b075dce41b1f480bf307e646f92",
+      "uncompressedBytes": 46718
+    },
+    {
+      "compressedBytes": 3370,
+      "count": 82,
+      "path": "entities/b8.dict",
+      "sha256": "b4aa8ec2f27ca1b4c82703087f432e96e5d494078929068d01c23cfb65704f36",
+      "uncompressedBytes": 43627
+    },
+    {
+      "compressedBytes": 3641,
+      "count": 82,
+      "path": "entities/b9.dict",
+      "sha256": "f43728b3ced707594206871244a38e505c81d8765620148ded3915ea0d453809",
+      "uncompressedBytes": 43693
+    },
+    {
+      "compressedBytes": 3335,
+      "count": 74,
+      "path": "entities/ba.dict",
+      "sha256": "7402b0a85a52ca1deb4e1392f1a918ef8328de5d982810becc41c0df8ec3e7ad",
+      "uncompressedBytes": 40412
+    },
+    {
+      "compressedBytes": 3349,
+      "count": 79,
+      "path": "entities/bb.dict",
+      "sha256": "a09d9499fed9a6c2c14b011492c8af82ebc54706ffb08e7ff55cf8069e7f1ab4",
+      "uncompressedBytes": 42390
+    },
+    {
+      "compressedBytes": 2937,
+      "count": 64,
+      "path": "entities/bc.dict",
+      "sha256": "b3747b9e0bd42ae86a9cc5b147acba7705b7dff161c0eace2aa3e922dc550c23",
+      "uncompressedBytes": 33863
+    },
+    {
+      "compressedBytes": 3234,
+      "count": 74,
+      "path": "entities/bd.dict",
+      "sha256": "c85fb4756adeac30a2a667b9aa9dd15970a8e2bd27aa37e772bf488d90c096c2",
+      "uncompressedBytes": 38509
+    },
+    {
+      "compressedBytes": 3357,
+      "count": 78,
+      "path": "entities/be.dict",
+      "sha256": "8909bfbc1a488b1016711885e2632b2734272f15ad9ddffb48d1b30556d41f3e",
+      "uncompressedBytes": 42182
+    },
+    {
+      "compressedBytes": 3669,
+      "count": 91,
+      "path": "entities/bf.dict",
+      "sha256": "dca9b256d2c8498e730f08b672da585b749a98a977ae62505007e4abfb0d8b02",
+      "uncompressedBytes": 48193
+    },
+    {
+      "compressedBytes": 3579,
+      "count": 76,
+      "path": "entities/c0.dict",
+      "sha256": "71ed021fbb4e394e2d307e2a5de0b14cf4b3ab3e3a41d9fd2e62e31d3d3619a6",
+      "uncompressedBytes": 40665
+    },
+    {
+      "compressedBytes": 2540,
+      "count": 56,
+      "path": "entities/c1.dict",
+      "sha256": "012b763c71a0e6759b499b45fc4b74893b7afc2923217106140729d7a4009cb8",
+      "uncompressedBytes": 29786
+    },
+    {
+      "compressedBytes": 3649,
+      "count": 82,
+      "path": "entities/c2.dict",
+      "sha256": "7aa4f9361d591eb2acbd3f858528ef1163dac0d40811609219dfc12dad5fff66",
+      "uncompressedBytes": 45283
+    },
+    {
+      "compressedBytes": 3276,
+      "count": 79,
+      "path": "entities/c3.dict",
+      "sha256": "b31367af178b970d84560a3c2cad95401ef70931307a429bddcc57bac4b9de5a",
+      "uncompressedBytes": 42814
+    },
+    {
+      "compressedBytes": 3335,
+      "count": 85,
+      "path": "entities/c4.dict",
+      "sha256": "636a2cf772f1f49532a8b777915aad44f527585165d91746e8c4659fa533d6ce",
+      "uncompressedBytes": 44895
+    },
+    {
+      "compressedBytes": 2727,
+      "count": 53,
+      "path": "entities/c5.dict",
+      "sha256": "fd1115882e2a2798c5818975bcfe8ee1cae7549eadfeeccc8101cecc61ea294b",
+      "uncompressedBytes": 29833
+    },
+    {
+      "compressedBytes": 2889,
+      "count": 59,
+      "path": "entities/c6.dict",
+      "sha256": "cc0e083fec8c034cc97a5de4e16996e11b7ed50becf6de6008fc51abdba019f1",
+      "uncompressedBytes": 32479
+    },
+    {
+      "compressedBytes": 3091,
+      "count": 70,
+      "path": "entities/c7.dict",
+      "sha256": "fbad4d7c1158db38d26bb073d66d14d3b151aebfe5c2b41c2f1cdfe6253cfb6c",
+      "uncompressedBytes": 36904
+    },
+    {
+      "compressedBytes": 3312,
+      "count": 72,
+      "path": "entities/c8.dict",
+      "sha256": "f887ae11f4c0d7931af0c6ca0c51ba2d4287d798c693f29c777db141e8590685",
+      "uncompressedBytes": 38899
+    },
+    {
+      "compressedBytes": 3485,
+      "count": 78,
+      "path": "entities/c9.dict",
+      "sha256": "b1044ed1c1317945fe0e981b296bf47aae662d0c62df132caf945c21ba194526",
+      "uncompressedBytes": 42830
+    },
+    {
+      "compressedBytes": 3162,
+      "count": 70,
+      "path": "entities/ca.dict",
+      "sha256": "025fd56450b0593fb65e755e411fc0cf36440faf0f4a59a2d5e60febc2928484",
+      "uncompressedBytes": 36793
+    },
+    {
+      "compressedBytes": 3070,
+      "count": 68,
+      "path": "entities/cb.dict",
+      "sha256": "6f7d03b5ab266cb7fd0ea56051392af2318dc3c7d99aff8e7eaa6bbc0e3d2bf6",
+      "uncompressedBytes": 36885
+    },
+    {
+      "compressedBytes": 2908,
+      "count": 69,
+      "path": "entities/cc.dict",
+      "sha256": "c8da52f29f975a3946080fbb10323469ae90b0f9a786ad06795bed3f4979386e",
+      "uncompressedBytes": 36872
+    },
+    {
+      "compressedBytes": 3521,
+      "count": 78,
+      "path": "entities/cd.dict",
+      "sha256": "4c1f6d134695219b31c637d7a50ec5b0bf232ac4fe4d7240bc7b2d9f40bdca94",
+      "uncompressedBytes": 42528
+    },
+    {
+      "compressedBytes": 3396,
+      "count": 76,
+      "path": "entities/ce.dict",
+      "sha256": "ff9d949c55c40a8ba5b34454088b4394625ec37f4bfa0a088d7ff6a2d72a7935",
+      "uncompressedBytes": 41138
+    },
+    {
+      "compressedBytes": 3059,
+      "count": 64,
+      "path": "entities/cf.dict",
+      "sha256": "ce7e609409399678a8e9837eb35bcbcbf4b21d4ed1ac3b7fea683c4f691f410b",
+      "uncompressedBytes": 36776
+    },
+    {
+      "compressedBytes": 3044,
+      "count": 69,
+      "path": "entities/d0.dict",
+      "sha256": "126b32d9db8b1cdcd23bcd784603993416a65d88aa26d39468deb1a9a6161fd1",
+      "uncompressedBytes": 37127
+    },
+    {
+      "compressedBytes": 3322,
+      "count": 78,
+      "path": "entities/d1.dict",
+      "sha256": "9895c28e087416ead133cb98c2f702395ac34dc9199e8f2d1885cf8d1a8e86f7",
+      "uncompressedBytes": 42285
+    },
+    {
+      "compressedBytes": 2975,
+      "count": 69,
+      "path": "entities/d2.dict",
+      "sha256": "74311f2cfbe6a5e36280511fa1e73766fb1740dd3cea979acd0cd49ef743f5f1",
+      "uncompressedBytes": 37104
+    },
+    {
+      "compressedBytes": 3450,
+      "count": 80,
+      "path": "entities/d3.dict",
+      "sha256": "491385dcd13f0b03e9182fa8015cab151b372f2632157162ac7af63e41b72853",
+      "uncompressedBytes": 43855
+    },
+    {
+      "compressedBytes": 3431,
+      "count": 73,
+      "path": "entities/d4.dict",
+      "sha256": "680a5a651f432177f7f7d35e75ea19645168a029fa8c9966cc6c92649877060f",
+      "uncompressedBytes": 40756
+    },
+    {
+      "compressedBytes": 3262,
+      "count": 71,
+      "path": "entities/d5.dict",
+      "sha256": "167332fbfa039b4b703741219fc6f17991ef1b5361e9ea22b4f2779425c2a0ec",
+      "uncompressedBytes": 40480
+    },
+    {
+      "compressedBytes": 3476,
+      "count": 76,
+      "path": "entities/d6.dict",
+      "sha256": "1ff0d81ef79bef3c1e79c2075a313934fdd76f7c1ca71ef583891171d269137c",
+      "uncompressedBytes": 40911
+    },
+    {
+      "compressedBytes": 3265,
+      "count": 70,
+      "path": "entities/d7.dict",
+      "sha256": "7f623572f7304fbddc4a75a42816ed2d46c998b96a6dd527b5c2b13fae7a0378",
+      "uncompressedBytes": 37663
+    },
+    {
+      "compressedBytes": 3715,
+      "count": 76,
+      "path": "entities/d8.dict",
+      "sha256": "82d01a0a589cc33256c780287f1dc8d56a27bdf611d5c239ac912ba7a0e18751",
+      "uncompressedBytes": 43289
+    },
+    {
+      "compressedBytes": 3468,
+      "count": 80,
+      "path": "entities/d9.dict",
+      "sha256": "b6dd56ee390785f3e1145f40da32b0ec0b817a9793fb99534e5dea411dba335c",
+      "uncompressedBytes": 44062
+    },
+    {
+      "compressedBytes": 3231,
+      "count": 76,
+      "path": "entities/da.dict",
+      "sha256": "3aefab10efd0e9f59da5d071da37153e71e8c63aafa7ec00437978f257dc8f2f",
+      "uncompressedBytes": 39566
+    },
+    {
+      "compressedBytes": 3534,
+      "count": 75,
+      "path": "entities/db.dict",
+      "sha256": "abe72506513abf10b6e861c424e7fe32c3c2d655e5eed91b88a3df6fc4b3e061",
+      "uncompressedBytes": 40745
+    },
+    {
+      "compressedBytes": 4071,
+      "count": 93,
+      "path": "entities/dc.dict",
+      "sha256": "304457ac5fb66b511826a0bfeefb35390d87c0245ce80970b8cad517d318c4f4",
+      "uncompressedBytes": 50384
+    },
+    {
+      "compressedBytes": 3635,
+      "count": 69,
+      "path": "entities/dd.dict",
+      "sha256": "207a96e34316f00740b23cec8f2ce504d65c83e0d718d908e67889918ef30bf6",
+      "uncompressedBytes": 41092
+    },
+    {
+      "compressedBytes": 3147,
+      "count": 74,
+      "path": "entities/de.dict",
+      "sha256": "2c4ecf998a11106faa6c78e91963559fd107de2b00f8d023cca7e33ca4f5e3fd",
+      "uncompressedBytes": 39884
+    },
+    {
+      "compressedBytes": 3042,
+      "count": 60,
+      "path": "entities/df.dict",
+      "sha256": "3bfe642f28eab845988ce7b051a3837127eaac08a306a25f12d9f82c48981b21",
+      "uncompressedBytes": 33273
+    },
+    {
+      "compressedBytes": 3865,
+      "count": 91,
+      "path": "entities/e0.dict",
+      "sha256": "fa0ad18a30ffa10320a2fb6996724b2e400a71ecfc13a14814e39c07cc5205d7",
+      "uncompressedBytes": 49577
+    },
+    {
+      "compressedBytes": 3463,
+      "count": 78,
+      "path": "entities/e1.dict",
+      "sha256": "7c10271cd26c9188f3113eefae64c1e7217668afeb26b7fea26188fcbd728a46",
+      "uncompressedBytes": 41425
+    },
+    {
+      "compressedBytes": 2974,
+      "count": 65,
+      "path": "entities/e2.dict",
+      "sha256": "e3e991f329a296949f69c6efca3f86efbd402ddc19b29b545229d09452c18dca",
+      "uncompressedBytes": 35026
+    },
+    {
+      "compressedBytes": 3024,
+      "count": 70,
+      "path": "entities/e3.dict",
+      "sha256": "1cd5d5fb7161ae43b1f42375c9c870ed9b4d14a0287495afb047b2457a04a821",
+      "uncompressedBytes": 37112
+    },
+    {
+      "compressedBytes": 3674,
+      "count": 78,
+      "path": "entities/e4.dict",
+      "sha256": "7bac6296a7eabace9dd16cacd9e924eacf8b929735d72e055f2a7267e3d8f2ef",
+      "uncompressedBytes": 42307
+    },
+    {
+      "compressedBytes": 3139,
+      "count": 74,
+      "path": "entities/e5.dict",
+      "sha256": "d41cfb70320ceb15354b666ec5936dda9e4395f54d531fed4f76352e6eadd482",
+      "uncompressedBytes": 38628
+    },
+    {
+      "compressedBytes": 3686,
+      "count": 79,
+      "path": "entities/e6.dict",
+      "sha256": "7eb71ac6fa43902fc7de0c38e81b090bb6b6fc16b2b4c43200206970d65a27cc",
+      "uncompressedBytes": 43050
+    },
+    {
+      "compressedBytes": 3372,
+      "count": 73,
+      "path": "entities/e7.dict",
+      "sha256": "a34d546e145874e1c784b099e51ac1cf049d2b0f4430bbf5eaeba4f8add1437f",
+      "uncompressedBytes": 38715
+    },
+    {
+      "compressedBytes": 2939,
+      "count": 83,
+      "path": "entities/e8.dict",
+      "sha256": "706a3a0d25fc24e8cea8ffe2cb6b12f1e1890d68c9e8c997dbbe932ad14581bf",
+      "uncompressedBytes": 43478
+    },
+    {
+      "compressedBytes": 3027,
+      "count": 64,
+      "path": "entities/e9.dict",
+      "sha256": "db3996399394d38e748c14a12c8d3f3d984a7f3cf3cda161e35f12e6d35dc52f",
+      "uncompressedBytes": 34884
+    },
+    {
+      "compressedBytes": 2937,
+      "count": 69,
+      "path": "entities/ea.dict",
+      "sha256": "d1fe91666a62aa3790cffad3be8021acf7d3d61a5d1dfd1ddd929a5b7caafc9a",
+      "uncompressedBytes": 37019
+    },
+    {
+      "compressedBytes": 3222,
+      "count": 77,
+      "path": "entities/eb.dict",
+      "sha256": "f65599400debf6a120957079181df3c39b4f66873178e468d1db4332dffaa158",
+      "uncompressedBytes": 40168
+    },
+    {
+      "compressedBytes": 2192,
+      "count": 53,
+      "path": "entities/ec.dict",
+      "sha256": "0ea583fefa19b7d187d9a2349331deace868f768f462b94565d1b10b3a8fbe8f",
+      "uncompressedBytes": 27443
+    },
+    {
+      "compressedBytes": 3263,
+      "count": 63,
+      "path": "entities/ed.dict",
+      "sha256": "79835a794c75cc2f363c49932bd362172f9332276e8cba6729e2304ede897f1e",
+      "uncompressedBytes": 35863
+    },
+    {
+      "compressedBytes": 3964,
+      "count": 86,
+      "path": "entities/ee.dict",
+      "sha256": "cb713e677a4289aff9e9ad3435631feff2457a98caea759039d6e690fabf6d2d",
+      "uncompressedBytes": 48110
+    },
+    {
+      "compressedBytes": 4069,
+      "count": 96,
+      "path": "entities/ef.dict",
+      "sha256": "122dde36543ca9e91bba431cd6724472565373f89189cfb48cc466d1a653ba88",
+      "uncompressedBytes": 51516
+    },
+    {
+      "compressedBytes": 3565,
+      "count": 83,
+      "path": "entities/f0.dict",
+      "sha256": "f41cb7232a9fcbbdd25614fe0cd4fc0571e2384fce51bc99376ecc8a4d1f4a10",
+      "uncompressedBytes": 45119
+    },
+    {
+      "compressedBytes": 2465,
+      "count": 56,
+      "path": "entities/f1.dict",
+      "sha256": "00cd61e897ab66d0636950859435ff8b703a30db863c23b0f2a9f126787648ec",
+      "uncompressedBytes": 29419
+    },
+    {
+      "compressedBytes": 3529,
+      "count": 85,
+      "path": "entities/f2.dict",
+      "sha256": "a4ea4deaea69b1794d8054b563c5b6f5677a67af0b3504f8baf654aa6c83d589",
+      "uncompressedBytes": 45368
+    },
+    {
+      "compressedBytes": 3556,
+      "count": 84,
+      "path": "entities/f3.dict",
+      "sha256": "044c17eba3efb11c730fe7456fadcb20022c179819925bf232744a1a4e1dda8a",
+      "uncompressedBytes": 44664
+    },
+    {
+      "compressedBytes": 3092,
+      "count": 75,
+      "path": "entities/f4.dict",
+      "sha256": "049eb233e10050eb6a3208444b33c59998635c615479467b92d1f942a906376f",
+      "uncompressedBytes": 39902
+    },
+    {
+      "compressedBytes": 4516,
+      "count": 103,
+      "path": "entities/f5.dict",
+      "sha256": "ea0e32708ebf1ae8374b04411dd376903075b9b71384563fc749f4071704a130",
+      "uncompressedBytes": 57136
+    },
+    {
+      "compressedBytes": 2827,
+      "count": 58,
+      "path": "entities/f6.dict",
+      "sha256": "ebe333c48cae6ea48b77c6b97c1c5e8fb1d4ea6926a3927608998313011d60e8",
+      "uncompressedBytes": 31748
+    },
+    {
+      "compressedBytes": 3293,
+      "count": 77,
+      "path": "entities/f7.dict",
+      "sha256": "3a52de24fe985aa4ae320e37003892af4e1a8256bfb071629421dc57f8f3b0ff",
+      "uncompressedBytes": 41311
+    },
+    {
+      "compressedBytes": 3231,
+      "count": 75,
+      "path": "entities/f8.dict",
+      "sha256": "64eae45bddde9572b0bcea578a6fd97bd5abede4a9600de0851135c43800b043",
+      "uncompressedBytes": 39850
+    },
+    {
+      "compressedBytes": 3809,
+      "count": 92,
+      "path": "entities/f9.dict",
+      "sha256": "9ee8547d048ab650bd689f57b61cd245a5ae82fcb08b516d83e778a9091cf0f0",
+      "uncompressedBytes": 50255
+    },
+    {
+      "compressedBytes": 3201,
+      "count": 70,
+      "path": "entities/fa.dict",
+      "sha256": "73437bdafccc9b34ac8db3e53c2d71a5a397ca2615a81dfd35ee1cbecce0bf38",
+      "uncompressedBytes": 38180
+    },
+    {
+      "compressedBytes": 3407,
+      "count": 80,
+      "path": "entities/fb.dict",
+      "sha256": "8f0c27b6e2935f22c2d475a573914f83581532b7e5f15088c214f86db511e54e",
+      "uncompressedBytes": 43257
+    },
+    {
+      "compressedBytes": 3291,
+      "count": 79,
+      "path": "entities/fc.dict",
+      "sha256": "3336cee79697b7c99a1f647b850ff5362ed81383c52d7635bfa13b3e7165eb56",
+      "uncompressedBytes": 42005
+    },
+    {
+      "compressedBytes": 3030,
+      "count": 73,
+      "path": "entities/fd.dict",
+      "sha256": "c7c9aeb5d44bf9d61a4bb22d4c2083731759985d924fbfcfb76a0735835df97c",
+      "uncompressedBytes": 38836
+    },
+    {
+      "compressedBytes": 3281,
+      "count": 73,
+      "path": "entities/fe.dict",
+      "sha256": "b29cdd6646d11749bae8ca43a7280b6c835e28bd67b96e1915910b14ebb8aa38",
+      "uncompressedBytes": 39490
+    },
+    {
+      "compressedBytes": 2947,
+      "count": 68,
+      "path": "entities/ff.dict",
+      "sha256": "4419bb01526e8c2b77a1f6e69efab892340c9153934d1f974669d1dbea7e97b6",
+      "uncompressedBytes": 36140
+    }
+  ],
+  "sources": [
+    {
+      "bytes": 18650,
+      "inputName": "fivethirtyeight-license.txt",
+      "kind": "license",
+      "path": "sources/7e7170e3cebf-fivethirtyeight-license.txt",
+      "sha256": "7e7170e3cebf88a9f60c7b8421418323c09304da1af4d5e90f4da1dc1c8a2661"
+    },
+    {
+      "bytes": 18881,
+      "checkedAt": "2026-10-28",
+      "inputName": "manifest.json",
+      "kind": "source-manifest",
+      "license": "CC0",
+      "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+      "path": "sources/1b93457d9e71-manifest.json",
+      "sha256": "1b93457d9e71afed83d75652644308226a91cf67f85f24e2ba2992659c00be57",
+      "source": "Wikidata"
+    },
+    {
+      "attribution": "FiveThirtyEight; original character-page metadata collected from Marvel Wikia, August 24, 2014. Adapted by The Watcher's Archive for local name matching.",
+      "bytes": 1915,
+      "checkedAt": "2026-10-28",
+      "inputName": "fivethirtyeight-manifest.json",
+      "kind": "source-manifest",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "path": "sources/2454e97b2463-fivethirtyeight-manifest.json",
+      "sha256": "2454e97b246314de6e504e62e5dcef7620a44b8e265c4760e9267f288f656b80",
+      "source": "https://raw.githubusercontent.com/fivethirtyeight/data/master/comic-characters/marvel-wikia-data.csv",
+      "sourceCharacterSnapshot": "2014-08-24"
+    },
+    {
+      "attribution": "FiveThirtyEight (CC BY 4.0), historical Marvel Wikia character metadata; Wikidata contributors (CC0). Cross-reference and index preparation by The Watcher's Archive.",
+      "bytes": 5991,
+      "checkedAt": "2026-10-28",
+      "inputName": "merge-manifest.json",
+      "kind": "source-manifest",
+      "path": "sources/96a643679aee-merge-manifest.json",
+      "sha256": "96a643679aeea5a68b193385075fc858901dcd6a28b97d81ca93a2a949f87fc1",
+      "source": "Exact offline Marvel Fandom page cross-reference of FiveThirtyEight and Wikidata inputs"
+    }
+  ]
+}

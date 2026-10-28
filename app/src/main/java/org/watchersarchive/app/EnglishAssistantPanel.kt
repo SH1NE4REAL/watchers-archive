@@ -143,12 +143,13 @@ internal fun EnglishAssistantCard(
             Text(token.text, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
                 color = Color(0xFFBE2834), fontWeight = FontWeight.Bold, maxLines = if (compact) 1 else 3, overflow = TextOverflow.Ellipsis)
             if (compact) {
-                val names = entry?.marvelNames.orEmpty().map { it.term.chineseName }.distinct()
+                val names = entry?.marvelNames.orEmpty().filter { it.term.hasChineseName }.map { it.term.chineseName }.distinct()
                 Text(when {
                     entry == null -> "正在查词…"
-                    names.isNotEmpty() -> "漫威专名候选：${names.joinToString(" / ")}"
+                    names.isNotEmpty() -> "漫威专名候选：${names.first()}${if (names.size > 1) " 等 ${names.size} 项" else ""}"
                     else -> entry.meaning.lineSequence().take(2).joinToString(" ")
                 }, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (entry?.marvelNames?.isNotEmpty() == true && names.isEmpty()) Text("有漫威英文实体候选，中文名待补，展开查看。", color = Color.Gray, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (entry == null) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -173,10 +174,13 @@ internal fun EnglishAssistantCard(
                         Text("漫威专名候选", fontWeight = FontWeight.Bold, color = Color(0xFFBE2834))
                         entry.marvelNames.forEach { match ->
                             val term = match.term
-                            Text("${term.chineseName} · ${term.englishName}", fontWeight = FontWeight.Bold)
+                            Text(if (term.hasChineseName) "${term.chineseName} · ${term.englishName}" else term.englishName, fontWeight = FontWeight.Bold)
                             Text("${term.kind.label} · ${term.chineseEvidence.label}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                             match.contextHint?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                             Text("这是漫威名称候选，请结合原句，普通词义见下方。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            term.universe?.let { Text("资料范围：$it", style = MaterialTheme.typography.bodySmall, color = Color.Gray) }
+                            val chineseAliases = term.chineseAliases.filter { alias -> alias.codePoints().anyMatch { Character.UnicodeScript.of(it) == Character.UnicodeScript.HAN } }
+                            if (chineseAliases.isNotEmpty()) Text("其他中文名称：${chineseAliases.take(4).joinToString("、")}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                             TextButton(onClick = { runCatching { uriHandler.openUri(term.englishSourceUrl) } }, contentPadding = PaddingValues(0.dp)) {
                                 Text("英文实体资料", style = MaterialTheme.typography.labelSmall)
                             }

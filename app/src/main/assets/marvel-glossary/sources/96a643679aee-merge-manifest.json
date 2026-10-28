@@ -1,0 +1,190 @@
+{
+  "attribution": "FiveThirtyEight (CC BY 4.0), historical Marvel Wikia character metadata; Wikidata contributors (CC0). Cross-reference and index preparation by The Watcher's Archive.",
+  "checkedAt": "2026-10-28",
+  "formatVersion": 1,
+  "inputs": [
+    {
+      "bytes": 13963534,
+      "name": "fivethirtyeight-entities.jsonl",
+      "records": 16376,
+      "sha256": "3ae3232a0300dbc3cc9216ad5ec1b05b3c427354ddd7d73960590fb2b61ee033"
+    },
+    {
+      "bytes": 3575069,
+      "name": "records.jsonl",
+      "records": 4213,
+      "sha256": "2bafe16eccf362e3854ab87ced8dad0baee84e2e7a127a482e1a2ac9da0898a2"
+    }
+  ],
+  "output": {
+    "bytes": 17402712,
+    "name": "merged-entities.jsonl",
+    "sha256": "6bdc5b8ee953294e331ce4fbc8a1f419c510047054f37760399472f44057b589"
+  },
+  "rejectedMatches": [
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Morgan_Stark_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:10125",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES",
+        "UNIVERSE_CONFLICT"
+      ],
+      "wikidataIds": [
+        "wikidata:Q6911845"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Narda_Ravanna_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:1158",
+      "reasons": [
+        "MULTIPLE_ENTITIES",
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q4883353"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Willis_Stryker_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:12751",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q43073416"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Piotr_Rasputin_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:1346",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q60002"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Daisy_Johnson_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:17988",
+      "reasons": [
+        "UNIVERSE_CONFLICT"
+      ],
+      "wikidataIds": [
+        "wikidata:Q1424480"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Scott_Summers_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:29481",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q857921"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Robert_Drake_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:35350",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q838088"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Gorr_(God_Butcher)_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:564728",
+      "reasons": [
+        "UNIVERSE_CONFLICT"
+      ],
+      "wikidataIds": [
+        "wikidata:Q96379736"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/James_Rhodes_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:6194",
+      "reasons": [
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q616337"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Krakoa_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:77192",
+      "reasons": [
+        "KIND_MISMATCH_OR_NON_CHARACTER"
+      ],
+      "wikidataIds": [
+        "wikidata:Q897782"
+      ]
+    },
+    {
+      "canonicalPage": "https://marvel.fandom.com/wiki/Bella_Donna_Boudreaux_(Earth-616)",
+      "fivethirtyeightId": "fivethirtyeight:79293",
+      "reasons": [
+        "MULTIPLE_ENTITIES",
+        "MULTIPLE_WIKIDATA_PAGES"
+      ],
+      "wikidataIds": [
+        "wikidata:Q4883353"
+      ]
+    }
+  ],
+  "rules": [
+    "one exact single Marvel Fandom page; preserve full title and universe qualifiers",
+    "globally one-to-one in both inputs; no real humans; CHARACTER kinds must agree",
+    "reject explicit universe or Chinese-label conflicts; no inferred Chinese labels",
+    "retain Wikidata ID and Chinese fields; union historical English names; retain both source IDs and URLs",
+    "no network requests or individual page rechecks; other records remain separate"
+  ],
+  "source": "Exact offline Marvel Fandom page cross-reference of FiveThirtyEight and Wikidata inputs",
+  "sources": [
+    {
+      "attribution": "FiveThirtyEight; original character-page metadata collected from Marvel Wikia. Historical names adapted for local matching.",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "source": "https://github.com/fivethirtyeight/data/tree/master/comic-characters",
+      "sourceCharacterSnapshot": "2014-08-24"
+    },
+    {
+      "attribution": "Wikidata contributors. Community labels are not verified publisher translations.",
+      "license": "CC0",
+      "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+      "source": "https://www.wikidata.org/"
+    }
+  ],
+  "stats": {
+    "allSkipReasonCounts": {
+      "KIND_MISMATCH_OR_NON_CHARACTER": 1,
+      "MULTIPLE_ENTITIES": 2,
+      "MULTIPLE_WIKIDATA_PAGES": 8,
+      "UNIVERSE_CONFLICT": 3
+    },
+    "fivethirtyeightInputRecords": 16376,
+    "inputRecords": 20589,
+    "keptFivethirtyeightRecords": 15347,
+    "keptOriginalRecords": 18531,
+    "keptWikidataRecords": 3184,
+    "matchedFivethirtyeightRecords": 1040,
+    "mergedPairs": 1029,
+    "mergedPairsWithExistingChineseName": 417,
+    "outputRecords": 19560,
+    "primarySkipReasonCounts": {
+      "KIND_MISMATCH_OR_NON_CHARACTER": 1,
+      "MULTIPLE_ENTITIES": 2,
+      "MULTIPLE_WIKIDATA_PAGES": 6,
+      "UNIVERSE_CONFLICT": 2
+    },
+    "sharedCanonicalPageKeys": 1040,
+    "skippedMatchedFivethirtyeightRecords": 11,
+    "unmatchedFivethirtyeightRecords": 15336,
+    "unmatchedWikidataRecords": 3174,
+    "wikidataInputRecords": 4213
+  }
+}

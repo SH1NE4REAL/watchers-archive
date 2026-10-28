@@ -111,4 +111,33 @@ class MarvelReadingGlossaryTest {
         assertTrue(entries.any { it.kind == MarvelNameKind.ORGANIZATION })
         assertTrue(entries.any { it.kind == MarvelNameKind.PLACE })
     }
+
+    @Test fun bulkNamesDoNotTurnCommonFunctionWordsIntoCharacterCandidates() {
+        for (word in listOf("A", "IT", "ONE", "they", "THE")) {
+            val page = page(word)
+            val requested = mutableListOf<String>()
+            val matches = MarvelReadingGlossary.matches(page.tokens.single(), page, extraFind = { names ->
+                requested += names
+                emptyList()
+            })
+            assertTrue(word, requested.isEmpty())
+            assertTrue(word, matches.isEmpty())
+        }
+    }
+
+    @Test fun bulkNamesUseLongCompleteNamesWithoutDiscardingDifferentVersions() {
+        val page = page("He", "Who", "Remains")
+        val one = MarvelReadingTerm("source:one", "He Who Remains", "遗留之人", emptyList(), MarvelNameKind.CHARACTER,
+            "https://www.wikidata.org/wiki/Q100", MarvelChineseEvidence.COMMUNITY, "Fixture", universe = "MCU")
+        val other = one.copy(id = "source:other", chineseName = "He Who Remains", hasChineseName = false,
+            chineseEvidence = MarvelChineseEvidence.UNTRANSLATED, universe = "Earth-616")
+        val matches = MarvelReadingGlossary.matches(page.tokens.first(), page, extraFind = { names ->
+            assertTrue(names.contains("he who remains"))
+            assertFalse(names.contains("he"))
+            listOf(other, one)
+        })
+        assertEquals(listOf("source:one", "source:other"), matches.map { it.term.id })
+        assertTrue(matches.all { it.matchedText == "He Who Remains" })
+        assertTrue(matches.all { it.contextHint!!.contains("仍需结合原句") })
+    }
 }
