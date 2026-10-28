@@ -11,11 +11,14 @@ android {
         applicationId = "org.watchersarchive.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.8.0"
+        versionCode = 14
+        versionName = "0.9.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true; buildConfig = true }
+    // AGP transparently expands assets ending in .gz. These .dict files contain
+    // bounded gzip shards and must retain their encoding inside the APK.
+    androidResources { noCompress += "dict" }
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {

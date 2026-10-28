@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +85,9 @@ import kotlinx.coroutines.withContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlin.math.abs
 import java.net.URI
 import org.watchersarchive.core.ArchiveError
@@ -215,7 +220,13 @@ internal fun ArchiveApp(repository: ReaderRepository) {
 }
 
 @Composable
-internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack: () -> Unit) {
+internal fun ReaderScreen(
+    comic: DemoComic,
+    repository: ReaderRepository,
+    createEnglishOcr: () -> EnglishOcrEngine = { MlKitEnglishOcrEngine() },
+    englishDictionaryOverride: EnglishDictionaryProvider? = null,
+    onBack: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     var session by remember(comic.id) { mutableStateOf<ReaderSession?>(null) }
     var page by remember(comic.id) { mutableStateOf<ReaderPage?>(null) }
@@ -226,9 +237,27 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
     var bookmarks by remember(comic.id) { mutableStateOf(emptySet<Int>()) }
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(false) }
-    var translationVisible by remember(comic.id) { mutableStateOf(false) }
-    LaunchedEffect(page?.index) { translationVisible = false }
+    var englishAssistantEnabled by remember(comic.id) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val englishDictionary = remember(comic.id, context) { PublicEnglishDictionaryProvider(context.applicationContext) }
+    val englishAssistant = remember(comic.id, englishDictionaryOverride) { EnglishAssistantController(createEnglishOcr(), englishDictionaryOverride ?: englishDictionary) }
+    val englishSpeech = remember(comic.id, englishAssistantEnabled) { if (englishAssistantEnabled) DeviceEnglishSpeech(context.applicationContext) else null }
+    val noSpeech = remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+    val speechReady by (englishSpeech?.ready ?: noSpeech).collectAsState()
+    val englishState by englishAssistant.state.collectAsState()
+    var downloadingEnglishModel by remember { mutableStateOf(false) }
+    var englishModelNotice by remember { mutableStateOf<String?>(null) }
+    var englishModelTask by remember { mutableStateOf<Job?>(null) }
+    DisposableEffect(englishAssistant, englishDictionary) { onDispose { englishAssistant.close(); englishDictionary.close() } }
+    DisposableEffect(englishSpeech) { onDispose { englishSpeech?.close() } }
+    val readerLifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(readerLifecycle, englishSpeech) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) englishSpeech?.stop() }
+        readerLifecycle.addObserver(observer)
+        onDispose { readerLifecycle.removeObserver(observer) }
+    }
     suspend fun load(index: Int) {
+        englishAssistant.disable(); englishSpeech?.stop()
         requestedIndex = index; busy = true; error = null; notice = null
         try {
             page = checkNotNull(session) { "尚未打开归档，请重新打开。" }.loadPage(index)
@@ -271,16 +300,35 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
         val displayedPage = page
         onDispose { displayedPage?.release?.invoke() }
     }
-    LaunchedEffect(page?.index, session, translationVisible) {
+    LaunchedEffect(page?.index, session, englishState is EnglishAssistantState.Recognizing) {
         val current = page ?: return@LaunchedEffect
-        if (repository.prefetchEnabled && !translationVisible) session?.prefetchPage(current.index + 1)
+        if (repository.prefetchEnabled && englishState !is EnglishAssistantState.Recognizing) session?.prefetchPage(current.index + 1)
         else session?.cancelPrefetch()
     }
 
-    if (translationVisible) page?.let { current ->
-        PageTranslationPanel(current.bitmap,
-            "${comic.id}:${comic.verifiedLength}:${current.stablePageId ?: "${current.index}:${current.bitmap.generationId}"}",
-            onDismiss = { translationVisible = false })
+    LaunchedEffect(page?.index, englishAssistantEnabled, busy) {
+        if (busy) { englishAssistant.disable(); return@LaunchedEffect }
+        val current = page ?: return@LaunchedEffect
+        if (englishAssistantEnabled) {
+            englishSpeech?.stop()
+            englishAssistant.openPage(
+                "${comic.id}:${comic.verifiedLength}:${current.stablePageId ?: "${current.index}:${current.bitmap.generationId}"}",
+                current.bitmap,
+            )
+        } else englishAssistant.disable()
+    }
+
+    fun selectEnglishToken(x: Float, y: Float, phrase: Boolean): Boolean {
+        if (!englishAssistantEnabled || busy) return false
+        val recognized = englishState.recognizedPage() ?: return false
+        val current = page ?: return false
+        val expectedKey = "${comic.id}:${comic.verifiedLength}:${current.stablePageId ?: "${current.index}:${current.bitmap.generationId}"}"
+        if (recognized.pageKey != expectedKey) return false
+        val token = englishTokenAt(recognized, x, y) ?: return false
+        val selection = if (phrase) englishLinePhrase(recognized, token) ?: token else token
+        englishSpeech?.stop(); englishModelNotice = null
+        scope.launch { englishAssistant.lookup(selection, recognized.pageKey) }
+        return true
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
@@ -288,7 +336,18 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
             ReaderGestureSurface(current.bitmap, current.index, enabled = !busy,
                 onPrevious = { if (!busy && current.index > 0) { busy = true; task = scope.launch { load(current.index - 1) } } },
                 onNext = { if (!busy && current.index + 1 < current.total) { busy = true; task = scope.launch { load(current.index + 1) } } },
-                onToggleControls = { controlsVisible = !controlsVisible })
+                onToggleControls = { controlsVisible = !controlsVisible },
+                onImageTap = { x, y -> selectEnglishToken(x, y, false) },
+                onImageLongPress = { x, y -> selectEnglishToken(x, y, true) },
+                overlay = { transform, bounds ->
+                    if (englishAssistantEnabled && !busy) {
+                        englishState.recognizedPage()?.let { recognized ->
+                            val selected = (englishState as? EnglishAssistantState.Selected)?.token
+                                ?: (englishState as? EnglishAssistantState.LookingUp)?.token
+                            EnglishAssistantOverlay(recognized, transform, bounds, selected)
+                        }
+                    }
+                })
         } ?: Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (busy) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp))
             Spacer(Modifier.height(14.dp))
@@ -319,7 +378,15 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
                             catch (_: Exception) { error = "书签未能保存，请重试。" }
                         }
                     }) { Text(if (page?.index?.let { it in bookmarks } == true) "已书签" else "书签", color = Color.White) }
-                    TextButton(enabled = page != null && !busy, onClick = { translationVisible = true }) { Text("译文", color = Color.White) }
+                }
+                Row(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .72f)).padding(horizontal = 12.dp)) {
+                    TextButton(enabled = page != null && !busy, modifier = Modifier.testTag("toggle-english-assistant"), onClick = {
+                        englishAssistantEnabled = !englishAssistantEnabled
+                        controlsVisible = false
+                        if (!englishAssistantEnabled) {
+                            englishAssistant.disable(); englishSpeech?.stop(); englishModelTask?.cancel()
+                        }
+                    }) { Text(if (englishAssistantEnabled) "关闭英文助手" else "英文助手", color = if (englishAssistantEnabled) Color(0xFFFFD166) else Color.White) }
                 }
                 Spacer(Modifier.weight(1f))
                 Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .76f)).windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -333,6 +400,45 @@ internal fun ReaderScreen(comic: DemoComic, repository: ReaderRepository, onBack
                         else if (error != null && session != null) OutlinedButton(onClick = { task = scope.launch { load(requestedIndex) } }) { Text("重试") }
                     }
                 }
+            }
+        }
+
+        if (englishAssistantEnabled && !busy) {
+            Column(
+                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars),
+                verticalArrangement = Arrangement.Bottom,
+            ) {
+                when (englishState) {
+                    EnglishAssistantState.Recognizing -> EnglishAssistantStatus(englishState)
+                    is EnglishAssistantState.Failed -> EnglishAssistantStatus(englishState)
+                    is EnglishAssistantState.Ready -> EnglishAssistantStatus(englishState)
+                    else -> Unit
+                }
+                EnglishAssistantCard(englishState, speechReady, downloadingEnglishModel, englishModelNotice,
+                    onSpeak = { text ->
+                        if (englishSpeech?.speak(text) != true) englishModelNotice = "本机语音暂不可用，请在系统文字转语音设置中检查英文语音。"
+                    },
+                    onDownloadModel = { wifiOnly ->
+                        if (!downloadingEnglishModel) englishModelTask = scope.launch {
+                            downloadingEnglishModel = true; englishModelNotice = "正在下载语言模型…"
+                            try {
+                                englishDictionary.downloadModel(wifiOnly)
+                                englishModelNotice = "语言模型已就绪，后续对白辅助在手机上处理。"
+                                (englishState as? EnglishAssistantState.Selected)?.let { selected ->
+                                    englishAssistant.lookup(selected.token, selected.page.pageKey)
+                                }
+                            } catch (cancelled: CancellationException) { throw cancelled }
+                            catch (_: Exception) { englishModelNotice = "语言模型未能下载，稍后重试。内置词典释义仍可使用。" }
+                            finally { downloadingEnglishModel = false }
+                        }
+                    },
+                    onPhrase = { phrase ->
+                        val expectedPage = englishState.recognizedPage()?.pageKey
+                        englishSpeech?.stop()
+                        scope.launch { if (expectedPage != null) englishAssistant.lookup(phrase, expectedPage) }
+                    },
+                    onDismiss = { englishSpeech?.stop(); englishAssistant.dismissSelection() },
+                )
             }
         }
     }

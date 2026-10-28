@@ -65,7 +65,7 @@ class ReaderChromeRuntimeTest {
 
         compose.onNodeWithText("下一页").assertIsDisplayed()
         compose.onNodeWithText("书签").assertIsDisplayed()
-        compose.onNodeWithText("译文").assertIsDisplayed()
+        compose.onNodeWithText("英文助手").assertIsDisplayed()
         compose.onNodeWithText("第 1 / 2 页", substring = true).assertIsDisplayed()
         listOf("缓存", "传输", "字节", "清理", "日志", "调试", "已解码").forEach {
             compose.onNodeWithText(it, substring = true).assertDoesNotExist()

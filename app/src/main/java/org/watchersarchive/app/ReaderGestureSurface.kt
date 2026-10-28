@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,19 +36,23 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.hypot
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Owns the image's touch sequence only. Place controls as siblings above this surface;
  * their buttons therefore never participate in page gestures. No page prefetch or I/O.
  */
 @Composable
-fun ReaderGestureSurface(
+internal fun ReaderGestureSurface(
     bitmap: Bitmap,
     pageKey: Any,
     enabled: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onToggleControls: () -> Unit,
+    overlay: @Composable (ReaderImageTransform, ReaderImageBounds) -> Unit = { _, _ -> },
+    onImageTap: ((Float, Float) -> Boolean)? = null,
+    onImageLongPress: ((Float, Float) -> Boolean)? = null,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf(IntSize.Zero) }
@@ -55,7 +60,11 @@ fun ReaderGestureSurface(
     val previousCallback by rememberUpdatedState(onPrevious)
     val nextCallback by rememberUpdatedState(onNext)
     val toggleCallback by rememberUpdatedState(onToggleControls)
+    val imageTapCallback by rememberUpdatedState(onImageTap)
+    val imageLongPressCallback by rememberUpdatedState(onImageLongPress)
     val currentlyEnabled by rememberUpdatedState(enabled)
+    val gesturePermit = remember(pageKey, enabled) { AtomicBoolean(enabled) }
+    DisposableEffect(gesturePermit) { onDispose { gesturePermit.set(false) } }
     val threshold = with(LocalDensity.current) { 56.dp.toPx() }
     val doubleTapDistance = with(LocalDensity.current) { 48.dp.toPx() }
     val currentBounds by rememberUpdatedState(ReaderImageBounds(
@@ -64,7 +73,7 @@ fun ReaderGestureSurface(
     Box(modifier.fillMaxSize().background(Color.Black).clipToBounds()
         .onSizeChanged { viewport = it }
         .testTag("reader-gesture-surface")
-        .pointerInput(pageKey, threshold) {
+        .pointerInput(pageKey, threshold, enabled) {
             coroutineScope {
                 val gestureScope = this
                 var pendingTap: Job? = null
@@ -72,6 +81,13 @@ fun ReaderGestureSurface(
                 var lastTapPosition = Offset.Unspecified
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = true)
+                    val possibleSecondTap = lastTapTime != Long.MIN_VALUE &&
+                        down.uptimeMillis - lastTapTime <= viewConfiguration.doubleTapTimeoutMillis &&
+                        lastTapPosition != Offset.Unspecified && (down.position - lastTapPosition).getDistance() <= doubleTapDistance
+                    // Resolve the first tap as a double gesture as soon as the
+                    // second finger-down arrives; its held-up duration must not
+                    // fire the old delayed lookup while zoom is being decided.
+                    if (possibleSecondTap) pendingTap?.cancel()
                     val sequence = ReaderTouchSequence(transform.scale)
                     var dragged = false
                     var lastTime = down.uptimeMillis
@@ -114,12 +130,17 @@ fun ReaderGestureSurface(
                             ReaderSwipe.NONE -> Unit
                         }
                     }
-                    if (!cancelled && !dragged && !sequence.usedMultiplePointers &&
+                    if (!cancelled && currentlyEnabled && !dragged && !sequence.usedMultiplePointers &&
+                        lastTime - down.uptimeMillis >= viewConfiguration.longPressTimeoutMillis) {
+                        pendingTap?.cancel()
+                        lastTapTime = Long.MIN_VALUE
+                        currentBounds.imagePointAt(transform, lastPosition.x, lastPosition.y)?.let { point ->
+                            imageLongPressCallback?.invoke(point.x, point.y)
+                        }
+                    }
+                    if (!cancelled && currentlyEnabled && !dragged && !sequence.usedMultiplePointers &&
                         lastTime - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis) {
-                        val secondTap = lastTapTime != Long.MIN_VALUE &&
-                            down.uptimeMillis - lastTapTime <= viewConfiguration.doubleTapTimeoutMillis &&
-                            lastTapPosition != Offset.Unspecified && (down.position - lastTapPosition).getDistance() <= doubleTapDistance
-                        if (secondTap) {
+                        if (possibleSecondTap) {
                             pendingTap?.cancel()
                             lastTapTime = Long.MIN_VALUE
                             if (currentlyEnabled) {
@@ -131,7 +152,14 @@ fun ReaderGestureSurface(
                             lastTapPosition = lastPosition
                             pendingTap = gestureScope.launch {
                                 delay(viewConfiguration.doubleTapTimeoutMillis)
-                                toggleCallback()
+                                // A rendered replacement/disabled page revokes
+                                // its predecessor immediately, independently of
+                                // when pointerInput's child cancellation unwinds.
+                                if (currentlyEnabled && gesturePermit.get()) {
+                                    val point = currentBounds.imagePointAt(transform, lastPosition.x, lastPosition.y)
+                                    val handled = point?.let { imageTapCallback?.invoke(it.x, it.y) } ?: false
+                                    if (!handled) toggleCallback()
+                                }
                             }
                         }
                     }
@@ -144,5 +172,6 @@ fun ReaderGestureSurface(
             translationX = transform.translationX
             translationY = transform.translationY
         }, contentScale = ContentScale.Fit)
+        overlay(transform, currentBounds)
     }
 }

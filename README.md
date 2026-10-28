@@ -1,8 +1,8 @@
 # 观察者漫格 · Phase 1
 
-当前源码版本：**0.8.0**。启动先进入“观察者书库”，底部仅有“观察者书库 / 我的书架 / 设置”。书库固定显示搜索和“最近更新 / 大事件专题 / 官方推荐”三个栏目按钮。
+当前源码版本：**0.9.0**。启动先进入“观察者书库”，底部仅有“观察者书库 / 我的书架 / 设置”。书库固定显示搜索和“最近更新 / 大事件专题 / 官方推荐”三个栏目按钮。
 来源详情提供“开始阅读”“加入书架”和用户主动的“下载整本”。下载完成后优先本地读取，支持暂停、继续和删除下载；已下载正文与临时阅读缓存分开保存。阅读器不再展示缓存、传输字节、日志或调试信息，开发夹具只在 debug 包长按设置页版本号后显示。
-正文检查在后台执行，HTML、损坏文件和缺少强 ETag 的远程来源不会进入阅读器或下载任务。支持 ZIP/ZIP64 和普通非固实 RAR4/CBR；RAR5、固实、加密、分卷和 PPM 压缩明确拒绝。
+正文检查在后台执行，HTML 和损坏文件不会被提供为可读漫画。在线分页要求强 ETag 与正确 Range；用户主动下载整本时，也可接收已知大小的正常文件响应，完成本地检查后离线阅读。支持 ZIP/ZIP64 和普通非固实 RAR4/CBR；RAR5、固实、加密、分卷和 PPM 压缩明确拒绝。
 来源站拒绝访问时保留本地快照，真实来源不依赖电脑测试 IP。大事件专题是有来源入口的检索集合，不能视为已下载、完整或官方排序的漫画合集。
 
 0.6.0 的离线存储边界、后台调度、122 项 App 主机测试及设备验证限制见 [验证记录](docs/0.6.0-verification.md)。图内中文覆盖与整本预译仍是设计方案，本版本没有声称实现。
@@ -11,10 +11,11 @@
 0.7.1 增加大小写、全半角、空格、连字符和有限英文拼写模糊匹配；中文检索使用明确标为 COMMON 的常用别名，不冒充官方中文书名。已验证的来源元数据在十分钟内可复用；整本下载使用流式 16MiB Range 窗口并在兼容性需要时回退到 4MiB。详见 [0.7.1 记录](docs/0.7.1-verification.md)。
 应用沿用用户提供的红白头像作为 Android 启动图标，覆盖 mdpi 到 xxxhdpi 常规密度资源。
 0.8.0 支持长按书架漫画修改显示书名和恢复原名；个人书名保存在独立持久存储，原文件、来源和阅读进度保持独立。整本下载的来源发现和切换在后台执行：依次尝试候选，区分可续传 Range 与不可续传的普通整文件传输，文件通过本地归档与图片校验后才完成。详见 [0.8.0 验证记录](docs/0.8.0-verification.md)。
+0.9.0 增加“英文助手”：开启后在手机识别当前页，点词查义、长按或点“本行短语”查看同一行文字。卡片提供词典音标、中文释义、词性和手机语音；对白参考使用用户明确下载的本机模型。识别、查词和卡片均不修改漫画原图，没有生词本。详见 [英文助手验收记录](docs/0.9.0-verification.md)。
 
 ## 手机安装
 
-仓库目前保留 [0.7.1 APK 存档](downloads/watchers-archive-0.7.1-icon.apk)，它不包含 0.8.0 的新功能。0.8.0 构建产物为 `app/build/outputs/apk/debug/app-debug.apk`，公开下载包需要同步发布，不能仅凭源码版本判断 APK 已更新。在手机浏览器取得对应新版文件后选择安装或更新；如果 Android 提示禁止安装未知来源，请只为当前浏览器临时开启“允许安装未知应用”，安装完成后可以关闭。更新安装不会清除书架、阅读进度或书签。
+仓库目前保留 [0.7.1 APK 存档](downloads/watchers-archive-0.7.1-icon.apk)，它不包含后续新版功能。当前构建产物为 `app/build/outputs/apk/debug/app-debug.apk`，公开下载包需要同步发布，不能仅凭源码版本判断 APK 已更新。在手机浏览器取得对应新版文件后选择安装或更新；如果 Android 提示禁止安装未知来源，请只为当前浏览器临时开启“允许安装未知应用”，安装完成后可以关闭。更新安装不会清除书架、阅读进度或书签。
 
 安装后不需要连接电脑、ADB、测试服务器或配置 IP。漫画目录和公开文件来源使用手机自己的 Wi-Fi 或移动网络。首次下载整本漫画时，可在详情确认是否允许使用手机流量；Android 13 及以上建议允许通知，以便看到后台下载进度。Pixeldrain 等来源的登录、额度、验证码和地区可达性仍由来源服务决定。
 
@@ -28,7 +29,7 @@ $env:GRADLE_USER_HOME = "$env:LOCALAPPDATA\Temp\gradle-home-phase1"
 $env:ANDROID_USER_HOME = "$env:LOCALAPPDATA\Temp\android-user-phase1"
 $env:TEMP = "$PWD\.tools\tmp"
 $env:TMP = $env:TEMP
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin --no-daemon --max-workers=2
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin --no-daemon --max-workers=1 --no-parallel '-Dorg.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8'
 ```
 
 这套测试包含 Robolectric Activity/Compose 布局、原生 BitmapFactory、触摸输入、来源解析、真实 loopback Range、持久化和取消租约交接。
@@ -105,14 +106,14 @@ The runner checks standard ZIP, ZIP64 and large offsets, local byte sources,
 non-solid RAR4, cancellation, CRC, memory/transfer limits and persistent data.
 It never needs a complete multi-GB fixture file.
 
-## 0.5.0 behaviour
+## Reader and shelf behaviour
 
 - Event collections are full-width vertical cards with sourced cover images.
 - The shelf is a three-column cover grid. Named categories appear as cover folders.
 - Long-press a category to delete it and return its members to the main shelf.
 - Read-ahead caches a rolling window of at most two upcoming pages without advancing progress. Each page is limited to 8MiB packed / 16MiB unpacked and the window to 24MiB unpacked; no extra preview Bitmap is decoded. Cached pages bypass unrelated slow preview HTTP work. The setting can be disabled to reduce speculative traffic. RAR page transfers use fewer bounded ranges.
 - Back from search clears the query and returns to recommendations; returning from an article preserves search results and scroll position. The top decoration is original red comic-panel artwork instead of the application title.
-- The reader's optional “译文” action offers English OCR with paired Chinese text. Opening it checks only the local model; first use requires explicitly choosing the approximately 30MB language-model download, using Wi-Fi by default. Images and recognized lettering are processed on-device. SDK model storage is independent of the disposable comic-page cache. Closing cancels page processing, although an SDK model download can continue. It does not replace speech bubbles or provide an official Chinese edition. Actual model delivery, physical-phone OCR, lettering order and translation quality still require device validation; controller/UI tests use a fake engine. See `docs/0.5.0-verification.md` for the exact scope.
+- The reader's optional “英文助手” action performs on-device OCR and local English/Chinese dictionary lookup. Word and phrase cards use the original page coordinates through zoom/pan, with installed Android TTS for pronunciation. Contextual machine translation is optional and requires an explicit language-model download. It does not replace speech bubbles, claim contextual sense disambiguation or save vocabulary. See `docs/0.9.0-verification.md` for the actual validation scope and `docs/english-dictionary-sources.md` for the packaged dictionary and license.
 - Long-press a book to move it between categories, return it to the main shelf or remove
   all shelf memberships. These actions never delete source files, progress, bookmarks or notes.
 - Cover loading has a 16MiB bitmap memory budget, shared requests, bounded thumbnails

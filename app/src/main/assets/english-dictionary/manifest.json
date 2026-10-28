@@ -1,0 +1,1805 @@
+{
+  "formatVersion": 1,
+  "source": "https://github.com/skywind3000/ECDICT/blob/master/ecdict.csv",
+  "upstreamGitBlob": "0e527e22e0e0d22f012b0ed251a8dddd5891773b",
+  "upstreamBytes": 66009548,
+  "upstreamSha256": "d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc",
+  "license": "MIT",
+  "entries": 769778,
+  "skipped": 3,
+  "maximumShardBytes": 317333,
+  "shards": [
+    {
+      "name": "00.dict",
+      "entries": 2970,
+      "uncompressedBytes": 297894,
+      "compressedBytes": 127438,
+      "sha256": "7002856725fa6eb0cb7f4d9d0826a689df92e528bf63484d4f4627438f15114f"
+    },
+    {
+      "name": "01.dict",
+      "entries": 3038,
+      "uncompressedBytes": 298525,
+      "compressedBytes": 127681,
+      "sha256": "486a009f8dc2aa23e4ac7d6ffc117328061f9aaddb351deb15ae6713c0365e75"
+    },
+    {
+      "name": "02.dict",
+      "entries": 2897,
+      "uncompressedBytes": 293895,
+      "compressedBytes": 125671,
+      "sha256": "2b011f6eb9b052bcd82152ad8c3f34e39fbafa0dd21b360663b024a3ec20cd90"
+    },
+    {
+      "name": "03.dict",
+      "entries": 3034,
+      "uncompressedBytes": 299943,
+      "compressedBytes": 128201,
+      "sha256": "de37e9a137a43a64a5b927a6fd47ccf5b21f1caf0544727d46cee0b85cfe80b5"
+    },
+    {
+      "name": "04.dict",
+      "entries": 3032,
+      "uncompressedBytes": 299852,
+      "compressedBytes": 128200,
+      "sha256": "f9f13e6fdb6373649c6a3ece47e23b479734cae0ae5a5f96f984bcd12051a237"
+    },
+    {
+      "name": "05.dict",
+      "entries": 3027,
+      "uncompressedBytes": 300418,
+      "compressedBytes": 128329,
+      "sha256": "5111fc4d6cce3400aa6fbb6d40d72dfed4294941cb04d9cb0f8eb81de23262b7"
+    },
+    {
+      "name": "06.dict",
+      "entries": 3057,
+      "uncompressedBytes": 310755,
+      "compressedBytes": 133061,
+      "sha256": "010b5dbd1be6468a3d2d5416ff4a493f41aeef2d6dc493be727ca6a474eb27c1"
+    },
+    {
+      "name": "07.dict",
+      "entries": 3083,
+      "uncompressedBytes": 303257,
+      "compressedBytes": 129486,
+      "sha256": "d74feb4f668447c87f3ad7134dea240b429f35b38963cead4319ef5fbac99f0d"
+    },
+    {
+      "name": "08.dict",
+      "entries": 2972,
+      "uncompressedBytes": 294827,
+      "compressedBytes": 125712,
+      "sha256": "bd28c990f6c3f280fa93f5558c740330a81e2231b15ec7a6dc10b26efe9ceb61"
+    },
+    {
+      "name": "09.dict",
+      "entries": 2984,
+      "uncompressedBytes": 290471,
+      "compressedBytes": 123045,
+      "sha256": "0a5eec9c9d98b6a5d4a78a53b8f4d001ce3c908a733fb4a7358b8a0f30c5f4c4"
+    },
+    {
+      "name": "0a.dict",
+      "entries": 3086,
+      "uncompressedBytes": 307839,
+      "compressedBytes": 131061,
+      "sha256": "97ae742aed41cd13f1bb7825f93127bc8de5194290a91cfb8ae875f32a109f50"
+    },
+    {
+      "name": "0b.dict",
+      "entries": 2952,
+      "uncompressedBytes": 297002,
+      "compressedBytes": 128008,
+      "sha256": "993f4e091fed4a94a6e81a4ac553d8b73ce90e1b6f539ea8a533e95074bb88de"
+    },
+    {
+      "name": "0c.dict",
+      "entries": 2964,
+      "uncompressedBytes": 299246,
+      "compressedBytes": 128999,
+      "sha256": "f0334014d9b6924735412b80b03130bc9013387d2ceac3c20286c15c373a80ee"
+    },
+    {
+      "name": "0d.dict",
+      "entries": 3030,
+      "uncompressedBytes": 300007,
+      "compressedBytes": 126952,
+      "sha256": "64b41985e91deb462cfb9c76f3be3507c5824eae5936d5b98d953bbe753441ce"
+    },
+    {
+      "name": "0e.dict",
+      "entries": 2929,
+      "uncompressedBytes": 295705,
+      "compressedBytes": 126137,
+      "sha256": "f5f0f43a7df2aafd1b78de6b80d755e07292347afb3fe7479666c08808ea6c75"
+    },
+    {
+      "name": "0f.dict",
+      "entries": 2972,
+      "uncompressedBytes": 300247,
+      "compressedBytes": 128599,
+      "sha256": "f6f35a7d7dfb9edbdacc0bafa70a84320b5171bc017de9e7c5fef50d7759af30"
+    },
+    {
+      "name": "10.dict",
+      "entries": 3028,
+      "uncompressedBytes": 298750,
+      "compressedBytes": 126345,
+      "sha256": "ab2333f2af769dad050bfb2abbf74483b5b3f888e880889877724b6feaa5f8af"
+    },
+    {
+      "name": "11.dict",
+      "entries": 3043,
+      "uncompressedBytes": 304623,
+      "compressedBytes": 129158,
+      "sha256": "cb1240dd1e6062c5fede9f8486b1a312449a8838df5b640404c8f0a88eb11742"
+    },
+    {
+      "name": "12.dict",
+      "entries": 2977,
+      "uncompressedBytes": 295220,
+      "compressedBytes": 126312,
+      "sha256": "4cabb6977fbce6873d4f4082ca5dc86bd1bf458e060d437f0844b685d1fb7ad0"
+    },
+    {
+      "name": "13.dict",
+      "entries": 2873,
+      "uncompressedBytes": 286650,
+      "compressedBytes": 122020,
+      "sha256": "a6c74855d9fb176bdf0f77eda53d7deda1a05b03c89b90a25f6269e7034b35ba"
+    },
+    {
+      "name": "14.dict",
+      "entries": 2977,
+      "uncompressedBytes": 295632,
+      "compressedBytes": 126014,
+      "sha256": "2ba255a8770fb64d17dcbe1adb4d4a7df35de9da51debc4655e1876b9b9d98a0"
+    },
+    {
+      "name": "15.dict",
+      "entries": 3086,
+      "uncompressedBytes": 309139,
+      "compressedBytes": 131551,
+      "sha256": "ff541f89a3e22ca89894f2deca8fb55262e8c18fc5937f86ded8f4e5168d53e0"
+    },
+    {
+      "name": "16.dict",
+      "entries": 2959,
+      "uncompressedBytes": 293159,
+      "compressedBytes": 125175,
+      "sha256": "141ba6d608d270fda75e3ba97276cbb91aeee2461bd92065aaafe56660eb022f"
+    },
+    {
+      "name": "17.dict",
+      "entries": 2930,
+      "uncompressedBytes": 295552,
+      "compressedBytes": 126289,
+      "sha256": "b08cf99c925cd9c480b6df1ed6466ffa87a9f24a87c570740d05519ec8a40837"
+    },
+    {
+      "name": "18.dict",
+      "entries": 2985,
+      "uncompressedBytes": 297495,
+      "compressedBytes": 127151,
+      "sha256": "8f8cdbd7c830001005b478a6e30647bc425bd515188e02a88a78847382e572f3"
+    },
+    {
+      "name": "19.dict",
+      "entries": 3132,
+      "uncompressedBytes": 308121,
+      "compressedBytes": 130707,
+      "sha256": "3edd950ab648f8e8ecf60328361c6ab3873e8e1ab8dfa6aa24e391797b247ba2"
+    },
+    {
+      "name": "1a.dict",
+      "entries": 3018,
+      "uncompressedBytes": 305574,
+      "compressedBytes": 130599,
+      "sha256": "aaf0ea0e4a1eea93558eca7b88cfe274878ce58a0b0ee94f5254974d276f76bd"
+    },
+    {
+      "name": "1b.dict",
+      "entries": 3025,
+      "uncompressedBytes": 303030,
+      "compressedBytes": 128978,
+      "sha256": "9b42fb4b8e34775368d183b5a9534db470cbadb2a13dc1d37fa99bbee7743eaa"
+    },
+    {
+      "name": "1c.dict",
+      "entries": 2868,
+      "uncompressedBytes": 286473,
+      "compressedBytes": 122760,
+      "sha256": "f7fe35371deea0f9fca50fcd4a4241d5a1c18ea6610aa87ba09b9c14dfd33a66"
+    },
+    {
+      "name": "1d.dict",
+      "entries": 2998,
+      "uncompressedBytes": 292956,
+      "compressedBytes": 124757,
+      "sha256": "19ecd7b7278b7388f9e2acb79afe33676d1d4b8e423da0f1096e4ee874379433"
+    },
+    {
+      "name": "1e.dict",
+      "entries": 2990,
+      "uncompressedBytes": 295733,
+      "compressedBytes": 125330,
+      "sha256": "25e5401a627df58aae5b6208c7b7e55f73073c3f6f9343e055be3398e5d845d1"
+    },
+    {
+      "name": "1f.dict",
+      "entries": 3041,
+      "uncompressedBytes": 305516,
+      "compressedBytes": 130906,
+      "sha256": "4114ba867c6ab3347912fe910b6f0ac9090cf06fd45e0a3bee337fda0533b747"
+    },
+    {
+      "name": "20.dict",
+      "entries": 3050,
+      "uncompressedBytes": 304275,
+      "compressedBytes": 129149,
+      "sha256": "3cb3469661a50590e3d5a008fc3e85fc5b1b3c349fc35e01f85a891d0fabd8fb"
+    },
+    {
+      "name": "21.dict",
+      "entries": 3035,
+      "uncompressedBytes": 302586,
+      "compressedBytes": 128381,
+      "sha256": "bf779dc8369964acb91bb0ab11adbeb53d1c51f085d90bbc3fd58413fe214dfa"
+    },
+    {
+      "name": "22.dict",
+      "entries": 3034,
+      "uncompressedBytes": 306655,
+      "compressedBytes": 131187,
+      "sha256": "7d59003a89fe6460e0e3576993a4ec6aed78cd06a6cff4d4b2b94650a6b9248b"
+    },
+    {
+      "name": "23.dict",
+      "entries": 3074,
+      "uncompressedBytes": 303829,
+      "compressedBytes": 129341,
+      "sha256": "7acd827b839a382ba63d7466af6ed92eb585f728474771c8be7447db9b655e2b"
+    },
+    {
+      "name": "24.dict",
+      "entries": 3040,
+      "uncompressedBytes": 305679,
+      "compressedBytes": 130752,
+      "sha256": "fbde5a87d62a283c219c7839b3e02e9a4524a0513efb9576a9d1c8de290bbce3"
+    },
+    {
+      "name": "25.dict",
+      "entries": 2889,
+      "uncompressedBytes": 289677,
+      "compressedBytes": 122795,
+      "sha256": "b4e0faf35735cc72ed9275d16b0bcf346910ef5a4c7d4e66b2182c71328b46c9"
+    },
+    {
+      "name": "26.dict",
+      "entries": 2986,
+      "uncompressedBytes": 298156,
+      "compressedBytes": 127805,
+      "sha256": "2fd99bb547d627f9c049d325503124d4b677aeb8e762e87557c7381c1799e942"
+    },
+    {
+      "name": "27.dict",
+      "entries": 3094,
+      "uncompressedBytes": 308827,
+      "compressedBytes": 132305,
+      "sha256": "81fb5bd45b52634c9e8c0c124a64e6ef803d3e9b4d1746844e473749e05975e2"
+    },
+    {
+      "name": "28.dict",
+      "entries": 2953,
+      "uncompressedBytes": 292233,
+      "compressedBytes": 124254,
+      "sha256": "17b0f37f8b7f580046179d746edf5a9375d8d349800b67d7dee7d2425c2a4cdc"
+    },
+    {
+      "name": "29.dict",
+      "entries": 2977,
+      "uncompressedBytes": 296899,
+      "compressedBytes": 127555,
+      "sha256": "0c65d8855a8c74c03e894defced3b879a065e1b4b3e19a142dc19cf10436fad2"
+    },
+    {
+      "name": "2a.dict",
+      "entries": 3100,
+      "uncompressedBytes": 306006,
+      "compressedBytes": 130750,
+      "sha256": "015b3c799e8f64f5cb9845f759eb0cdab5117267558a1db772751221df6a0a55"
+    },
+    {
+      "name": "2b.dict",
+      "entries": 3036,
+      "uncompressedBytes": 306265,
+      "compressedBytes": 131739,
+      "sha256": "67258e1d2c7b3b3358509c9fc7ecea0b5c3e48d33d0ebd300f6fd1178a8a14aa"
+    },
+    {
+      "name": "2c.dict",
+      "entries": 2972,
+      "uncompressedBytes": 299188,
+      "compressedBytes": 128253,
+      "sha256": "206bb5c214a79f011e49dc2f3b3854316825fb422aa2b5f9cc779d8053a3a0f0"
+    },
+    {
+      "name": "2d.dict",
+      "entries": 2984,
+      "uncompressedBytes": 293682,
+      "compressedBytes": 124936,
+      "sha256": "45e91b81b262be8ee78ec92d56e9c6113cb1afd1656f3874e30906ffc474887e"
+    },
+    {
+      "name": "2e.dict",
+      "entries": 3022,
+      "uncompressedBytes": 306557,
+      "compressedBytes": 131718,
+      "sha256": "2e4f064a30ca04ac0b2f92777b74dd674df6f88e7da86ae77c150bf3db0b03a9"
+    },
+    {
+      "name": "2f.dict",
+      "entries": 2980,
+      "uncompressedBytes": 294310,
+      "compressedBytes": 125415,
+      "sha256": "b0a2dbc703bc473ccd3055978b2814d3f601514dd62fbe0453786b7a393baa7c"
+    },
+    {
+      "name": "30.dict",
+      "entries": 3026,
+      "uncompressedBytes": 299883,
+      "compressedBytes": 127557,
+      "sha256": "ec15f857ab8e32b359349aecad1a9a7009940797766971c52520da74632e51db"
+    },
+    {
+      "name": "31.dict",
+      "entries": 2999,
+      "uncompressedBytes": 299218,
+      "compressedBytes": 127662,
+      "sha256": "d5cd2ceda953ca6831b47079c926c33ebdee13f0d0c47d9aa30c20d2014adbf5"
+    },
+    {
+      "name": "32.dict",
+      "entries": 3009,
+      "uncompressedBytes": 296809,
+      "compressedBytes": 127243,
+      "sha256": "b84d5187816e1dbfb54799b334800a02f9bd4a4d6dd45af198cbc8bb08535609"
+    },
+    {
+      "name": "33.dict",
+      "entries": 3057,
+      "uncompressedBytes": 301798,
+      "compressedBytes": 128248,
+      "sha256": "51c7113059badbe0bac0642286a0a6f8179155f56d95b4e12f321262de775ddb"
+    },
+    {
+      "name": "34.dict",
+      "entries": 3090,
+      "uncompressedBytes": 307514,
+      "compressedBytes": 130715,
+      "sha256": "7e526c4887c654c44bb50b412dc61de753f405166c88dcaa73b2767db0e578da"
+    },
+    {
+      "name": "35.dict",
+      "entries": 2994,
+      "uncompressedBytes": 300820,
+      "compressedBytes": 128327,
+      "sha256": "0da1b34405f6c9b100d9e51a945f5a37c2644b301b446a6dbfb9edd1d27ce430"
+    },
+    {
+      "name": "36.dict",
+      "entries": 2953,
+      "uncompressedBytes": 298095,
+      "compressedBytes": 126969,
+      "sha256": "4dec1774eb556909d8df8e82bf5bff81fef6d1cb018ee42a68841340aaf8802d"
+    },
+    {
+      "name": "37.dict",
+      "entries": 3020,
+      "uncompressedBytes": 300205,
+      "compressedBytes": 127598,
+      "sha256": "406dbe59a278485b9b3fbba7697f4a7a9d3f667c81018994cbf1cbb26dc87fe8"
+    },
+    {
+      "name": "38.dict",
+      "entries": 3015,
+      "uncompressedBytes": 295283,
+      "compressedBytes": 126095,
+      "sha256": "c356629e775f3d506825497f8680a29127297070cfc45a425125b149c27191fb"
+    },
+    {
+      "name": "39.dict",
+      "entries": 3011,
+      "uncompressedBytes": 308584,
+      "compressedBytes": 132189,
+      "sha256": "b5b2f6c917315658eca899f7a364e0d238d03f3e9e28e570307b86b7a48be123"
+    },
+    {
+      "name": "3a.dict",
+      "entries": 3069,
+      "uncompressedBytes": 298393,
+      "compressedBytes": 127113,
+      "sha256": "074e5f992eb46fd9fc03e0d057308592bdd98c27888abfcd726c9684b6525455"
+    },
+    {
+      "name": "3b.dict",
+      "entries": 3028,
+      "uncompressedBytes": 307383,
+      "compressedBytes": 131541,
+      "sha256": "d7cd9485573106f183d133e36414c72a035cd19c3dcfa12fae521a37ff47b973"
+    },
+    {
+      "name": "3c.dict",
+      "entries": 3015,
+      "uncompressedBytes": 292153,
+      "compressedBytes": 124036,
+      "sha256": "303c54138bfc5935bf843f6842e9901a89b71d12f8eb2cba72260def14cb4889"
+    },
+    {
+      "name": "3d.dict",
+      "entries": 2951,
+      "uncompressedBytes": 296886,
+      "compressedBytes": 126954,
+      "sha256": "29a9028cbd03a8e753f0065f0574f0440888b0c5214c682a1269078e94fc47bb"
+    },
+    {
+      "name": "3e.dict",
+      "entries": 3004,
+      "uncompressedBytes": 302099,
+      "compressedBytes": 128943,
+      "sha256": "c288c9694376f279897968583d660acb06d122a26bcac655a3247d79a246e4ea"
+    },
+    {
+      "name": "3f.dict",
+      "entries": 2892,
+      "uncompressedBytes": 293964,
+      "compressedBytes": 126426,
+      "sha256": "61707dee452fb997486f51ad7553f95c32a07bbff34ef86a8aa8e777a53cc830"
+    },
+    {
+      "name": "40.dict",
+      "entries": 2955,
+      "uncompressedBytes": 299403,
+      "compressedBytes": 127794,
+      "sha256": "50315435b19f2ab857989f89ad9c7b006995e7046b18351435aebb9269067a44"
+    },
+    {
+      "name": "41.dict",
+      "entries": 3058,
+      "uncompressedBytes": 306660,
+      "compressedBytes": 129921,
+      "sha256": "34f4f9a782e6a182d88481748937ba88a4958d6668f897889bb9cf363e315b3f"
+    },
+    {
+      "name": "42.dict",
+      "entries": 3036,
+      "uncompressedBytes": 297496,
+      "compressedBytes": 126642,
+      "sha256": "63e7aa1f21e8b1529ad64e5dafe27295dc30c892da253449421b7a4dee95e00f"
+    },
+    {
+      "name": "43.dict",
+      "entries": 3146,
+      "uncompressedBytes": 311283,
+      "compressedBytes": 133202,
+      "sha256": "73af0aa0bcc57ad256196a47fe371b4f022c2a6f626773fd6d45eebc4daceed0"
+    },
+    {
+      "name": "44.dict",
+      "entries": 3016,
+      "uncompressedBytes": 303586,
+      "compressedBytes": 130007,
+      "sha256": "5b34daac8457c72fdf3e2b4d87f900f9db79f3fa1bad6ae4c137d0bc199725c8"
+    },
+    {
+      "name": "45.dict",
+      "entries": 2922,
+      "uncompressedBytes": 287799,
+      "compressedBytes": 123024,
+      "sha256": "7f737b6e65e77db6141fb250c175e9a0078f3f29669eec7bef4ff2bcd11e2f4c"
+    },
+    {
+      "name": "46.dict",
+      "entries": 3020,
+      "uncompressedBytes": 304617,
+      "compressedBytes": 130243,
+      "sha256": "2c853fd356011bdce9c7f1d5c55c63601646ea68a3286070d0dcdfc80a72c812"
+    },
+    {
+      "name": "47.dict",
+      "entries": 2936,
+      "uncompressedBytes": 302579,
+      "compressedBytes": 129088,
+      "sha256": "42661c42f3ba45d1baec24f3cf70aa5e103e7b22cec5966a46c0ab00e54601a6"
+    },
+    {
+      "name": "48.dict",
+      "entries": 3040,
+      "uncompressedBytes": 302699,
+      "compressedBytes": 129111,
+      "sha256": "bd71de7c98f61fed12393f1d61f0efdf5bf9100d4189add5572c39a5215bae3b"
+    },
+    {
+      "name": "49.dict",
+      "entries": 3012,
+      "uncompressedBytes": 301093,
+      "compressedBytes": 128763,
+      "sha256": "74e1b7484f9c297a58213cc0127ed360c5d622674984e5536b199c604bc6c6e6"
+    },
+    {
+      "name": "4a.dict",
+      "entries": 2934,
+      "uncompressedBytes": 293015,
+      "compressedBytes": 125552,
+      "sha256": "37bc080c9903adc47a188fc9cf321bc35cafb0f3828e536a9b9dc4863a8f00ac"
+    },
+    {
+      "name": "4b.dict",
+      "entries": 3073,
+      "uncompressedBytes": 300948,
+      "compressedBytes": 127342,
+      "sha256": "3ea3df73ba0613405571f44163a3e852a1d814a26f912345153b70332e812e53"
+    },
+    {
+      "name": "4c.dict",
+      "entries": 2983,
+      "uncompressedBytes": 295707,
+      "compressedBytes": 126224,
+      "sha256": "1cf421ea43634b8cebab52040db48e8ba6a1a1e42682c4d8143ddc20b15b0f80"
+    },
+    {
+      "name": "4d.dict",
+      "entries": 3047,
+      "uncompressedBytes": 297589,
+      "compressedBytes": 126539,
+      "sha256": "97b78c82dbe7ef9dcd6dc7d1cbc377d3a29373e45e1ca6d040b55e9d34e16548"
+    },
+    {
+      "name": "4e.dict",
+      "entries": 2936,
+      "uncompressedBytes": 288463,
+      "compressedBytes": 122722,
+      "sha256": "5341d7002949dd91678db06b03a8ec77519c531d6ce252bf572c6d111352fde8"
+    },
+    {
+      "name": "4f.dict",
+      "entries": 3042,
+      "uncompressedBytes": 305724,
+      "compressedBytes": 131175,
+      "sha256": "904242242b6ecb8ac77fb3e0df2ab41cbca5fcd51f59535318cd03c34dc8192c"
+    },
+    {
+      "name": "50.dict",
+      "entries": 3062,
+      "uncompressedBytes": 302797,
+      "compressedBytes": 129901,
+      "sha256": "6f3b83f95cb8d0de5d7a48b9ed0f2fd54a870072f7dc757b9f5296e4dda01ebb"
+    },
+    {
+      "name": "51.dict",
+      "entries": 2986,
+      "uncompressedBytes": 298326,
+      "compressedBytes": 127283,
+      "sha256": "692c9f2ae73b5a3b54bc73d38759912bade898fba866141d5642276e19e16e09"
+    },
+    {
+      "name": "52.dict",
+      "entries": 3035,
+      "uncompressedBytes": 304370,
+      "compressedBytes": 129935,
+      "sha256": "6b3ddfffe1d3964c409a9e55a4b47d146fce978ee59647c412975a0f7e067ba8"
+    },
+    {
+      "name": "53.dict",
+      "entries": 3053,
+      "uncompressedBytes": 305005,
+      "compressedBytes": 130185,
+      "sha256": "88ca200d8d1843301932eeff65e3b2c1a6d5c9cc2fa17cc8151fc9d1a75cd519"
+    },
+    {
+      "name": "54.dict",
+      "entries": 3120,
+      "uncompressedBytes": 316944,
+      "compressedBytes": 136003,
+      "sha256": "1be03e08def174875d80e2c311b6d8dfc3c7c27ef5a54231c5f6e76501ec981f"
+    },
+    {
+      "name": "55.dict",
+      "entries": 2956,
+      "uncompressedBytes": 299835,
+      "compressedBytes": 129121,
+      "sha256": "6995c0077c1c2cac907c0e7b7aff2fcd8d25071d0a7b0cceb763671a048773ae"
+    },
+    {
+      "name": "56.dict",
+      "entries": 2938,
+      "uncompressedBytes": 296763,
+      "compressedBytes": 127478,
+      "sha256": "7b79715d7af855684d59e6c83e359aaa2b1c00e593ac85bfb1a0c1a2ee311034"
+    },
+    {
+      "name": "57.dict",
+      "entries": 3049,
+      "uncompressedBytes": 303932,
+      "compressedBytes": 130366,
+      "sha256": "21463de6374c9e4d070f7d166128c5e6531c127a5fe6177b4f4747fff94d8d7e"
+    },
+    {
+      "name": "58.dict",
+      "entries": 2980,
+      "uncompressedBytes": 292599,
+      "compressedBytes": 123888,
+      "sha256": "033d3df17573882fe9ad5ebf4926d1ae969eb16e930dc92bafa060fb4a9ad790"
+    },
+    {
+      "name": "59.dict",
+      "entries": 2985,
+      "uncompressedBytes": 300457,
+      "compressedBytes": 127100,
+      "sha256": "92974157c84989ea5802b9a9f6d9a85d44a6d2fc154470107541bb16f6f3d373"
+    },
+    {
+      "name": "5a.dict",
+      "entries": 3100,
+      "uncompressedBytes": 307116,
+      "compressedBytes": 131223,
+      "sha256": "ffea5da5f59e44df073bf6bc738926072b9a6766f887e01aa95be0f0ea4032ed"
+    },
+    {
+      "name": "5b.dict",
+      "entries": 3033,
+      "uncompressedBytes": 299185,
+      "compressedBytes": 127609,
+      "sha256": "2dad2a183cef68d340995f8841d75971f2c7b2d957c72bb458fc964ef4f17eb3"
+    },
+    {
+      "name": "5c.dict",
+      "entries": 2946,
+      "uncompressedBytes": 291902,
+      "compressedBytes": 124889,
+      "sha256": "82cf5e8c92b646e77258fbcaf1f5566fa2c1f63a6872470ac050218b9b870f20"
+    },
+    {
+      "name": "5d.dict",
+      "entries": 3036,
+      "uncompressedBytes": 298914,
+      "compressedBytes": 127203,
+      "sha256": "3dfdb2036c6584ede50b078cb13a4d5eb5c923e56816d355ad40e3a21a78e197"
+    },
+    {
+      "name": "5e.dict",
+      "entries": 2977,
+      "uncompressedBytes": 299387,
+      "compressedBytes": 128336,
+      "sha256": "89e825750f2739e6243a515d8654d5f76da9d5005fdfbc1e9159912bf2a014b1"
+    },
+    {
+      "name": "5f.dict",
+      "entries": 3024,
+      "uncompressedBytes": 295826,
+      "compressedBytes": 125653,
+      "sha256": "8aebaa8694c96cc8cce290318366caf427a4dd51dbd0dbe5979f2d2e5c5b2471"
+    },
+    {
+      "name": "60.dict",
+      "entries": 3035,
+      "uncompressedBytes": 302150,
+      "compressedBytes": 128428,
+      "sha256": "ef32b6a1d4cb2ac036e2589c5d39ebd65c28afbcdb6dd5954b1b85d45e032a10"
+    },
+    {
+      "name": "61.dict",
+      "entries": 3040,
+      "uncompressedBytes": 303915,
+      "compressedBytes": 129560,
+      "sha256": "79f1706d77dd6ae7b5e8490a1c58b7e7b6df799cbf5ad6379f590624d48e8c33"
+    },
+    {
+      "name": "62.dict",
+      "entries": 2956,
+      "uncompressedBytes": 297452,
+      "compressedBytes": 127513,
+      "sha256": "b71de15920b47254c93cf4710a909dab7b2c3a51e15fb4c3947a39f503304d53"
+    },
+    {
+      "name": "63.dict",
+      "entries": 3050,
+      "uncompressedBytes": 306174,
+      "compressedBytes": 130533,
+      "sha256": "3cc829ecf34724dbcadf9b0d7f8e0dfad9a7ec6598040311fb33e732921ea65e"
+    },
+    {
+      "name": "64.dict",
+      "entries": 3096,
+      "uncompressedBytes": 304093,
+      "compressedBytes": 129003,
+      "sha256": "c886348f559207735dd2a220ef2ab47669b066838a0eea8a616fa18610031a16"
+    },
+    {
+      "name": "65.dict",
+      "entries": 2893,
+      "uncompressedBytes": 283198,
+      "compressedBytes": 120617,
+      "sha256": "c509771a779c3230988eac48ce33fc383c71b9b3a313af3463f3db10de76dee3"
+    },
+    {
+      "name": "66.dict",
+      "entries": 3017,
+      "uncompressedBytes": 296852,
+      "compressedBytes": 126553,
+      "sha256": "7307a501e6c125683a63cabe68f51149c4e6e4144febbf560adaaa78dfdf4de3"
+    },
+    {
+      "name": "67.dict",
+      "entries": 2999,
+      "uncompressedBytes": 297604,
+      "compressedBytes": 126859,
+      "sha256": "73dfaf8fcc34122ab51babe30f1b63d01d163a15362b68d81eebb317e53b1852"
+    },
+    {
+      "name": "68.dict",
+      "entries": 3057,
+      "uncompressedBytes": 305531,
+      "compressedBytes": 130827,
+      "sha256": "a4bff9ad8d86b61ffb90ca11f17c284c3c2243b2558dc846023d53ee01f9b3d7"
+    },
+    {
+      "name": "69.dict",
+      "entries": 2950,
+      "uncompressedBytes": 295786,
+      "compressedBytes": 126624,
+      "sha256": "03db14d9bd168532960820cd9f4fa67222ba1f67d8e96dd833860edddfa7a8db"
+    },
+    {
+      "name": "6a.dict",
+      "entries": 2947,
+      "uncompressedBytes": 295849,
+      "compressedBytes": 126014,
+      "sha256": "2a42bf527719c8ffd2a9ee8012f3a914371bb973296c329002ae8e9054e0bcba"
+    },
+    {
+      "name": "6b.dict",
+      "entries": 2929,
+      "uncompressedBytes": 289637,
+      "compressedBytes": 124428,
+      "sha256": "bdacf6a1e3b1b16002e5fb5ea46c58eb4c2e9f6f30a4237e2ada1355130ba931"
+    },
+    {
+      "name": "6c.dict",
+      "entries": 3009,
+      "uncompressedBytes": 300437,
+      "compressedBytes": 127899,
+      "sha256": "b6cdc207c368622cdd2203663fecf8c0c8106efe8ecfb629f6450d9e3b2f4ce4"
+    },
+    {
+      "name": "6d.dict",
+      "entries": 2959,
+      "uncompressedBytes": 297950,
+      "compressedBytes": 127266,
+      "sha256": "d1d8a0c39799ca19a1de220b46a8651a660823132de4c13352154beaba6315de"
+    },
+    {
+      "name": "6e.dict",
+      "entries": 3006,
+      "uncompressedBytes": 304263,
+      "compressedBytes": 130500,
+      "sha256": "e32629219e473eaf61783c1c34f995501d128465c0ed0a3668b34d45ee3f7095"
+    },
+    {
+      "name": "6f.dict",
+      "entries": 3013,
+      "uncompressedBytes": 297499,
+      "compressedBytes": 126737,
+      "sha256": "5c1c2da0ed9ade7ee8c00c0db1dfa191ee216a1c8397c862f0632ce3e87d7ff7"
+    },
+    {
+      "name": "70.dict",
+      "entries": 3042,
+      "uncompressedBytes": 309470,
+      "compressedBytes": 132307,
+      "sha256": "32a15bff9cc7147cb29686af26962a9b0da1a83bd53311808160ccb069e1a407"
+    },
+    {
+      "name": "71.dict",
+      "entries": 3015,
+      "uncompressedBytes": 296561,
+      "compressedBytes": 126639,
+      "sha256": "15b9cb16e438ddc1234b85c2bc4b0e916ca50ab2f6c262fe152145eabbb83c8f"
+    },
+    {
+      "name": "72.dict",
+      "entries": 2953,
+      "uncompressedBytes": 289504,
+      "compressedBytes": 122135,
+      "sha256": "b6b98cf20cd975944583b19c9c3adcd534332d0186c6e7ebf1248b1b7e94cd73"
+    },
+    {
+      "name": "73.dict",
+      "entries": 2920,
+      "uncompressedBytes": 290483,
+      "compressedBytes": 124734,
+      "sha256": "9ce57979aed5122f525fe586a50cfb4ec8c4f522ea6b16984facc34c24d6252b"
+    },
+    {
+      "name": "74.dict",
+      "entries": 3019,
+      "uncompressedBytes": 304270,
+      "compressedBytes": 129953,
+      "sha256": "789be2f855e1bc1900751a8ee8195b2567de11a09c8131a5813beb0b99b77038"
+    },
+    {
+      "name": "75.dict",
+      "entries": 2964,
+      "uncompressedBytes": 296611,
+      "compressedBytes": 127316,
+      "sha256": "66050d0ce8183dda7a43f8276bebceefd1b2f24dcc825d8ebec1cebf89bbdf6f"
+    },
+    {
+      "name": "76.dict",
+      "entries": 2993,
+      "uncompressedBytes": 297078,
+      "compressedBytes": 126200,
+      "sha256": "854471ca33b2cc867d46579cfcd7e7b56ddf67f26ce2ed420bb9e6008760438a"
+    },
+    {
+      "name": "77.dict",
+      "entries": 2880,
+      "uncompressedBytes": 285355,
+      "compressedBytes": 121871,
+      "sha256": "558e7af2cf3950062f0e4feade5b804ba1445a3d25b488c42ccf6b5d84fc7808"
+    },
+    {
+      "name": "78.dict",
+      "entries": 2989,
+      "uncompressedBytes": 291780,
+      "compressedBytes": 123881,
+      "sha256": "9e0a7c0bd5eed99c201e370560cfc4886351679918112b1b466aec28b139bdd6"
+    },
+    {
+      "name": "79.dict",
+      "entries": 3068,
+      "uncompressedBytes": 300113,
+      "compressedBytes": 127418,
+      "sha256": "5ecc0ba79b67075d948748e098518e8e427c674500d0c332e50ced645d2c2609"
+    },
+    {
+      "name": "7a.dict",
+      "entries": 3008,
+      "uncompressedBytes": 298544,
+      "compressedBytes": 127246,
+      "sha256": "a1a6094a71c90502392282d6e5706fbe84ccf0bd1b0cf064325a32014357b2e3"
+    },
+    {
+      "name": "7b.dict",
+      "entries": 3135,
+      "uncompressedBytes": 312887,
+      "compressedBytes": 133382,
+      "sha256": "f1b8b78341e790264b6d33017869bc8d7dc6386b94f1f0a47ffcb7281b2fc0a3"
+    },
+    {
+      "name": "7c.dict",
+      "entries": 3056,
+      "uncompressedBytes": 305915,
+      "compressedBytes": 130533,
+      "sha256": "499c7c35d7d177e685ca0063d3e8b97e5022ad724925d6feba83cba61154eb65"
+    },
+    {
+      "name": "7d.dict",
+      "entries": 3016,
+      "uncompressedBytes": 307746,
+      "compressedBytes": 131786,
+      "sha256": "48c073ed765093046cb3fd16d828d15f933f1081b86d526462604b3cf6ad3547"
+    },
+    {
+      "name": "7e.dict",
+      "entries": 3085,
+      "uncompressedBytes": 303880,
+      "compressedBytes": 129156,
+      "sha256": "984fef0b62cf2315ab6ace09f3585aad3afd4ea880e85e79ad3dc5e590e04795"
+    },
+    {
+      "name": "7f.dict",
+      "entries": 3035,
+      "uncompressedBytes": 300421,
+      "compressedBytes": 128163,
+      "sha256": "d66007913bd83ff4044a919757a0165149ad2705671737ffeae1b4789c147186"
+    },
+    {
+      "name": "80.dict",
+      "entries": 3062,
+      "uncompressedBytes": 301377,
+      "compressedBytes": 128438,
+      "sha256": "98a98282cc6b88d9766678cf2c0f0540a7eb8ecb1c5392ccf35025eabb8e2555"
+    },
+    {
+      "name": "81.dict",
+      "entries": 3035,
+      "uncompressedBytes": 300212,
+      "compressedBytes": 128554,
+      "sha256": "565792f0d43c81162724e1dad6c1ee68ac987deb7bba7ea92a90d17c4f76f30b"
+    },
+    {
+      "name": "82.dict",
+      "entries": 2944,
+      "uncompressedBytes": 298861,
+      "compressedBytes": 128125,
+      "sha256": "4086e7d638174ded09cba973a8c7dcf94682c765f41d6651154e955f2b10a6a0"
+    },
+    {
+      "name": "83.dict",
+      "entries": 2901,
+      "uncompressedBytes": 288518,
+      "compressedBytes": 123099,
+      "sha256": "fabd18c27d23c4795785dd0d0f852aba9ff72261302bec33cd1b070fc6a173fc"
+    },
+    {
+      "name": "84.dict",
+      "entries": 3037,
+      "uncompressedBytes": 293203,
+      "compressedBytes": 124880,
+      "sha256": "25a7e452e1cf0d5a1330e7bed5405a8b46f6e27c65c835c353e8b4be48db6339"
+    },
+    {
+      "name": "85.dict",
+      "entries": 3050,
+      "uncompressedBytes": 303600,
+      "compressedBytes": 129389,
+      "sha256": "d150217391377aefd10ef87eed6bd623e0478bc80214eda6365a80a8ede0331b"
+    },
+    {
+      "name": "86.dict",
+      "entries": 3021,
+      "uncompressedBytes": 292828,
+      "compressedBytes": 124173,
+      "sha256": "23137e7f5ed2cce1f64821d21e59ceccf8d5700f9cc0f66e43fb581e4a7a1aa8"
+    },
+    {
+      "name": "87.dict",
+      "entries": 2939,
+      "uncompressedBytes": 290299,
+      "compressedBytes": 123184,
+      "sha256": "c4fe778955cbaf6fc9eaf4b9cf3b756b5d91fcc14fb36d43765a7e5c3be3f2cb"
+    },
+    {
+      "name": "88.dict",
+      "entries": 3031,
+      "uncompressedBytes": 295616,
+      "compressedBytes": 125850,
+      "sha256": "dba82f9bc3e5920358a21652a626a56c5b9705c465127e4d214c3c54048954ee"
+    },
+    {
+      "name": "89.dict",
+      "entries": 3008,
+      "uncompressedBytes": 301270,
+      "compressedBytes": 128644,
+      "sha256": "9e4488ff1c2857064d16748f66e85c5c56c75556706ddebe0794083716ec5429"
+    },
+    {
+      "name": "8a.dict",
+      "entries": 2949,
+      "uncompressedBytes": 295386,
+      "compressedBytes": 126550,
+      "sha256": "6a07b83da3f3234f745d1cd98eb4353b62950736e85e3dc46747dbda7bfe9f60"
+    },
+    {
+      "name": "8b.dict",
+      "entries": 3053,
+      "uncompressedBytes": 308434,
+      "compressedBytes": 132285,
+      "sha256": "4ccd5f8804679bdc31c9aac80fbe46dc37788ba399222683f7d0967b2fd953b2"
+    },
+    {
+      "name": "8c.dict",
+      "entries": 3035,
+      "uncompressedBytes": 301866,
+      "compressedBytes": 128405,
+      "sha256": "135b42427e4e0f6cf1b4f2d171151d15b950422b49efd28dcf509330aeeb2a44"
+    },
+    {
+      "name": "8d.dict",
+      "entries": 3011,
+      "uncompressedBytes": 300153,
+      "compressedBytes": 127916,
+      "sha256": "70f923c8def3dc4d52a5bb0111403ecee9cda40a90fc6f1b9122786c3ddaf057"
+    },
+    {
+      "name": "8e.dict",
+      "entries": 2972,
+      "uncompressedBytes": 297647,
+      "compressedBytes": 127011,
+      "sha256": "bc9b7636c02c5e114fe692025f912167aed93a598579cf455bd09698e0ff1cf5"
+    },
+    {
+      "name": "8f.dict",
+      "entries": 3000,
+      "uncompressedBytes": 295661,
+      "compressedBytes": 126417,
+      "sha256": "70dfb69cf0eb93ce49d5c749b2d1b02e0d81099eeab2e5e71ee59a5fc757304b"
+    },
+    {
+      "name": "90.dict",
+      "entries": 3000,
+      "uncompressedBytes": 302954,
+      "compressedBytes": 130223,
+      "sha256": "f395e9da3eea64bf66073fa062a9f3b7075affa54a251828e25d2927901a6326"
+    },
+    {
+      "name": "91.dict",
+      "entries": 2997,
+      "uncompressedBytes": 295997,
+      "compressedBytes": 125074,
+      "sha256": "2f7171bef93e7f4899dcf0ba63a86046a7f7547ff343d0511bab63eb7a584f86"
+    },
+    {
+      "name": "92.dict",
+      "entries": 3070,
+      "uncompressedBytes": 307476,
+      "compressedBytes": 131286,
+      "sha256": "55bc0f416661dd37c50dfee823b0bbff5355721887c185ce31eec25ec337bbe3"
+    },
+    {
+      "name": "93.dict",
+      "entries": 2989,
+      "uncompressedBytes": 299292,
+      "compressedBytes": 128350,
+      "sha256": "4c321efde3f3c69d48f2a41328c8d1ea462a3940777b00bd421bc09675ed9ce4"
+    },
+    {
+      "name": "94.dict",
+      "entries": 3011,
+      "uncompressedBytes": 298944,
+      "compressedBytes": 127374,
+      "sha256": "61fae6031ef59f7138766c63bbf9acb0162bde7e726885583642aeedfdf727b1"
+    },
+    {
+      "name": "95.dict",
+      "entries": 3086,
+      "uncompressedBytes": 298604,
+      "compressedBytes": 127599,
+      "sha256": "49bbb49f8c7c59daab171cf7599d63d54e6d926eeba22a05f88f7a1572c5d2a6"
+    },
+    {
+      "name": "96.dict",
+      "entries": 3024,
+      "uncompressedBytes": 302544,
+      "compressedBytes": 129319,
+      "sha256": "5867cbae4693b49b802bdc74c6a952aa345aa674a5c962799a901796b4d45f3a"
+    },
+    {
+      "name": "97.dict",
+      "entries": 2930,
+      "uncompressedBytes": 285491,
+      "compressedBytes": 122000,
+      "sha256": "4f15cc0d15fd012a7336bb6bb1152098b7d8c716f06f21f72d5ec3135640d23b"
+    },
+    {
+      "name": "98.dict",
+      "entries": 3006,
+      "uncompressedBytes": 304274,
+      "compressedBytes": 130847,
+      "sha256": "9c62c5847dfc84cc0bc98bd5125453c9729a1ffc1b79debf764fb02e7c0744dd"
+    },
+    {
+      "name": "99.dict",
+      "entries": 3025,
+      "uncompressedBytes": 296016,
+      "compressedBytes": 126056,
+      "sha256": "d20186a6f97e4501c44687391ea4486ae0c457a238c77347b4043e6f5eeac2fc"
+    },
+    {
+      "name": "9a.dict",
+      "entries": 3119,
+      "uncompressedBytes": 308301,
+      "compressedBytes": 131207,
+      "sha256": "27fb9e0442b346da53e7daaf01c64dab8d48d88d1f8ed0d0e99061bb9b660b18"
+    },
+    {
+      "name": "9b.dict",
+      "entries": 2953,
+      "uncompressedBytes": 296719,
+      "compressedBytes": 126839,
+      "sha256": "b9ff7c9f287a14c38fcb9e55ecdc1a3a1c4ac7b610f124097f6ac7e62ed8aef2"
+    },
+    {
+      "name": "9c.dict",
+      "entries": 3026,
+      "uncompressedBytes": 304798,
+      "compressedBytes": 129440,
+      "sha256": "7470065b6dc280913584694edf5d9f2d6a362b5b297166226b32d39de6f2a985"
+    },
+    {
+      "name": "9d.dict",
+      "entries": 2919,
+      "uncompressedBytes": 282719,
+      "compressedBytes": 120021,
+      "sha256": "3424285549a13d7ffa0173940082d9638bca9619ddde04d49c82a736713415ed"
+    },
+    {
+      "name": "9e.dict",
+      "entries": 2993,
+      "uncompressedBytes": 297162,
+      "compressedBytes": 126505,
+      "sha256": "91106a673eaff653b4f6649d1818cc283d7ec942da9c9d68c8417155ab5ecdba"
+    },
+    {
+      "name": "9f.dict",
+      "entries": 2952,
+      "uncompressedBytes": 295214,
+      "compressedBytes": 126034,
+      "sha256": "2ddc96068c0143864d3725a7f5f86c529d09430d385734de16a948dbd0c1f14c"
+    },
+    {
+      "name": "a0.dict",
+      "entries": 2944,
+      "uncompressedBytes": 294268,
+      "compressedBytes": 126159,
+      "sha256": "e2108d4910ab9a4884e84f1330964987ad75405d75ba87395b9f37fd13158f03"
+    },
+    {
+      "name": "a1.dict",
+      "entries": 2981,
+      "uncompressedBytes": 290329,
+      "compressedBytes": 123384,
+      "sha256": "530436a0b7a517a22bfd56fbb9df7cf905fd21a814ff4ef7b92ee53ccc0a62fa"
+    },
+    {
+      "name": "a2.dict",
+      "entries": 3017,
+      "uncompressedBytes": 292431,
+      "compressedBytes": 124164,
+      "sha256": "6f7e22249465599a5fe5f390a23aeeab1554b203dd84c7e2e4b2cd24a7949487"
+    },
+    {
+      "name": "a3.dict",
+      "entries": 2925,
+      "uncompressedBytes": 287069,
+      "compressedBytes": 122190,
+      "sha256": "e6fc314ab8cf1fd565c3bc58559d7c015798214c21132dd269e91ef71efd135b"
+    },
+    {
+      "name": "a4.dict",
+      "entries": 2991,
+      "uncompressedBytes": 297489,
+      "compressedBytes": 127305,
+      "sha256": "0c43bf29e763bf8bfaddce47042717ad6b07980a00f10981133f9fc99d039668"
+    },
+    {
+      "name": "a5.dict",
+      "entries": 3025,
+      "uncompressedBytes": 301193,
+      "compressedBytes": 128777,
+      "sha256": "913f088779f00e50c8b1a67f0944eef44c1dd055c77bc744f7427a55f54a2f4f"
+    },
+    {
+      "name": "a6.dict",
+      "entries": 2987,
+      "uncompressedBytes": 299399,
+      "compressedBytes": 128022,
+      "sha256": "16dd91ef29b26b52491b55094a2dd5c80b086fdc199f0b47c8a5fa011ec845dc"
+    },
+    {
+      "name": "a7.dict",
+      "entries": 3058,
+      "uncompressedBytes": 300310,
+      "compressedBytes": 126740,
+      "sha256": "6496c49487e4e0e5abfa05bc609a1b63156c5a849f458d01b32e82451c93dda7"
+    },
+    {
+      "name": "a8.dict",
+      "entries": 3016,
+      "uncompressedBytes": 302944,
+      "compressedBytes": 129264,
+      "sha256": "1ed4aa293b811903c02938e33f56b1d8b9d8b66b1ff98155624bc03b6a7b03d8"
+    },
+    {
+      "name": "a9.dict",
+      "entries": 3050,
+      "uncompressedBytes": 306414,
+      "compressedBytes": 130947,
+      "sha256": "dbd2d5f11fbc34bc86405ac948cae618f6fea13296e94a26128f3f2e26cb4942"
+    },
+    {
+      "name": "aa.dict",
+      "entries": 3077,
+      "uncompressedBytes": 299148,
+      "compressedBytes": 127270,
+      "sha256": "bb548e2fd96564c7faeccfa22eec40e549fd34eb9b9bfc662c28eedd8f432f61"
+    },
+    {
+      "name": "ab.dict",
+      "entries": 2984,
+      "uncompressedBytes": 300631,
+      "compressedBytes": 127917,
+      "sha256": "0d5519e52c41b3edf87dfeef7e41929769dbf56d2bb87b52e82d75815e39105e"
+    },
+    {
+      "name": "ac.dict",
+      "entries": 2955,
+      "uncompressedBytes": 289416,
+      "compressedBytes": 122963,
+      "sha256": "48a1581870e86c618f7ff9cd6412a726564d229ff188666b74a2aac73cc5e19a"
+    },
+    {
+      "name": "ad.dict",
+      "entries": 3005,
+      "uncompressedBytes": 299685,
+      "compressedBytes": 127733,
+      "sha256": "118a582eb32ddca5690faeea0dc99e10166002d19baaf0b9859f95fa1bd8b864"
+    },
+    {
+      "name": "ae.dict",
+      "entries": 2935,
+      "uncompressedBytes": 292064,
+      "compressedBytes": 124638,
+      "sha256": "b27bb487afc060c841651aabb8ad2359e3bd937c0277d202942ca7b1f485fddf"
+    },
+    {
+      "name": "af.dict",
+      "entries": 2967,
+      "uncompressedBytes": 293139,
+      "compressedBytes": 124927,
+      "sha256": "37ca8653176ab9db9725d27e5e5fc8ab388a1180f02210634bf1895cd79321d6"
+    },
+    {
+      "name": "b0.dict",
+      "entries": 2971,
+      "uncompressedBytes": 296770,
+      "compressedBytes": 127494,
+      "sha256": "c863b187fd18cb014c4c42bfdad0a81e0900bb2cb3b0a0ae37bcf71f8e60b9d2"
+    },
+    {
+      "name": "b1.dict",
+      "entries": 3090,
+      "uncompressedBytes": 308246,
+      "compressedBytes": 132419,
+      "sha256": "10996e3cdf3c47fe04f83bbaea302a5e66c6e301ae1e8197e309bef1dc5e630f"
+    },
+    {
+      "name": "b2.dict",
+      "entries": 2983,
+      "uncompressedBytes": 297872,
+      "compressedBytes": 127257,
+      "sha256": "9d67b96d54eb99b86c78318327ccc8a2866d8099abee62b847c8d5b1342f03e9"
+    },
+    {
+      "name": "b3.dict",
+      "entries": 2988,
+      "uncompressedBytes": 298061,
+      "compressedBytes": 126856,
+      "sha256": "1591a4d80bc8ba66985ce8e4a4cd5507777bdb3da03997a1aa3bf7c206fe01ab"
+    },
+    {
+      "name": "b4.dict",
+      "entries": 3038,
+      "uncompressedBytes": 299417,
+      "compressedBytes": 126781,
+      "sha256": "101aee75e0d4de461aabe73244b0866e9d13d13f040bc00f220ec8c0b742454c"
+    },
+    {
+      "name": "b5.dict",
+      "entries": 3052,
+      "uncompressedBytes": 305202,
+      "compressedBytes": 130608,
+      "sha256": "c323768e2dcc5b333824be0f16bcc505b61c9f821c4fe126cc0da98911b20aba"
+    },
+    {
+      "name": "b6.dict",
+      "entries": 2983,
+      "uncompressedBytes": 297652,
+      "compressedBytes": 127024,
+      "sha256": "44febf9a420e42a12d89c41943d720b7f39b569701acc8d513be7f542a096f88"
+    },
+    {
+      "name": "b7.dict",
+      "entries": 3079,
+      "uncompressedBytes": 299556,
+      "compressedBytes": 127119,
+      "sha256": "7b537d82429944d0683aade7cfdaf3655e98f31317eee5affc3f7d43c6c60b30"
+    },
+    {
+      "name": "b8.dict",
+      "entries": 2887,
+      "uncompressedBytes": 287705,
+      "compressedBytes": 123734,
+      "sha256": "2b46486e659c0d4972152839d93e411cea6aac5611c06de6a8efab0f278ccef1"
+    },
+    {
+      "name": "b9.dict",
+      "entries": 3009,
+      "uncompressedBytes": 298916,
+      "compressedBytes": 127682,
+      "sha256": "eaa9b063187cd96b5b358b49fd3d87ad2a700d3145277bd865b535aad600c301"
+    },
+    {
+      "name": "ba.dict",
+      "entries": 2995,
+      "uncompressedBytes": 300279,
+      "compressedBytes": 127888,
+      "sha256": "25cea270722910550116f8b0baddcdb2fb46a7182f104dde8fe0407fb468fac3"
+    },
+    {
+      "name": "bb.dict",
+      "entries": 2995,
+      "uncompressedBytes": 298312,
+      "compressedBytes": 127614,
+      "sha256": "6f6b6851120dce2f138bd21cf581a3c08353f112dc4ac6164a47264eb0866d95"
+    },
+    {
+      "name": "bc.dict",
+      "entries": 3043,
+      "uncompressedBytes": 299019,
+      "compressedBytes": 127068,
+      "sha256": "7c7aad5de4ab5f517e2a67aa15cde5a68e1454e476d716c39fd1395bf5c35b98"
+    },
+    {
+      "name": "bd.dict",
+      "entries": 2983,
+      "uncompressedBytes": 298477,
+      "compressedBytes": 127219,
+      "sha256": "54621255c0084d047e84076150e0d2746ca1e2d9d5f78824acc68279ffe1c5b2"
+    },
+    {
+      "name": "be.dict",
+      "entries": 2966,
+      "uncompressedBytes": 292850,
+      "compressedBytes": 124357,
+      "sha256": "eb5027de352d38fcc856ddf58f1da139511f92fef3ac34cc65a5fac2df61342b"
+    },
+    {
+      "name": "bf.dict",
+      "entries": 3012,
+      "uncompressedBytes": 302130,
+      "compressedBytes": 128506,
+      "sha256": "ff21399cc3e1722e91bf3823d0e2a1dcbdef3764b6725e520e3eef34ac2dc191"
+    },
+    {
+      "name": "c0.dict",
+      "entries": 3017,
+      "uncompressedBytes": 304055,
+      "compressedBytes": 129794,
+      "sha256": "f6efbaacbae4e91072c7b78b222a4aba209f73cad11020e5fecb1806ed4d2e98"
+    },
+    {
+      "name": "c1.dict",
+      "entries": 2997,
+      "uncompressedBytes": 294636,
+      "compressedBytes": 125207,
+      "sha256": "a2f53e562246c59213b55a8c6e09d415d54d68b10f5f52003588a6324f90ffd1"
+    },
+    {
+      "name": "c2.dict",
+      "entries": 2969,
+      "uncompressedBytes": 294106,
+      "compressedBytes": 125494,
+      "sha256": "a41ac59d384ec8e7b6ae531f95d161bc7f382e1964b6eb2a6da7933a1862fc6d"
+    },
+    {
+      "name": "c3.dict",
+      "entries": 2974,
+      "uncompressedBytes": 290674,
+      "compressedBytes": 123921,
+      "sha256": "f45c6fd1ecd1e188a5f231df6123de3ff5419059540853613a3399b6b00b2646"
+    },
+    {
+      "name": "c4.dict",
+      "entries": 3110,
+      "uncompressedBytes": 305597,
+      "compressedBytes": 129769,
+      "sha256": "a876daa75162593467565d4be31d20f2933eafa3b9d9cf1d607fa4410497095a"
+    },
+    {
+      "name": "c5.dict",
+      "entries": 3011,
+      "uncompressedBytes": 301987,
+      "compressedBytes": 128982,
+      "sha256": "b2802f16c1fd9f66f7d8afc27481d554902a2fcd58a13a8e48597e1b546e39b8"
+    },
+    {
+      "name": "c6.dict",
+      "entries": 3051,
+      "uncompressedBytes": 296854,
+      "compressedBytes": 126272,
+      "sha256": "2fd50aea8829672397036f39b893e5c5e648990152f76a135e622057d05f7d76"
+    },
+    {
+      "name": "c7.dict",
+      "entries": 2979,
+      "uncompressedBytes": 299148,
+      "compressedBytes": 127881,
+      "sha256": "5c18066d0c9b03ca5d3bdccac572228f06ebf00ee40a8e850d6d490f2bf05fe4"
+    },
+    {
+      "name": "c8.dict",
+      "entries": 2994,
+      "uncompressedBytes": 299086,
+      "compressedBytes": 127362,
+      "sha256": "e22abd085d79fc92ea4764bfc3e4e526c646664ca54b7bea0e4b59dca893c017"
+    },
+    {
+      "name": "c9.dict",
+      "entries": 3039,
+      "uncompressedBytes": 301306,
+      "compressedBytes": 128299,
+      "sha256": "d27a281a97fb08499dba3c6b66795f0f7996fb11e7265aac55caefec460d42dc"
+    },
+    {
+      "name": "ca.dict",
+      "entries": 3008,
+      "uncompressedBytes": 300224,
+      "compressedBytes": 127758,
+      "sha256": "f78d5ffbe724a1ac0b9225aa6c44abdceb29b5a683037348ecf3012efe1ab25d"
+    },
+    {
+      "name": "cb.dict",
+      "entries": 3037,
+      "uncompressedBytes": 301375,
+      "compressedBytes": 128724,
+      "sha256": "823106a67578fffc7f339581870760ff121719d0a5a17ad88fca00b3eba62e61"
+    },
+    {
+      "name": "cc.dict",
+      "entries": 3032,
+      "uncompressedBytes": 310291,
+      "compressedBytes": 132187,
+      "sha256": "8643754a309a87663fe8eac0d1dfd77296f4e0a1e4109426803c4aa386d1fbdc"
+    },
+    {
+      "name": "cd.dict",
+      "entries": 2957,
+      "uncompressedBytes": 297319,
+      "compressedBytes": 126367,
+      "sha256": "a5d3b2e96b3191112c6d279adf2c3e3082303636c5d49a1aa4d0740440e5244b"
+    },
+    {
+      "name": "ce.dict",
+      "entries": 3028,
+      "uncompressedBytes": 302762,
+      "compressedBytes": 128739,
+      "sha256": "87ccfd24bb3533ad0a5c2f40371f24138d29118df2915b69fb1ba3fbf7d6bc4d"
+    },
+    {
+      "name": "cf.dict",
+      "entries": 2945,
+      "uncompressedBytes": 298177,
+      "compressedBytes": 127353,
+      "sha256": "3fe412fdbb55dad7b575b6d53d65c28fd0fdb34ea82d3f6e83d9cf4b235dbe6e"
+    },
+    {
+      "name": "d0.dict",
+      "entries": 3010,
+      "uncompressedBytes": 299930,
+      "compressedBytes": 127803,
+      "sha256": "923aebbb8d03f6b711d0e619858685dd820475bf80a2e00ece922a29de109dcd"
+    },
+    {
+      "name": "d1.dict",
+      "entries": 2950,
+      "uncompressedBytes": 287041,
+      "compressedBytes": 121853,
+      "sha256": "ac2750aed934618259be571d650b38a0ce902228c5f9035c837ebb96f474a991"
+    },
+    {
+      "name": "d2.dict",
+      "entries": 3016,
+      "uncompressedBytes": 299048,
+      "compressedBytes": 128012,
+      "sha256": "10053a4af568c5ff1b3faa3a10126cf0b63c2dffba71ecb6bac95fe1a5da3a27"
+    },
+    {
+      "name": "d3.dict",
+      "entries": 3011,
+      "uncompressedBytes": 301342,
+      "compressedBytes": 128746,
+      "sha256": "24f8c3dc09e370029dfc167bb70d5ad3c1cf57b1974335e08171551acf1230d3"
+    },
+    {
+      "name": "d4.dict",
+      "entries": 3130,
+      "uncompressedBytes": 307792,
+      "compressedBytes": 131074,
+      "sha256": "88e55534535d26a47e8ff5984e050673970caa55b460968cf2b072bbf5419ce4"
+    },
+    {
+      "name": "d5.dict",
+      "entries": 3009,
+      "uncompressedBytes": 305034,
+      "compressedBytes": 129966,
+      "sha256": "16b119f6fca52d18b91e55d1bc800e33bd60cb6b14663e304a8fafacf4eadd83"
+    },
+    {
+      "name": "d6.dict",
+      "entries": 3131,
+      "uncompressedBytes": 317333,
+      "compressedBytes": 135120,
+      "sha256": "fc93b94cab1d47e2ca0bddc58c1fe171f8842247d9f405de7fdba89c72d65935"
+    },
+    {
+      "name": "d7.dict",
+      "entries": 3067,
+      "uncompressedBytes": 304051,
+      "compressedBytes": 130272,
+      "sha256": "350f57a113a3436c3c2e51880f1e56520e9d527fe0bf5799dbe446a6c9c581eb"
+    },
+    {
+      "name": "d8.dict",
+      "entries": 3010,
+      "uncompressedBytes": 294589,
+      "compressedBytes": 125968,
+      "sha256": "23d83e128b504eaf6f773490e72e35e614956cc3c105f255bc5f3f440080bcc0"
+    },
+    {
+      "name": "d9.dict",
+      "entries": 3055,
+      "uncompressedBytes": 306120,
+      "compressedBytes": 131087,
+      "sha256": "ded5115e14f56a34486f87be126fb22198969516901e47cef1d54d75d8e26cba"
+    },
+    {
+      "name": "da.dict",
+      "entries": 3039,
+      "uncompressedBytes": 300837,
+      "compressedBytes": 128221,
+      "sha256": "17a4a8eb9a6e1cffbb6330cfac4d61e647243ae740e8ec959159c6530965066b"
+    },
+    {
+      "name": "db.dict",
+      "entries": 3049,
+      "uncompressedBytes": 303580,
+      "compressedBytes": 129149,
+      "sha256": "57e79c64ae2d180d27d13449d073f9dd24da1738f19a0bc08c4478c38ab1140f"
+    },
+    {
+      "name": "dc.dict",
+      "entries": 3095,
+      "uncompressedBytes": 313881,
+      "compressedBytes": 133995,
+      "sha256": "1702bae33b7462ed4234e5668eb428fabfa2e72bb3b8a5a0bc5bcb3f6bb73bca"
+    },
+    {
+      "name": "dd.dict",
+      "entries": 2980,
+      "uncompressedBytes": 306315,
+      "compressedBytes": 131008,
+      "sha256": "0745fc9a9219568c459fa09a543a2e98ffda60d93cd40fd854083ee2a8753bf7"
+    },
+    {
+      "name": "de.dict",
+      "entries": 2902,
+      "uncompressedBytes": 287466,
+      "compressedBytes": 123350,
+      "sha256": "9b2f1e83aa48f1ffd8a177605a9b766ddd9886d1a4babdcdd956f93860be1695"
+    },
+    {
+      "name": "df.dict",
+      "entries": 2955,
+      "uncompressedBytes": 291572,
+      "compressedBytes": 124108,
+      "sha256": "ebf8b76921171abf51dd22ec6fbc35fdd3d372893e8d0a47a85dee1651be7a81"
+    },
+    {
+      "name": "e0.dict",
+      "entries": 2966,
+      "uncompressedBytes": 295402,
+      "compressedBytes": 126367,
+      "sha256": "003e19e43398a41f13eb7b2388403bb7279bee0f5e73911c937bea7b5ffabac2"
+    },
+    {
+      "name": "e1.dict",
+      "entries": 2974,
+      "uncompressedBytes": 293584,
+      "compressedBytes": 124931,
+      "sha256": "47ea34b2bf71de0d9e510c6527a7d3fd9c09bd28553d4d45a051ab93e36ee45f"
+    },
+    {
+      "name": "e2.dict",
+      "entries": 2975,
+      "uncompressedBytes": 299227,
+      "compressedBytes": 127909,
+      "sha256": "71fc3471e1363fb90c800afdd9551db94dff74d753573b989348d7716dfaadd2"
+    },
+    {
+      "name": "e3.dict",
+      "entries": 3033,
+      "uncompressedBytes": 302819,
+      "compressedBytes": 128537,
+      "sha256": "a70ca347e50cf5964263582516c3452bed9fa439bb2d5a98ca7d7dcd231d56d2"
+    },
+    {
+      "name": "e4.dict",
+      "entries": 3041,
+      "uncompressedBytes": 301584,
+      "compressedBytes": 128342,
+      "sha256": "4c9f488b4b5dfdd7fdd6fba14d3d4dc4b5821a3fa2f1e0050280d2f0728ef43d"
+    },
+    {
+      "name": "e5.dict",
+      "entries": 2956,
+      "uncompressedBytes": 293186,
+      "compressedBytes": 124766,
+      "sha256": "aa499e878cd3b2328305b0b5771f60f1a67f499ac6a486e23141a18851613ee6"
+    },
+    {
+      "name": "e6.dict",
+      "entries": 2950,
+      "uncompressedBytes": 293118,
+      "compressedBytes": 124817,
+      "sha256": "7e9ce3deedae30eba2ffe22b73a12c66cd4bd90789a49fb783156ad04f0742ca"
+    },
+    {
+      "name": "e7.dict",
+      "entries": 3014,
+      "uncompressedBytes": 302256,
+      "compressedBytes": 129323,
+      "sha256": "eaea86e64d16d5a0653600f540fd122b63049e89cdbb0303cb1ff7ee4218b503"
+    },
+    {
+      "name": "e8.dict",
+      "entries": 3068,
+      "uncompressedBytes": 309002,
+      "compressedBytes": 132263,
+      "sha256": "09505db32d76354c4ea8214691b6559b1e4f70cb41044506f082c9dd05a5f80c"
+    },
+    {
+      "name": "e9.dict",
+      "entries": 2982,
+      "uncompressedBytes": 297190,
+      "compressedBytes": 127418,
+      "sha256": "a508392ab6e53c4b3324a856bed225aa9c68b264cdd329cfa4ec3b5a209200ab"
+    },
+    {
+      "name": "ea.dict",
+      "entries": 2996,
+      "uncompressedBytes": 292857,
+      "compressedBytes": 124861,
+      "sha256": "1e4c2254e772d2d15f668222f334a1563cf36d1ad4939e6668d410506f7bdecc"
+    },
+    {
+      "name": "eb.dict",
+      "entries": 2949,
+      "uncompressedBytes": 287326,
+      "compressedBytes": 122608,
+      "sha256": "44bb628c1f5a072fbdf19d9828c29170340eb0c3c2d9359e1c4d7f121222c78a"
+    },
+    {
+      "name": "ec.dict",
+      "entries": 2997,
+      "uncompressedBytes": 294343,
+      "compressedBytes": 125113,
+      "sha256": "5a4212ff26977742aa60d8b5e1aa814b0062f4fa0d72d812f13bb7f352388231"
+    },
+    {
+      "name": "ed.dict",
+      "entries": 3032,
+      "uncompressedBytes": 296349,
+      "compressedBytes": 125582,
+      "sha256": "4bf5807764c72774190d95b78eb81afdf049a87a0a337044ac0e09289886e3e2"
+    },
+    {
+      "name": "ee.dict",
+      "entries": 2933,
+      "uncompressedBytes": 291322,
+      "compressedBytes": 124078,
+      "sha256": "95fdd0940cf001a3b11920525852804e49cc3c0bf683a222335ae1b407a113b0"
+    },
+    {
+      "name": "ef.dict",
+      "entries": 2981,
+      "uncompressedBytes": 297842,
+      "compressedBytes": 126748,
+      "sha256": "33f8176a51ec5f4a0fcaa30655a96bed1b91193b1f1000f09f17379b69f84fbf"
+    },
+    {
+      "name": "f0.dict",
+      "entries": 2981,
+      "uncompressedBytes": 291458,
+      "compressedBytes": 124023,
+      "sha256": "2ba1ffb30fcef226c60012727a2cc249f7ad55d0ea3e9b0c24c41994def5d6ef"
+    },
+    {
+      "name": "f1.dict",
+      "entries": 3071,
+      "uncompressedBytes": 307978,
+      "compressedBytes": 131888,
+      "sha256": "ee631c1042f040fb3e209eb0874174aa486f1094d2162ca5d14ef370177a1a0f"
+    },
+    {
+      "name": "f2.dict",
+      "entries": 3022,
+      "uncompressedBytes": 301844,
+      "compressedBytes": 129413,
+      "sha256": "e21521cc8abf6e1b5f10e4a80df0f7c809565f59755927648219dc84517ab855"
+    },
+    {
+      "name": "f3.dict",
+      "entries": 2976,
+      "uncompressedBytes": 293808,
+      "compressedBytes": 125573,
+      "sha256": "d517335f42a4bcf848d8b332df6d37e73969a82cdf008888e9c46e03a6fc4175"
+    },
+    {
+      "name": "f4.dict",
+      "entries": 2970,
+      "uncompressedBytes": 297422,
+      "compressedBytes": 126953,
+      "sha256": "81ccc0c027f52052ffa0116d44b86b580345a0e627168b38782ee9563c649673"
+    },
+    {
+      "name": "f5.dict",
+      "entries": 3142,
+      "uncompressedBytes": 311079,
+      "compressedBytes": 132840,
+      "sha256": "c32a369df9168df4e1061f159264bde5a9647405bd5bfaa9c129bf2b3617a312"
+    },
+    {
+      "name": "f6.dict",
+      "entries": 2904,
+      "uncompressedBytes": 286530,
+      "compressedBytes": 122160,
+      "sha256": "ec208703eacfae673ff11d54420a9d1634e8f83e123359c276da950191c6a175"
+    },
+    {
+      "name": "f7.dict",
+      "entries": 3129,
+      "uncompressedBytes": 311810,
+      "compressedBytes": 132851,
+      "sha256": "95fd82ba3dc94a0d75ec07a6d50609102f81e83c151e21647fa0bfb45f263215"
+    },
+    {
+      "name": "f8.dict",
+      "entries": 3012,
+      "uncompressedBytes": 301264,
+      "compressedBytes": 129380,
+      "sha256": "dcbfc69fec5abf7bc91eb502e28151f62afc09996bc5cde64710a9b08ee2bb50"
+    },
+    {
+      "name": "f9.dict",
+      "entries": 2969,
+      "uncompressedBytes": 297600,
+      "compressedBytes": 127443,
+      "sha256": "603d511beaf5cfb089b8fc8021a01dd1c7e9788ac1b9b9106b8d19cc71991a90"
+    },
+    {
+      "name": "fa.dict",
+      "entries": 2997,
+      "uncompressedBytes": 304431,
+      "compressedBytes": 129897,
+      "sha256": "20dc4ec61055f3df02d2e278b93d36ff8193398e538318fa762cd8707e410872"
+    },
+    {
+      "name": "fb.dict",
+      "entries": 3095,
+      "uncompressedBytes": 305490,
+      "compressedBytes": 129872,
+      "sha256": "de2a19b01512dec3536daeb048bec6dc7f14130a36e9ed2d7ed0a31acfa616d2"
+    },
+    {
+      "name": "fc.dict",
+      "entries": 2934,
+      "uncompressedBytes": 288802,
+      "compressedBytes": 122525,
+      "sha256": "bd13a03e3615d90cdad4c58071ef4b277b1dd367d3b97ab34e429f54c6945154"
+    },
+    {
+      "name": "fd.dict",
+      "entries": 3028,
+      "uncompressedBytes": 301343,
+      "compressedBytes": 128917,
+      "sha256": "caf67528f5cf34b29ea60bda178663cf826ae0098e1a9a4324e015e041d60839"
+    },
+    {
+      "name": "fe.dict",
+      "entries": 3064,
+      "uncompressedBytes": 299599,
+      "compressedBytes": 127184,
+      "sha256": "d932b5371dccd5d642f428585315e0392ecbd00f4f28990b4984c20b8a010a59"
+    },
+    {
+      "name": "ff.dict",
+      "entries": 3055,
+      "uncompressedBytes": 306138,
+      "compressedBytes": 130213,
+      "sha256": "7c2633a5d7356a50d348fcce7856a37ac744366162cc381db63829f4675eb523"
+    }
+  ]
+}
