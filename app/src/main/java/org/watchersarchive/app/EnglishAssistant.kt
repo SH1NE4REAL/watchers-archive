@@ -51,6 +51,8 @@ internal data class EnglishDictionaryEntry(
     val sourceUrl: String? = null,
     val requiresModel: Boolean = false,
     val notice: String? = null,
+    /** Domain candidates are distinct from the ordinary dictionary definition. */
+    val marvelNames: List<MarvelNameMatch> = emptyList(),
 )
 
 internal interface EnglishDictionaryProvider {

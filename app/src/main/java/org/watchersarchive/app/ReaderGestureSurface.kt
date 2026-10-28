@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ internal fun ReaderGestureSurface(
     overlay: @Composable (ReaderImageTransform, ReaderImageBounds) -> Unit = { _, _ -> },
     onImageTap: ((Float, Float) -> Boolean)? = null,
     onImageLongPress: ((Float, Float) -> Boolean)? = null,
+    onGeometryChanged: ((Any, ReaderImageTransform, ReaderImageBounds) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf(IntSize.Zero) }
@@ -69,6 +71,7 @@ internal fun ReaderGestureSurface(
     val doubleTapDistance = with(LocalDensity.current) { 48.dp.toPx() }
     val currentBounds by rememberUpdatedState(ReaderImageBounds(
         viewport.width.toFloat(), viewport.height.toFloat(), bitmap.width.toFloat(), bitmap.height.toFloat()))
+    SideEffect { onGeometryChanged?.invoke(pageKey, transform, currentBounds) }
 
     Box(modifier.fillMaxSize().background(Color.Black).clipToBounds()
         .onSizeChanged { viewport = it }

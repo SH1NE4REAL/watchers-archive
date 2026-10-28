@@ -72,6 +72,7 @@ internal class PublicEnglishDictionaryProvider(
     context: Context,
     private val translation: EnglishDefinitionTranslator = MlKitEnglishDefinitionTranslator(),
     private val dictionary: BundleEnglishDictionary = BundleEnglishDictionary(context.applicationContext.assets),
+    private val comicTitleHint: String? = null,
 ) : EnglishDictionaryProvider, Closeable {
     private val definitions = LinkedHashMap<String, BundledEnglishLexeme?>(128, .75f, true)
     private val modelDownload = Mutex()
@@ -98,11 +99,12 @@ internal class PublicEnglishDictionaryProvider(
         check(!closed)
         val word = BundleEnglishDictionary.normalize(token.text)
         if (word.length !in 1..120 || word.split(' ').size > 12 || word.any(Char::isISOControl) || !word.any(Char::isLetter)) return@withContext null
+        val marvelNames = MarvelReadingGlossary.matches(token, page, comicTitleHint)
         val local = try { definition(word) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) {
             return@withContext EnglishDictionaryEntry(token.text, meaning = "离线词典暂不可用，请更新应用后重试。",
-                notice = "词典资源读取失败，未将错误视作词语未收录。")
+                notice = "词典资源读取失败，未将错误视作词语未收录。", marvelNames = marvelNames)
         }
         currentCoroutineContext().ensureActive()
         if (closed) return@withContext null
@@ -132,6 +134,7 @@ internal class PublicEnglishDictionaryProvider(
                 translatedWord != null -> "未取得词典条目，当前仅提供设备端机器参考译义。"
                 else -> "人名、拟声词、俚语或识别错误可能查不到释义。"
             },
+            marvelNames = marvelNames,
         )
     }
 

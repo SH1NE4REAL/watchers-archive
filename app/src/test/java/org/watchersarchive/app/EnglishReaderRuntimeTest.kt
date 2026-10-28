@@ -108,4 +108,58 @@ class EnglishReaderRuntimeTest {
         compose.waitForIdle()
         assertEquals("Turning a page with assistant disabled does not run OCR", 2, ocr.calls)
     }
+
+    @Test fun selectingALowerPageNameMovesTheCompactCardAboveTheWord() {
+        val wordBounds = RectF(80f, 490f, 190f, 520f)
+        val lowerBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true).also {
+            Canvas(it).drawText("CYCLOPS", 80f, 515f, Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 24f; color = android.graphics.Color.DKGRAY })
+        }
+        val nameToken = EnglishToken("cyclops", "CYCLOPS", wordBounds, "CYCLOPS is here.", "name-line")
+        val ocr = object : EnglishOcrEngine {
+            override suspend fun recognize(bitmap: Bitmap, pageKey: String) =
+                EnglishPageTokens(pageKey, bitmap.width, bitmap.height, listOf(nameToken), false)
+            override fun close() { }
+        }
+        val dictionary = object : EnglishDictionaryProvider {
+            override suspend fun lookup(token: EnglishToken, page: EnglishPageTokens) =
+                EnglishDictionaryEntry(token.text, meaning = "独眼巨人", partOfSpeech = "名词",
+                    marvelNames = MarvelReadingGlossary.matches(token, page, "X-Men"))
+        }
+        val actual = AndroidRepository(ApplicationProvider.getApplicationContext())
+        val repository = object : ReaderRepository by actual {
+            override suspend fun lastPage(comicId: String) = 0
+            override suspend fun bookmarkPages(comicId: String) = emptySet<Int>()
+            override suspend fun open(comic: DemoComic) = object : ReaderSession {
+                override val totalPages = 1
+                override suspend fun loadPage(index: Int) = ReaderPage(0, 1, lowerBitmap, true, 0, stablePageId = "lower-page")
+                override suspend fun close() { }
+            }
+        }
+        lateinit var view: View
+        compose.setContent { view = LocalView.current; MaterialTheme { ReaderScreen(comic, repository, { ocr }, dictionary) {} } }
+        compose.waitForIdle()
+        val image = compose.onNodeWithTag("reader-gesture-surface")
+        image.performTouchInput { click(Offset(2f, 2f)) }
+        compose.mainClock.advanceTimeBy(600)
+        compose.onNodeWithTag("toggle-english-assistant").performClick()
+        compose.waitForIdle()
+        val viewport = image.fetchSemanticsNode().boundsInRoot
+        val selected = checkNotNull(ReaderImageBounds(viewport.width, viewport.height, 300f, 600f)
+            .imageRectOnScreen(ReaderImageTransform(), wordBounds))
+        image.performTouchInput { click(Offset(selected.centerX(), selected.centerY())) }
+        compose.mainClock.advanceTimeBy(600)
+        compose.onNodeWithText("镭射眼", substring = true).assertIsDisplayed()
+        val card = compose.onNodeWithTag("english-assistant-card").fetchSemanticsNode().boundsInRoot
+        assertTrue("The card must leave the selected lower-page word visible", card.bottom <= viewport.top + selected.top - 10f)
+        assertTrue("Default card stays compact", card.height <= 160f)
+        runCatching { compose.runOnIdle {
+            val folder = generateSequence(File(System.getProperty("user.dir") ?: ".").absoluteFile) { it.parentFile }
+                .first { File(it, "settings.gradle.kts").isFile }.resolve("artifacts/ui-v0.9.1").apply { mkdirs() }
+            val preview = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            try {
+                view.draw(Canvas(preview))
+                folder.resolve("lower-word-marvel-card.png").outputStream().use { preview.compress(Bitmap.CompressFormat.PNG,100,it) }
+            } finally { preview.recycle() }
+        } }
+    }
 }

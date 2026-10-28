@@ -238,8 +238,9 @@ internal fun ReaderScreen(
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(false) }
     var englishAssistantEnabled by remember(comic.id) { mutableStateOf(false) }
+    var englishGeometry by remember(comic.id) { mutableStateOf<ReaderImageGeometry?>(null) }
     val context = LocalContext.current
-    val englishDictionary = remember(comic.id, context) { PublicEnglishDictionaryProvider(context.applicationContext) }
+    val englishDictionary = remember(comic.id, context) { PublicEnglishDictionaryProvider(context.applicationContext, comicTitleHint = comic.title) }
     val englishAssistant = remember(comic.id, englishDictionaryOverride) { EnglishAssistantController(createEnglishOcr(), englishDictionaryOverride ?: englishDictionary) }
     val englishSpeech = remember(comic.id, englishAssistantEnabled) { if (englishAssistantEnabled) DeviceEnglishSpeech(context.applicationContext) else null }
     val noSpeech = remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
@@ -326,6 +327,7 @@ internal fun ReaderScreen(
         if (recognized.pageKey != expectedKey) return false
         val token = englishTokenAt(recognized, x, y) ?: return false
         val selection = if (phrase) englishLinePhrase(recognized, token) ?: token else token
+        controlsVisible = false
         englishSpeech?.stop(); englishModelNotice = null
         scope.launch { englishAssistant.lookup(selection, recognized.pageKey) }
         return true
@@ -339,6 +341,10 @@ internal fun ReaderScreen(
                 onToggleControls = { controlsVisible = !controlsVisible },
                 onImageTap = { x, y -> selectEnglishToken(x, y, false) },
                 onImageLongPress = { x, y -> selectEnglishToken(x, y, true) },
+                onGeometryChanged = if (englishAssistantEnabled) ({ pageKey, transform, bounds ->
+                    val geometry = ReaderImageGeometry(pageKey, transform, bounds)
+                    if (geometry != englishGeometry) englishGeometry = geometry
+                }) else null,
                 overlay = { transform, bounds ->
                     if (englishAssistantEnabled && !busy) {
                         englishState.recognizedPage()?.let { recognized ->
@@ -404,17 +410,19 @@ internal fun ReaderScreen(
         }
 
         if (englishAssistantEnabled && !busy) {
-            Column(
-                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars),
-                verticalArrangement = Arrangement.Bottom,
-            ) {
+            Column(Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars)) {
                 when (englishState) {
                     EnglishAssistantState.Recognizing -> EnglishAssistantStatus(englishState)
                     is EnglishAssistantState.Failed -> EnglishAssistantStatus(englishState)
-                    is EnglishAssistantState.Ready -> EnglishAssistantStatus(englishState)
                     else -> Unit
                 }
-                EnglishAssistantCard(englishState, speechReady, downloadingEnglishModel, englishModelNotice,
+            }
+            val selectedToken = (englishState as? EnglishAssistantState.Selected)?.token
+                ?: (englishState as? EnglishAssistantState.LookingUp)?.token
+            val geometry = englishGeometry?.takeIf { it.pageKey == page?.index }
+            val selectedScreenBounds = if (geometry != null && selectedToken != null)
+                geometry.bounds.imageRectOnScreen(geometry.transform, selectedToken.bounds) else null
+            EnglishAssistantCardHost(englishState, selectedScreenBounds, speechReady, downloadingEnglishModel, englishModelNotice,
                     onSpeak = { text ->
                         if (englishSpeech?.speak(text) != true) englishModelNotice = "本机语音暂不可用，请在系统文字转语音设置中检查英文语音。"
                     },
@@ -438,8 +446,7 @@ internal fun ReaderScreen(
                         scope.launch { if (expectedPage != null) englishAssistant.lookup(phrase, expectedPage) }
                     },
                     onDismiss = { englishSpeech?.stop(); englishAssistant.dismissSelection() },
-                )
-            }
+            )
         }
     }
 }
