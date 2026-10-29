@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,11 +33,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -61,6 +65,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -73,6 +79,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
@@ -237,6 +247,9 @@ internal fun ReaderScreen(
     var bookmarks by remember(comic.id) { mutableStateOf(emptySet<Int>()) }
     var task by remember { mutableStateOf<Job?>(null) }
     var controlsVisible by remember(comic.id) { mutableStateOf(false) }
+    var jumpDialogVisible by remember(comic.id) { mutableStateOf(false) }
+    var jumpInput by remember(comic.id) { mutableStateOf(TextFieldValue("")) }
+    var jumpError by remember(comic.id) { mutableStateOf<String?>(null) }
     var englishAssistantEnabled by remember(comic.id) { mutableStateOf(false) }
     var englishGeometry by remember(comic.id) { mutableStateOf<ReaderImageGeometry?>(null) }
     val context = LocalContext.current
@@ -297,8 +310,11 @@ internal fun ReaderScreen(
     // Keep the displayed page pinned while Compose owns the corresponding UI. When
     // navigation replaces it (or the screen leaves composition), release only that
     // page lease; the session still owns any in-flight/candidate leases.
-    DisposableEffect(page) {
-        val displayedPage = page
+    // Capture the value during composition, together with the effect key. An
+    // immediate load can otherwise change page before the effect is installed,
+    // making the old null-key effect incorrectly own the newly displayed page.
+    val displayedPage = page
+    DisposableEffect(displayedPage) {
         onDispose { displayedPage?.release?.invoke() }
     }
     LaunchedEffect(page?.index, session, englishState is EnglishAssistantState.Recognizing) {
@@ -372,7 +388,19 @@ internal fun ReaderScreen(
                     TextButton(onClick = onBack) { Text("‹ 返回", color = Color.White, fontSize = 16.sp) }
                     Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         Text(comic.title, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text("${if (comic.isTestContent) "测试内容 · " else ""}${page?.let { "第 ${it.index + 1} / ${it.total} 页" } ?: "读取中"}", color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
+                        TextButton(
+                            enabled = page != null && !busy,
+                            onClick = {
+                                val number = (page?.index?.plus(1) ?: 1).toString()
+                                jumpInput = TextFieldValue(number, selection = TextRange(0, number.length))
+                                jumpError = null
+                                jumpDialogVisible = true
+                            },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.testTag("reader-page-indicator"),
+                        ) {
+                            Text("${if (comic.isTestContent) "测试内容 · " else ""}${page?.let { "第 ${it.index + 1} / ${it.total} 页 · 跳页" } ?: "读取中"}", color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                     TextButton(enabled = page != null && !busy, onClick = {
                         val current = page ?: return@TextButton
@@ -446,6 +474,60 @@ internal fun ReaderScreen(
                         scope.launch { if (expectedPage != null) englishAssistant.lookup(phrase, expectedPage) }
                     },
                     onDismiss = { englishSpeech?.stop(); englishAssistant.dismissSelection() },
+            )
+        }
+
+        if (jumpDialogVisible) {
+            val totalPages = session?.totalPages ?: page?.total ?: 0
+            val jumpFocus = remember { FocusRequester() }
+            fun submitJump() {
+                if (busy || !jumpDialogVisible) return
+                val target = jumpInput.text.trim().toIntOrNull()
+                if (target == null || target !in 1..totalPages) {
+                    jumpError = "页码无效，请输入 1 到 $totalPages 之间的数字。"
+                    return
+                }
+                jumpDialogVisible = false
+                jumpError = null
+                if (target - 1 != page?.index) {
+                    busy = true
+                    task = scope.launch { load(target - 1) }
+                } else {
+                    // Keeping this page also keeps its zoom, bitmap and lease.
+                    error = null
+                    notice = null
+                }
+            }
+            AlertDialog(
+                onDismissRequest = { jumpDialogVisible = false; jumpError = null },
+                title = { Text("跳转到页码") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(
+                            value = jumpInput,
+                            onValueChange = { value ->
+                                jumpInput = value
+                                jumpError = null
+                            },
+                            label = { Text("页码") },
+                            singleLine = true,
+                            enabled = !busy,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { submitJump() }),
+                            isError = jumpError != null,
+                            modifier = Modifier.fillMaxWidth().focusRequester(jumpFocus).testTag("reader-jump-page-input"),
+                        )
+                        LaunchedEffect(Unit) { jumpFocus.requestFocus() }
+                        Text("请输入 1 到 $totalPages 之间的页码。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        jumpError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ArchiveRed) }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { jumpDialogVisible = false; jumpError = null }) { Text("取消") }
+                },
+                confirmButton = {
+                    TextButton(enabled = !busy, onClick = { submitJump() }) { Text("跳转") }
+                },
             )
         }
     }
